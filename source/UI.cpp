@@ -4,8 +4,10 @@
 
 #include "SKSEMenuFramework.h"
 
+#include "Enchanting.h"
 #include "Levelling.h"
 #include "Patches.h"
+#include "Presets.h"
 #include "SkillList.h"
 #include "Skills.h"
 #include "Settings.h"
@@ -57,7 +59,8 @@ namespace UI
 				"igPushItemWidth",
 				"igPopItemWidth",
 				"igPushID_Str",
-				"igPopID"
+				"igPopID",
+				"igInputText"
 			};
 
 			for (const char* name : required)
@@ -125,6 +128,7 @@ namespace UI
 				OnMainThread([]() {
 					const bool ok = settings::Reload();
 					Levelling::Apply();
+					Enchanting::Apply();
 					statusMessage = ok ? "Settings reloaded from the INI."
 									   : "Could not read the INI. See the log for why.";
 				});
@@ -138,6 +142,7 @@ namespace UI
 				OnMainThread([]() {
 					settings::RestoreDefaults();
 					Levelling::Apply();
+					Enchanting::Apply();
 					logger::debug("Restored default settings");
 				});
 				statusMessage = "Defaults restored - the values this install had before the mod. Press Save to keep them.";
@@ -172,6 +177,8 @@ namespace UI
 		SKSEMenuFramework::SetSection("Character Progression Control");
 		SKSEMenuFramework::AddSectionItem("Levelling", LevellingPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Skills", SkillsPanel::Render);
+		SKSEMenuFramework::AddSectionItem("Enchanting", EnchantingPanel::Render);
+		SKSEMenuFramework::AddSectionItem("Presets", PresetsPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Patches", PatchesPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Debug", DebugPanel::Render);
 		logger::info("Registered the settings pages with the menu framework");
@@ -316,6 +323,158 @@ namespace UI
 		}
 
 		ImGuiMCP::PopItemWidth();
+		RenderButtons();
+	}
+
+	void __stdcall PresetsPanel::Render()
+	{
+		static char newName[64] = "My preset";
+		static bool scanned = false;
+		if (!scanned) { Presets::Refresh(); scanned = true; }
+
+		ImGuiMCP::TextWrapped("A preset is a file in this mod's Presets folder, in the same format as its "
+							  "INI. Whichever one is selected is what the mod is using - and the selection "
+							  "belongs to THIS character, while the files are shared, so two saves can sit "
+							  "on different presets at once.");
+		ImGuiMCP::Spacing();
+
+		const auto& all = Presets::All();
+		ImGuiMCP::Text("This character is using: %s", Presets::Current().c_str());
+		ImGuiMCP::Spacing();
+
+		ImGuiMCP::SeparatorText("Presets");
+		for (const auto& name : all)
+		{
+			ImGuiMCP::PushID(name.c_str());
+			const bool isCurrent = (name == Presets::Current());
+			if (ImGuiMCP::Button(isCurrent ? "In use" : "Use"))
+			{
+				const std::string picked = name;
+				OnMainThread([picked]() {
+					statusMessage = Presets::Select(picked)
+										? "Now using " + picked + "."
+										: "Could not read that preset - fell back to the built-in default.";
+				});
+			}
+			ImGuiMCP::SameLine();
+			ImGuiMCP::Text("%s", name.c_str());
+			ImGuiMCP::PopID();
+		}
+
+		ImGuiMCP::Spacing();
+		ImGuiMCP::SeparatorText("This configuration");
+
+		if (ImGuiMCP::Button("Save into the selected preset"))
+		{
+			OnMainThread([]() {
+				statusMessage = Presets::SaveCurrent()
+									? "Saved into " + Presets::Current() + "."
+									: "The built-in default is not a file - use Save as a new preset instead.";
+			});
+		}
+		HelpMarker("A preset is a living configuration, not a read-only template: this writes what is on "
+				   "the pages now back into the preset you are using.");
+
+		ImGuiMCP::PushItemWidth(200.0F);
+		ImGuiMCP::InputText("New preset name", newName, sizeof(newName));
+		ImGuiMCP::PopItemWidth();
+		ImGuiMCP::SameLine();
+		if (ImGuiMCP::Button("Save as a new preset"))
+		{
+			const std::string wanted = newName;
+			OnMainThread([wanted]() {
+				statusMessage = Presets::Export(wanted)
+									? "Wrote and selected " + wanted + "."
+									: "That name cannot be used as a file name.";
+			});
+		}
+		HelpMarker("Writes the current configuration out as its own file, which is also how you share one.");
+
+		if (Presets::Current() != Presets::kDefaultName)
+		{
+			if (ImGuiMCP::Button("Delete the selected preset"))
+			{
+				const std::string doomed = Presets::Current();
+				OnMainThread([doomed]() {
+					statusMessage = Presets::Delete(doomed)
+										? "Deleted " + doomed + "; back on the built-in default."
+										: "Could not delete that preset.";
+				});
+			}
+			HelpMarker("Deletes the file. The built-in default can never be deleted, so there is always "
+					   "somewhere to fall back to.");
+		}
+
+		ImGuiMCP::Spacing();
+		ImGuiMCP::Text("%s", Presets::Dir().c_str());
+
+		RenderButtons();
+	}
+
+	void __stdcall EnchantingPanel::Render()
+	{
+		using namespace settings;
+
+		const auto& group = Enchanting::Settings();
+
+		ImGuiMCP::TextWrapped("How the cost of using an enchanted item scales with your Enchanting skill. "
+							  "This is the equation that breaks when Enchanting is uncapped, which is why it "
+							  "sits beside the skill caps.");
+		ImGuiMCP::Spacing();
+
+		if (!group.Captured() || group.FoundCount() == 0)
+		{
+			ImGuiMCP::TextWrapped("None of the enchanting cost settings could be read on this runtime, so "
+								  "this tab will not write anything. See the log.");
+			RenderButtons();
+			return;
+		}
+		if (group.FoundCount() < static_cast<int>(group.Entries().size()))
+		{
+			ImGuiMCP::TextWrapped("Only some of these settings exist on this runtime; the rest are left alone.");
+			ImGuiMCP::Spacing();
+		}
+
+		ImGuiMCP::PushItemWidth(260.0F);
+
+		bool changed = false;
+		bool over = enchanting::overrideCost;
+		if (ImGuiMCP::Checkbox("Control the enchantment charge cost", &over))
+		{
+			enchanting::overrideCost = over;
+			changed = true;
+		}
+		HelpMarker("Off by default. While it is off this mod restores the values your install came with "
+				   "and leaves them alone.");
+
+		if (enchanting::overrideCost)
+		{
+			changed |= NudgeableSlider("Cost base", &enchanting::costBase, 0.0F, 100.0F, "%.2f", 0.5F);
+			changed |= NudgeableSlider("Cost scale", &enchanting::costScale, 0.0F, 10.0F, "%.2f", 0.05F);
+			changed |= NudgeableSlider("Cost multiplier", &enchanting::costMult, 0.0F, 100.0F, "%.2f", 0.5F);
+			changed |= NudgeableSlider("Cost exponent", &enchanting::costExponent, 0.0F, 5.0F, "%.2f", 0.05F);
+			HelpMarker("Lower values make an enchanted item cheaper to use. The exponent is the one that "
+					   "runs away when the skill climbs past 100.");
+		}
+
+		if (changed) { Enchanting::RequestApply(); }
+
+		ImGuiMCP::PopItemWidth();
+
+		ImGuiMCP::Spacing();
+		ImGuiMCP::SeparatorText("What the game is using");
+		const auto& entries = group.Entries();
+		for (int i = 0; i < static_cast<int>(entries.size()); ++i)
+		{
+			if (!entries[static_cast<std::size_t>(i)].found)
+			{
+				ImGuiMCP::TextDisabled("%s - not on this runtime", entries[static_cast<std::size_t>(i)].name);
+				continue;
+			}
+			ImGuiMCP::Text("%s = %.3f   (this install: %.3f)", entries[static_cast<std::size_t>(i)].name,
+						   group.Live(i), entries[static_cast<std::size_t>(i)].vanilla);
+		}
+
 		RenderButtons();
 	}
 

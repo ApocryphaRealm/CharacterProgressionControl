@@ -18,6 +18,16 @@ namespace UI
 		void __stdcall Render();
 	}
 
+	namespace PresetsPanel
+	{
+		void __stdcall Render();
+	}
+
+	namespace EnchantingPanel
+	{
+		void __stdcall Render();
+	}
+
 	namespace PatchesPanel
 	{
 		void __stdcall Render();

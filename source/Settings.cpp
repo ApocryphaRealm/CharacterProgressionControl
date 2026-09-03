@@ -29,6 +29,8 @@ namespace settings
 			bool overrideCaps;
 			float cap[skilllist::kCount];
 			float formulaCap[skilllist::kCount];
+			bool overrideEnchanting;
+			float ench[4];
 		} defaults{};
 
 		// Vanilla Skyrim stops every skill at 100, and that is what "default" means here.
@@ -72,10 +74,10 @@ namespace settings
 			try { a_out = static_cast<std::uint32_t>(std::stoull(Trim(a_text), nullptr, 0)); return true; } catch (...) { return false; }
 		}
 
-		std::map<std::string, std::string> ReadKeys()
+		std::map<std::string, std::string> ReadKeys(const std::string& a_path)
 		{
 			std::map<std::string, std::string> keys;
-			std::ifstream in(iniPath);
+			std::ifstream in(a_path);
 			if (!in) { return keys; }
 			std::string line, section;
 			while (std::getline(in, line))
@@ -90,14 +92,14 @@ namespace settings
 			return keys;
 		}
 
-		bool LoadFileValues()
+		bool LoadFileValues(const std::string& a_path)
 		{
-			if (!std::filesystem::exists(iniPath))
+			if (!std::filesystem::exists(a_path))
 			{
-				logger::warn("INI not found at {}; keeping compiled defaults", iniPath);
+				logger::warn("settings file not found at {}; keeping the values in hand", a_path);
 				return false;
 			}
-			const auto k = ReadKeys();
+			const auto k = ReadKeys(a_path);
 			bool sawBase = false, sawMult = false;
 			auto get = [&](const char* a_key, auto& a_out, auto a_parse, bool* a_saw = nullptr) {
 				const auto it = k.find(a_key);
@@ -109,6 +111,14 @@ namespace settings
 			get("boverridelevelcost:levelling", levelling::overrideCost, ParseBool);
 			get("flevelupbase:levelling", levelling::base, ParseFloat, &sawBase);
 			get("flevelupmult:levelling", levelling::mult, ParseFloat, &sawMult);
+
+			bool sawEnch = false;
+			get("boverrideenchanting:enchanting", enchanting::overrideCost, ParseBool);
+			get("fenchantingcostbase:enchanting", enchanting::costBase, ParseFloat, &sawEnch);
+			get("fenchantingcostscale:enchanting", enchanting::costScale, ParseFloat);
+			get("fenchantingcostmult:enchanting", enchanting::costMult, ParseFloat);
+			get("fenchantingcostexponent:enchanting", enchanting::costExponent, ParseFloat);
+			if (sawEnch) { enchanting::seeded = true; }
 
 			get("boverrideskillcaps:skills", skills::overrideCaps, ParseBool);
 			for (int i = 0; i < skilllist::kCount; ++i)
@@ -122,7 +132,7 @@ namespace settings
 			if (sawBase && sawMult) { levelling::seeded = true; }
 
 			logger::info("settings loaded from {}: overrideCost={} base={:.1f} mult={:.1f} logLevel={}",
-						 iniPath, levelling::overrideCost, levelling::base, levelling::mult, debug::logLevel);
+						 a_path, levelling::overrideCost, levelling::base, levelling::mult, debug::logLevel);
 			return true;
 		}
 
@@ -202,6 +212,11 @@ namespace settings
 			defaults.cap[i] = skills::cap[i];
 			defaults.formulaCap[i] = skills::formulaCap[i];
 		}
+		defaults.overrideEnchanting = enchanting::overrideCost;
+		defaults.ench[0] = enchanting::costBase;
+		defaults.ench[1] = enchanting::costScale;
+		defaults.ench[2] = enchanting::costMult;
+		defaults.ench[3] = enchanting::costExponent;
 
 		// Registered for engine-side consistency; NEVER read through the collection - the
 		// plain-file parse above is the value of record (redirector-proof).
@@ -212,24 +227,38 @@ namespace settings
 			utils::MakeSetting("fLevelUpBase:Levelling", levelling::base),
 			utils::MakeSetting("fLevelUpMult:Levelling", levelling::mult));
 
-		LoadFileValues();
+		LoadFileValues(iniPath);
 	}
 
 	bool Reload()
 	{
-		const bool ok = LoadFileValues();
+		const bool ok = LoadFileValues(iniPath);
 		ApplyLogLevel();
 		return ok;
 	}
 
-	bool Save()
+	bool LoadFrom(const std::string& a_path)
 	{
+		const bool ok = LoadFileValues(a_path);
+		ApplyLogLevel();
+		return ok;
+	}
+
+	bool Save() { return SaveTo(iniPath); }
+
+	bool SaveTo(const std::string& a_path)
+	{
+		// The existing file is read back first so comments and ordering survive a save. A file
+		// that does not exist yet is not an error - that is a new preset, and WriteKey builds it
+		// from nothing.
 		std::vector<std::string> lines;
 		{
-			std::ifstream in(iniPath);
-			if (!in) { logger::error("Save: could not open {} for reading", iniPath); return false; }
-			std::string line;
-			while (std::getline(in, line)) { lines.push_back(line); }
+			std::ifstream in(a_path);
+			if (in)
+			{
+				std::string line;
+				while (std::getline(in, line)) { lines.push_back(line); }
+			}
 		}
 
 		bool ok = true;
@@ -238,6 +267,12 @@ namespace settings
 		ok &= WriteKey(lines, "Levelling", "fLevelUpBase", FormatFloat(levelling::base));
 		ok &= WriteKey(lines, "Levelling", "fLevelUpMult", FormatFloat(levelling::mult));
 
+		ok &= WriteKey(lines, "Enchanting", "bOverrideEnchanting", enchanting::overrideCost ? "1" : "0");
+		ok &= WriteKey(lines, "Enchanting", "fEnchantingCostBase", FormatFloat(enchanting::costBase));
+		ok &= WriteKey(lines, "Enchanting", "fEnchantingCostScale", FormatFloat(enchanting::costScale));
+		ok &= WriteKey(lines, "Enchanting", "fEnchantingCostMult", FormatFloat(enchanting::costMult));
+		ok &= WriteKey(lines, "Enchanting", "fEnchantingCostExponent", FormatFloat(enchanting::costExponent));
+
 		ok &= WriteKey(lines, "Skills", "bOverrideSkillCaps", skills::overrideCaps ? "1" : "0");
 		for (int i = 0; i < skilllist::kCount; ++i)
 		{
@@ -245,10 +280,10 @@ namespace settings
 			ok &= WriteKey(lines, "Skills", SkillKey("fFormulaCap", i).c_str(), FormatFloat(skills::formulaCap[i]));
 		}
 
-		std::ofstream out(iniPath, std::ios::trunc);
-		if (!out) { logger::error("Save: could not open {} for writing", iniPath); return false; }
+		std::ofstream out(a_path, std::ios::trunc);
+		if (!out) { logger::error("Save: could not open {} for writing", a_path); return false; }
 		for (const auto& line : lines) { out << line << '\n'; }
-		logger::info("settings saved to {}", iniPath);
+		logger::info("settings saved to {}", a_path);
 		return ok;
 	}
 
@@ -264,6 +299,11 @@ namespace settings
 			skills::cap[i] = defaults.cap[i];
 			skills::formulaCap[i] = defaults.formulaCap[i];
 		}
+		enchanting::overrideCost = defaults.overrideEnchanting;
+		enchanting::costBase = defaults.ench[0];
+		enchanting::costScale = defaults.ench[1];
+		enchanting::costMult = defaults.ench[2];
+		enchanting::costExponent = defaults.ench[3];
 		ApplyLogLevel();
 	}
 
@@ -273,6 +313,14 @@ namespace settings
 		// into the DLL from some other copy of the game.
 		defaults.base = a_base;
 		defaults.mult = a_mult;
+	}
+
+	void SetCapturedEnchanting(float a_base, float a_scale, float a_mult, float a_exponent)
+	{
+		defaults.ench[0] = a_base;
+		defaults.ench[1] = a_scale;
+		defaults.ench[2] = a_mult;
+		defaults.ench[3] = a_exponent;
 	}
 
 	void ApplyLogLevel()

@@ -4,7 +4,9 @@ One page for how a character grows: what a level costs, where experience comes f
 and rates, and what a level up grants. SKSE plugin, C++ with CommonLibSSE-NG, MIT, written from
 scratch. Skyrim Special Edition.
 
-**Version 0.1.0 - stages 1 and 2 of nine.** The plan is at `4. plans\character-progression-control`.
+**Version 0.1.0 - stages 1, 2, 7 and 8 of nine.** The plan is at
+`4. plans\character-progression-control`. The stages are out of order on purpose: everything that
+needs no engine hook is built first, so the mod is useful and safe long before the risky part.
 
 Stage 2 is deliberately partial, and the mod says so out loud rather than implying otherwise: the
 Skills tab and its settings are real, the skill *cap patch* is not. Raising a cap needs an engine
@@ -21,14 +23,22 @@ implemented, and skills cap at 100 exactly as in vanilla until it is.
 - **Skills tab** - every skill live (level, experience, threshold) straight from the game's own
   progression data, plus the cap and formula-cap settings for all eighteen. The cap patch itself
   is not implemented yet and the tab says so; the values are stored and saved regardless.
+- **Enchanting tab** - how the cost of using an enchanted item scales with the Enchanting skill.
+  This is the equation uncapping Enchanting breaks, which is why it sits beside the caps. Another
+  no-hook tab: they are the game's own settings.
+- **Presets tab** - a preset is a file in this mod's Presets folder, in the same format as its
+  INI. Whichever is selected is what the mod is using - no hidden merge - and **the selection
+  belongs to the character** while the files are shared, so two saves can sit on different presets
+  at once. The default is compiled into the DLL, so it can never be deleted or corrupted and a
+  missing preset falls back to it rather than to zeros.
 - **Patches tab** - each engine patch group and whether it installed. A patch that is not active
   is not a fault: that part of the game behaves as it would without this mod, and it says which.
 - **Debug tab** - log level, and a live readout of what the game is actually using.
 - Plain-file INI, the tabbed settings pages under the menu framework, and the `cpc.control`
   DevBench tool so the whole thing can be driven and read without a person at the keyboard.
 
-Still to come, in the plan's order: the skill cap patch itself, experience rates and curves,
-perks per level, attributes, static levelling, enchanting, presets, and alternative experience
+Still to come, and every one of them needs an engine hook: the skill cap patch itself, experience
+rates and curves, perks per level, attributes, static levelling, and alternative experience
 sources.
 
 ## Two rules this mod follows, and will keep following
