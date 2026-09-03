@@ -10,6 +10,7 @@
 #include "SkillList.h"
 #include "Skills.h"
 #include "Settings.h"
+#include "Signature.h"
 #include "utils/Logger.h"
 
 #include <cstdlib>
@@ -36,6 +37,23 @@ namespace DevBenchTool
 				}
 			}
 			return out;
+		}
+
+		// Pull a quoted string value out of the args JSON: ..."pattern":"48 8B 01 ??"...
+		// Deliberately a small hand parser rather than a JSON dependency - the rest of this tool
+		// already matches on substrings, and a signature is plain ASCII with no escaping.
+		std::string ExtractString(std::string_view a_args, std::string_view a_key)
+		{
+			const std::string needle = std::string("\"") + std::string(a_key) + "\"";
+			auto at = a_args.find(needle);
+			if (at == std::string_view::npos) { return {}; }
+			at = a_args.find(':', at + needle.size());
+			if (at == std::string_view::npos) { return {}; }
+			const auto open = a_args.find('"', at);
+			if (open == std::string_view::npos) { return {}; }
+			const auto close = a_args.find('"', open + 1);
+			if (close == std::string_view::npos) { return {}; }
+			return std::string(a_args.substr(open + 1, close - open - 1));
 		}
 
 		float ReadNumber(std::string_view a_args, std::string_view a_key)
@@ -133,6 +151,30 @@ namespace DevBenchTool
 					R"({{"ok":true,"op":"enchanting","captured":{},"found":{},"overriding":{},"settings":[{}]}})",
 					g.Captured() ? "true" : "false", g.FoundCount(),
 					settings::enchanting::overrideCost ? "true" : "false", rows).c_str());
+				return;
+			}
+			// op=scan with a "pattern" field - search the RUNNING game's executable section for a
+			// byte signature. This exists because the shipped SkyrimSE.exe is Steam-packed: its
+			// .text is encrypted on disk, so a signature can only ever be checked here, in the
+			// decrypted image. Read-only, and it reports the match COUNT so an ambiguous
+			// signature is visibly refused rather than silently taking the first hit.
+			if (args.find("\"scan\"") != std::string_view::npos)
+			{
+				const auto pattern = ExtractString(args, "pattern");
+				if (pattern.empty())
+				{
+					a_write(a_sink, R"({"ok":false,"op":"scan","error":"no \"pattern\" given"})");
+					return;
+				}
+				std::uintptr_t base = 0;
+				std::size_t size = 0;
+				Signature::ModuleRange(base, size);
+				const auto r = Signature::Find(pattern, 0);
+				a_write(a_sink, std::format(
+					R"({{"ok":true,"op":"scan","found":{},"matches":{},"address":"0x{:X}",)"
+					R"("moduleOffset":"0x{:X}","textBase":"0x{:X}","textSize":{},"note":"{}"}})",
+					r.found ? "true" : "false", r.matches, r.address,
+					r.found ? (r.address - base) : 0, base, size, EscapeJson(r.note)).c_str());
 				return;
 			}
 			if (args.find("\"presets\"") != std::string_view::npos)
