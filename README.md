@@ -4,18 +4,30 @@ One page for how a character grows: what a level costs, where experience comes f
 and rates, and what a level up grants. SKSE plugin, C++ with CommonLibSSE-NG, MIT, written from
 scratch. Skyrim Special Edition.
 
-**Version 0.1.0 - stage 1 of nine.** The plan is at `4. plans\character-progression-control`.
+**Version 0.1.0 - stages 1 and 2 of nine.** The plan is at `4. plans\character-progression-control`.
+
+Stage 2 is deliberately partial, and the mod says so out loud rather than implying otherwise: the
+Skills tab and its settings are real, the skill *cap patch* is not. Raising a cap needs an engine
+hook, an engine hook needs an Address Library ID verified against the runtime, and a guessed ID
+does not fail safely - it corrupts or crashes. CommonLibSSE-NG does not declare these functions,
+so that patch is registered as a group whose installer reports honestly that it is not
+implemented, and skills cap at 100 exactly as in vanilla until it is.
 
 ## What is in this build
 
 - **Levelling tab** - what a character level costs. Skyrim works the cost of your next level out
   as `base + (per-level x your level)`, and this tab owns those two numbers. It needs no engine
   patch of any kind, which is why it is first.
+- **Skills tab** - every skill live (level, experience, threshold) straight from the game's own
+  progression data, plus the cap and formula-cap settings for all eighteen. The cap patch itself
+  is not implemented yet and the tab says so; the values are stored and saved regardless.
+- **Patches tab** - each engine patch group and whether it installed. A patch that is not active
+  is not a fault: that part of the game behaves as it would without this mod, and it says which.
 - **Debug tab** - log level, and a live readout of what the game is actually using.
 - Plain-file INI, the tabbed settings pages under the menu framework, and the `cpc.control`
   DevBench tool so the whole thing can be driven and read without a person at the keyboard.
 
-Still to come, in the plan's order: skill caps and formula caps, experience rates and curves,
+Still to come, in the plan's order: the skill cap patch itself, experience rates and curves,
 perks per level, attributes, static levelling, enchanting, presets, and alternative experience
 sources.
 

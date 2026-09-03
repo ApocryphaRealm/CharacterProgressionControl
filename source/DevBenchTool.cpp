@@ -4,6 +4,9 @@
 
 #include "DevBench/DevBenchAPI.h"
 #include "Levelling.h"
+#include "Patches.h"
+#include "SkillList.h"
+#include "Skills.h"
 #include "Settings.h"
 #include "utils/Logger.h"
 
@@ -86,6 +89,43 @@ namespace DevBenchTool
 				}
 			}
 
+			if (args.find("\"skills\"") != std::string_view::npos)
+			{
+				const auto sk = Skills::GetState();
+				std::string rows;
+				for (int i = 0; i < skilllist::kCount; ++i)
+				{
+					if (i) { rows += ","; }
+					rows += std::format(
+						R"({{"skill":"{}","level":{:.1f},"xp":{:.1f},"threshold":{:.1f},"cap":{:.1f},"formulaCap":{:.1f}}})",
+						skilllist::kIniName[i], sk.skill[i].level, sk.skill[i].xp, sk.skill[i].levelThreshold,
+						settings::skills::cap[i], settings::skills::formulaCap[i]);
+				}
+				a_write(a_sink, std::format(
+					R"({{"ok":true,"op":"skills","readable":{},"capsActive":{},"overrideCaps":{},)"
+					R"("characterLevel":{},"characterXp":{:.1f},"characterThreshold":{:.1f},"skills":[{}]}})",
+					sk.readable ? "true" : "false",
+					Patches::IsInstalled("Skill caps") ? "true" : "false",
+					settings::skills::overrideCaps ? "true" : "false",
+					sk.characterLevel, sk.characterXp, sk.characterThreshold, rows).c_str());
+				return;
+			}
+			if (args.find("\"patches\"") != std::string_view::npos)
+			{
+				std::string rows;
+				bool first = true;
+				for (const auto& g : Patches::All())
+				{
+					if (!first) { rows += ","; }
+					first = false;
+					rows += std::format(R"({{"name":"{}","installed":{},"status":"{}","touches":"{}"}})",
+										EscapeJson(g.name), g.installed ? "true" : "false",
+										EscapeJson(g.status), EscapeJson(g.touches));
+				}
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"patches","groups":[{}]}})", rows).c_str());
+				return;
+			}
+
 			const auto s = Levelling::GetState();
 			const std::string json = std::format(
 				"{{\"ok\":true,"
@@ -126,7 +166,9 @@ namespace DevBenchTool
 			"\"description\":\"Character Progression Control live state: the level-cost settings, the "
 			"values this install had before the mod, what the game is using now, and the cost of the "
 			"player's current level. op=reload re-reads the INI, op=apply re-writes the policy, "
-			"op=defaults restores, op=override:0|1, op=base:<n>, op=mult:<n>.\","
+			"op=defaults restores, op=override:0|1, op=base:<n>, op=mult:<n>. op=skills reads every "
+			"skill's level, experience and threshold plus the configured caps; op=patches lists each "
+			"engine patch group and whether it installed.\","
 			"\"inputSchema\":{\"type\":\"object\",\"properties\":{\"op\":{\"type\":\"string\"}}},"
 			"\"readOnly\":false"
 			"}";

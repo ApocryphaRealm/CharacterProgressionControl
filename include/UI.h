@@ -13,6 +13,16 @@ namespace UI
 		void __stdcall Render();
 	}
 
+	namespace SkillsPanel
+	{
+		void __stdcall Render();
+	}
+
+	namespace PatchesPanel
+	{
+		void __stdcall Render();
+	}
+
 	namespace DebugPanel
 	{
 		void __stdcall Render();

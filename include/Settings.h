@@ -3,6 +3,8 @@
 // Character Progression Control - settings. Plain-file INI (never the Win32 profile API, so
 // PrivateProfileRedirector can neither serve stale values nor overwrite the file).
 
+#include "SkillList.h"
+
 #include <cstdint>
 #include <string>
 
@@ -27,6 +29,18 @@ namespace settings
 		// True once base/mult hold real values - either read from the INI or captured from the
 		// game itself. Stops the capture from overwriting a configuration the player saved.
 		inline bool seeded = false;
+	}
+
+	namespace skills
+	{
+		// Same rule as the level cost: off by default, and while it is off nothing is asserted.
+		inline bool overrideCaps = false;                  // bOverrideSkillCaps:Skills
+
+		// Where a skill stops advancing, and separately the value the game's own formulas read
+		// for it - so a skill can show 300 while combat maths still treats it as 100. Both are
+		// filled with 100 at startup, which is vanilla.
+		inline float cap[skilllist::kCount]{};             // fCap<Skill>:Skills
+		inline float formulaCap[skilllist::kCount]{};      // fFormulaCap<Skill>:Skills
 	}
 
 	void Init(const std::string& a_iniFileName);

@@ -26,7 +26,18 @@ namespace settings
 			bool overrideCost;
 			float base;
 			float mult;
+			bool overrideCaps;
+			float cap[skilllist::kCount];
+			float formulaCap[skilllist::kCount];
 		} defaults{};
+
+		// Vanilla Skyrim stops every skill at 100, and that is what "default" means here.
+		constexpr float kVanillaSkillCap = 100.0F;
+
+		std::string SkillKey(const char* a_prefix, int a_index)
+		{
+			return std::string(a_prefix) + skilllist::kIniName[a_index];
+		}
 
 		std::string Lower(std::string a_s)
 		{
@@ -99,6 +110,13 @@ namespace settings
 			get("flevelupbase:levelling", levelling::base, ParseFloat, &sawBase);
 			get("flevelupmult:levelling", levelling::mult, ParseFloat, &sawMult);
 
+			get("boverrideskillcaps:skills", skills::overrideCaps, ParseBool);
+			for (int i = 0; i < skilllist::kCount; ++i)
+			{
+				get((Lower(SkillKey("fCap", i)) + ":skills").c_str(), skills::cap[i], ParseFloat);
+				get((Lower(SkillKey("fFormulaCap", i)) + ":skills").c_str(), skills::formulaCap[i], ParseFloat);
+			}
+
 			// A configuration read from the file counts as seeded, so the capture at kDataLoaded
 			// leaves it alone rather than replacing it with the game's own numbers.
 			if (sawBase && sawMult) { levelling::seeded = true; }
@@ -108,25 +126,52 @@ namespace settings
 			return true;
 		}
 
+		// Replaces the key in place when it is there, and otherwise ADDS it - at the end of its
+		// section, or in a new section at the end of the file. A settings file that predates a
+		// new option is the normal case as this mod grows tab by tab, so a missing key must be
+		// something Save fixes rather than something it fails on.
 		bool WriteKey(std::vector<std::string>& a_lines, const char* a_section, const char* a_key, const std::string& a_value)
 		{
 			const std::string wantSection = Lower(a_section);
 			const std::string wantKey = Lower(a_key);
+
 			std::string section;
-			for (auto& line : a_lines)
+			std::size_t sectionEnd = 0;      // one past the last line belonging to the section
+			bool sawSection = false;
+
+			for (std::size_t i = 0; i < a_lines.size(); ++i)
 			{
-				const std::string t = Trim(line);
-				if (!t.empty() && t.front() == '[' && t.back() == ']') { section = Lower(t.substr(1, t.size() - 2)); continue; }
+				const std::string t = Trim(a_lines[i]);
+				if (!t.empty() && t.front() == '[' && t.back() == ']')
+				{
+					section = Lower(t.substr(1, t.size() - 2));
+					if (section == wantSection) { sawSection = true; sectionEnd = i + 1; }
+					continue;
+				}
+				if (section != wantSection) { continue; }
+				sectionEnd = i + 1;
 				const auto eq = t.find('=');
-				if (eq == std::string::npos || section != wantSection) { continue; }
+				if (eq == std::string::npos) { continue; }
 				if (Lower(Trim(t.substr(0, eq))) == wantKey)
 				{
-					line = std::string(a_key) + "=" + a_value;
+					a_lines[i] = std::string(a_key) + "=" + a_value;
 					return true;
 				}
 			}
-			logger::warn("Save: key {} not found in [{}]", a_key, a_section);
-			return false;
+
+			const std::string entry = std::string(a_key) + "=" + a_value;
+			if (sawSection)
+			{
+				a_lines.insert(a_lines.begin() + static_cast<std::ptrdiff_t>(sectionEnd), entry);
+			}
+			else
+			{
+				if (!a_lines.empty() && !Trim(a_lines.back()).empty()) { a_lines.push_back(""); }
+				a_lines.push_back("[" + std::string(a_section) + "]");
+				a_lines.push_back(entry);
+			}
+			logger::debug("Save: added {} to [{}]", a_key, a_section);
+			return true;
 		}
 
 		std::string FormatFloat(float a_v)
@@ -141,7 +186,22 @@ namespace settings
 	{
 		iniPath = (std::filesystem::current_path() / "Data" / "SKSE" / "Plugins" / a_iniFileName).string();
 
-		defaults = { debug::logLevel, levelling::overrideCost, levelling::base, levelling::mult };
+		for (int i = 0; i < skilllist::kCount; ++i)
+		{
+			skills::cap[i] = kVanillaSkillCap;
+			skills::formulaCap[i] = kVanillaSkillCap;
+		}
+
+		defaults.logLevel = debug::logLevel;
+		defaults.overrideCost = levelling::overrideCost;
+		defaults.base = levelling::base;
+		defaults.mult = levelling::mult;
+		defaults.overrideCaps = skills::overrideCaps;
+		for (int i = 0; i < skilllist::kCount; ++i)
+		{
+			defaults.cap[i] = skills::cap[i];
+			defaults.formulaCap[i] = skills::formulaCap[i];
+		}
 
 		// Registered for engine-side consistency; NEVER read through the collection - the
 		// plain-file parse above is the value of record (redirector-proof).
@@ -178,6 +238,13 @@ namespace settings
 		ok &= WriteKey(lines, "Levelling", "fLevelUpBase", FormatFloat(levelling::base));
 		ok &= WriteKey(lines, "Levelling", "fLevelUpMult", FormatFloat(levelling::mult));
 
+		ok &= WriteKey(lines, "Skills", "bOverrideSkillCaps", skills::overrideCaps ? "1" : "0");
+		for (int i = 0; i < skilllist::kCount; ++i)
+		{
+			ok &= WriteKey(lines, "Skills", SkillKey("fCap", i).c_str(), FormatFloat(skills::cap[i]));
+			ok &= WriteKey(lines, "Skills", SkillKey("fFormulaCap", i).c_str(), FormatFloat(skills::formulaCap[i]));
+		}
+
 		std::ofstream out(iniPath, std::ios::trunc);
 		if (!out) { logger::error("Save: could not open {} for writing", iniPath); return false; }
 		for (const auto& line : lines) { out << line << '\n'; }
@@ -191,6 +258,12 @@ namespace settings
 		levelling::overrideCost = defaults.overrideCost;
 		levelling::base = defaults.base;
 		levelling::mult = defaults.mult;
+		skills::overrideCaps = defaults.overrideCaps;
+		for (int i = 0; i < skilllist::kCount; ++i)
+		{
+			skills::cap[i] = defaults.cap[i];
+			skills::formulaCap[i] = defaults.formulaCap[i];
+		}
 		ApplyLogLevel();
 	}
 

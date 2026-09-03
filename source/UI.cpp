@@ -5,6 +5,9 @@
 #include "SKSEMenuFramework.h"
 
 #include "Levelling.h"
+#include "Patches.h"
+#include "SkillList.h"
+#include "Skills.h"
 #include "Settings.h"
 
 #include "utils/Logger.h"
@@ -52,7 +55,9 @@ namespace UI
 				"igSameLine",
 				"igSpacing",
 				"igPushItemWidth",
-				"igPopItemWidth"
+				"igPopItemWidth",
+				"igPushID_Str",
+				"igPopID"
 			};
 
 			for (const char* name : required)
@@ -166,6 +171,8 @@ namespace UI
 
 		SKSEMenuFramework::SetSection("Character Progression Control");
 		SKSEMenuFramework::AddSectionItem("Levelling", LevellingPanel::Render);
+		SKSEMenuFramework::AddSectionItem("Skills", SkillsPanel::Render);
+		SKSEMenuFramework::AddSectionItem("Patches", PatchesPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Debug", DebugPanel::Render);
 		logger::info("Registered the settings pages with the menu framework");
 	}
@@ -238,6 +245,106 @@ namespace UI
 		}
 		HelpMarker("Re-writes the values. It also runs by itself when a save loads, when a new game starts, "
 				   "and when you change anything above - nothing runs in the background.");
+
+		RenderButtons();
+	}
+
+	void __stdcall SkillsPanel::Render()
+	{
+		using namespace settings;
+
+		const auto s = Skills::GetState();
+		const bool capsActive = Patches::IsInstalled("Skill caps");
+
+		ImGuiMCP::TextWrapped("Where each skill stops, and what the game's own formulas read for it - "
+							  "so a skill can show 300 while combat maths still treats it as 100.");
+		ImGuiMCP::Spacing();
+
+		if (!capsActive)
+		{
+			// Said plainly rather than left to be discovered. The values below are still stored
+			// and saved, so a configuration made now is ready the day the patch lands.
+			ImGuiMCP::TextWrapped("The skill cap patch is NOT active in this build, so every skill still "
+								  "stops at 100 exactly as in vanilla. The values below are remembered "
+								  "and saved, but they do nothing yet. See the Patches tab.");
+			ImGuiMCP::Spacing();
+		}
+
+		ImGuiMCP::PushItemWidth(200.0F);
+
+		bool over = skills::overrideCaps;
+		if (ImGuiMCP::Checkbox("Control skill caps", &over)) { skills::overrideCaps = over; }
+		HelpMarker("Off by default. While it is off this mod asserts nothing about your skills.");
+
+		ImGuiMCP::Spacing();
+		ImGuiMCP::SeparatorText("Your skills right now");
+
+		if (!s.readable)
+		{
+			ImGuiMCP::TextDisabled("No character loaded - load a save to see your skills.");
+			ImGuiMCP::PopItemWidth();
+			RenderButtons();
+			return;
+		}
+
+		// The live readout: the game's own numbers, straight out of the player's progression
+		// data. It is also the check on the Levelling tab - the character threshold below is
+		// what the game is really holding.
+		ImGuiMCP::Text("Character level %u - %.0f of %.0f experience toward the next level",
+					   s.characterLevel, s.characterXp, s.characterThreshold);
+		ImGuiMCP::Spacing();
+
+		for (int i = 0; i < skilllist::kCount; ++i)
+		{
+			ImGuiMCP::PushID(skilllist::kIniName[i]);
+
+			ImGuiMCP::Text("%-12s  %5.1f   %.0f / %.0f", skilllist::kDisplayName[i],
+						   s.skill[i].level, s.skill[i].xp, s.skill[i].levelThreshold);
+
+			if (skills::overrideCaps)
+			{
+				NudgeableSlider("Cap", &skills::cap[i], 100.0F, 1000.0F, "%.0f", 5.0F);
+				HelpMarker("The level this skill stops advancing at. 100 is vanilla.");
+
+				NudgeableSlider("Formula cap", &skills::formulaCap[i], 10.0F, 1000.0F, "%.0f", 5.0F);
+				HelpMarker("The value the game's own calculations use for this skill, however high "
+						   "the skill itself reads. Leaving this at 100 keeps combat and prices "
+						   "balanced while the skill number keeps climbing.");
+			}
+
+			ImGuiMCP::PopID();
+		}
+
+		ImGuiMCP::PopItemWidth();
+		RenderButtons();
+	}
+
+	void __stdcall PatchesPanel::Render()
+	{
+		ImGuiMCP::TextWrapped("Each engine patch this mod installs, and what it changes. A patch that is "
+							  "not active is not a fault - that part of the game simply behaves as it "
+							  "would without this mod.");
+		ImGuiMCP::Spacing();
+
+		const auto& groups = Patches::All();
+		if (groups.empty())
+		{
+			ImGuiMCP::TextDisabled("No patch groups are registered in this build.");
+			RenderButtons();
+			return;
+		}
+
+		for (const auto& g : groups)
+		{
+			ImGuiMCP::SeparatorText(g.name.c_str());
+			ImGuiMCP::Text("%s", g.installed ? "Active" : "Not active");
+			ImGuiMCP::TextWrapped("Touches: %s", g.touches.c_str());
+			if (!g.installed)
+			{
+				ImGuiMCP::TextWrapped("Why: %s", g.status.c_str());
+			}
+			ImGuiMCP::Spacing();
+		}
 
 		RenderButtons();
 	}

@@ -8,7 +8,9 @@
 
 #include "DevBenchTool.h"
 #include "Levelling.h"
+#include "Patches.h"
 #include "Settings.h"
+#include "Skills.h"
 #include "UI.h"
 
 #include "utils/Logger.h"
@@ -26,6 +28,10 @@ namespace
 			// Read the game's own values BEFORE anything is written, so "vanilla" means what
 			// this installation actually had.
 			Levelling::CaptureVanilla();
+			// Register every patch group first, then install them in one pass so each one's
+			// outcome is logged together and a failure is a reported fact, not a crash.
+			Skills::Register();
+			Patches::InstallAll();
 			UI::Register();
 			DevBenchTool::Init(true);
 			break;
