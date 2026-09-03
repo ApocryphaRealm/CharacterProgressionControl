@@ -1,0 +1,12 @@
+{
+    "name": "characterprogressioncontrol",
+    "version-string": "0.1.0",
+    "description": "Character Progression Control - one page for how a character grows: what a level costs, where experience comes from, skill caps and rates, and what a level up grants.",
+    "homepage": "https://github.com/ApocryphaRealm/CharacterProgressionControl",
+    "license": "MIT",
+    "dependencies": [
+        "commonlibsse-ng",
+        "spdlog"
+    ],
+    "builtin-baseline": "8d3649ba34aab36914ddd897958599aa0a91b08e"
+}
