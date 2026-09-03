@@ -9,11 +9,18 @@ scratch. Skyrim Special Edition.
 needs no engine hook is built first, so the mod is useful and safe long before the risky part.
 
 Stage 2 is deliberately partial, and the mod says so out loud rather than implying otherwise: the
-Skills tab and its settings are real, the skill *cap patch* is not. Raising a cap needs an engine
-hook, an engine hook needs an Address Library ID verified against the runtime, and a guessed ID
-does not fail safely - it corrupts or crashes. CommonLibSSE-NG does not declare these functions,
-so that patch is registered as a group whose installer reports honestly that it is not
-implemented, and skills cap at 100 exactly as in vanilla until it is.
+Skills tab and its settings are real, the skill *cap patch* is not. The **address is now verified**
+- the signature resolves to exactly one place in the running game (RVA `0x6E6201` on 1.5.97) - but
+locating the site is not the same as proving that a branch written over it behaves, and that needs
+testing in game before it is safe to ship. So the patch group reports the address it found and
+writes nothing, and skills cap at 100 exactly as in vanilla until it does.
+
+Finding that address is worth explaining, because it governs all future hook work here. The
+retail `SkyrimSE.exe` is **Steam-packed**: it carries a `.bind` section, its entry point sits
+inside it, and the real `.text` is encrypted on disk. So a byte signature cannot be checked
+against the shipped file at all - only against the decrypted image in the running process. The
+mod scans for its signatures at load and refuses any that matches zero times *or* more than once,
+and `cpc.control op=scan` exposes the same scanner for finding new ones.
 
 ## What is in this build
 
