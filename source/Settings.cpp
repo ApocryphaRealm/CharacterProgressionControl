@@ -31,6 +31,13 @@ namespace settings
 			float formulaCap[skilllist::kCount];
 			bool overrideEnchanting;
 			float ench[4];
+			bool overrideRates;
+			float skillMult[skilllist::kCount];
+			float toLevelMult;
+			bool overrideRewards;
+			float lvl[7];   // perks, health, magicka, stamina, cw-per-health/magicka/stamina
+			bool staticEnabled;
+			float perUse[skilllist::kCount];
 		} defaults{};
 
 		// Vanilla Skyrim stops every skill at 100, and that is what "default" means here.
@@ -127,6 +134,28 @@ namespace settings
 				get((Lower(SkillKey("fFormulaCap", i)) + ":skills").c_str(), skills::formulaCap[i], ParseFloat);
 			}
 
+			get("boverrideskillexp:skillexperience", skillexp::overrideRates, ParseBool);
+			get("fskilltolevelmult:skillexperience", skillexp::toLevelMult, ParseFloat);
+			for (int i = 0; i < skilllist::kCount; ++i)
+			{
+				get((Lower(SkillKey("fMult", i)) + ":skillexperience").c_str(), skillexp::mult[i], ParseFloat);
+			}
+
+			get("boverrideleveluprewards:levelup", levelup::overrideRewards, ParseBool);
+			get("fperksperlevel:levelup", levelup::perksPerLevel, ParseFloat);
+			get("fhealthperlevel:levelup", levelup::healthPerLevel, ParseFloat);
+			get("fmagickaperlevel:levelup", levelup::magickaPerLevel, ParseFloat);
+			get("fstaminaperlevel:levelup", levelup::staminaPerLevel, ParseFloat);
+			get("fcarryweightperhealth:levelup", levelup::carryWeightPerHealth, ParseFloat);
+			get("fcarryweightpermagicka:levelup", levelup::carryWeightPerMagicka, ParseFloat);
+			get("fcarryweightperstamina:levelup", levelup::carryWeightPerStamina, ParseFloat);
+
+			get("bstaticlevelling:staticlevelling", staticlevel::enabled, ParseBool);
+			for (int i = 0; i < skilllist::kCount; ++i)
+			{
+				get((Lower(SkillKey("fPerUse", i)) + ":staticlevelling").c_str(), staticlevel::xpPerUse[i], ParseFloat);
+			}
+
 			// A configuration read from the file counts as seeded, so the capture at kDataLoaded
 			// leaves it alone rather than replacing it with the game's own numbers.
 			if (sawBase && sawMult) { levelling::seeded = true; }
@@ -200,6 +229,8 @@ namespace settings
 		{
 			skills::cap[i] = kVanillaSkillCap;
 			skills::formulaCap[i] = kVanillaSkillCap;
+			skillexp::mult[i] = 1.0F;        // 1.0 is vanilla - no change to what a use pays
+			staticlevel::xpPerUse[i] = 1.0F; // only consulted when static levelling is on
 		}
 
 		defaults.logLevel = debug::logLevel;
@@ -212,6 +243,23 @@ namespace settings
 			defaults.cap[i] = skills::cap[i];
 			defaults.formulaCap[i] = skills::formulaCap[i];
 		}
+		defaults.overrideRates = skillexp::overrideRates;
+		defaults.toLevelMult = skillexp::toLevelMult;
+		defaults.overrideRewards = levelup::overrideRewards;
+		defaults.lvl[0] = levelup::perksPerLevel;
+		defaults.lvl[1] = levelup::healthPerLevel;
+		defaults.lvl[2] = levelup::magickaPerLevel;
+		defaults.lvl[3] = levelup::staminaPerLevel;
+		defaults.lvl[4] = levelup::carryWeightPerHealth;
+		defaults.lvl[5] = levelup::carryWeightPerMagicka;
+		defaults.lvl[6] = levelup::carryWeightPerStamina;
+		defaults.staticEnabled = staticlevel::enabled;
+		for (int i = 0; i < skilllist::kCount; ++i)
+		{
+			defaults.skillMult[i] = skillexp::mult[i];
+			defaults.perUse[i] = staticlevel::xpPerUse[i];
+		}
+
 		defaults.overrideEnchanting = enchanting::overrideCost;
 		defaults.ench[0] = enchanting::costBase;
 		defaults.ench[1] = enchanting::costScale;
@@ -267,6 +315,28 @@ namespace settings
 		ok &= WriteKey(lines, "Levelling", "fLevelUpBase", FormatFloat(levelling::base));
 		ok &= WriteKey(lines, "Levelling", "fLevelUpMult", FormatFloat(levelling::mult));
 
+		ok &= WriteKey(lines, "SkillExperience", "bOverrideSkillExp", skillexp::overrideRates ? "1" : "0");
+		ok &= WriteKey(lines, "SkillExperience", "fSkillToLevelMult", FormatFloat(skillexp::toLevelMult));
+		for (int i = 0; i < skilllist::kCount; ++i)
+		{
+			ok &= WriteKey(lines, "SkillExperience", SkillKey("fMult", i).c_str(), FormatFloat(skillexp::mult[i]));
+		}
+
+		ok &= WriteKey(lines, "LevelUp", "bOverrideLevelUpRewards", levelup::overrideRewards ? "1" : "0");
+		ok &= WriteKey(lines, "LevelUp", "fPerksPerLevel", FormatFloat(levelup::perksPerLevel));
+		ok &= WriteKey(lines, "LevelUp", "fHealthPerLevel", FormatFloat(levelup::healthPerLevel));
+		ok &= WriteKey(lines, "LevelUp", "fMagickaPerLevel", FormatFloat(levelup::magickaPerLevel));
+		ok &= WriteKey(lines, "LevelUp", "fStaminaPerLevel", FormatFloat(levelup::staminaPerLevel));
+		ok &= WriteKey(lines, "LevelUp", "fCarryWeightPerHealth", FormatFloat(levelup::carryWeightPerHealth));
+		ok &= WriteKey(lines, "LevelUp", "fCarryWeightPerMagicka", FormatFloat(levelup::carryWeightPerMagicka));
+		ok &= WriteKey(lines, "LevelUp", "fCarryWeightPerStamina", FormatFloat(levelup::carryWeightPerStamina));
+
+		ok &= WriteKey(lines, "StaticLevelling", "bStaticLevelling", staticlevel::enabled ? "1" : "0");
+		for (int i = 0; i < skilllist::kCount; ++i)
+		{
+			ok &= WriteKey(lines, "StaticLevelling", SkillKey("fPerUse", i).c_str(), FormatFloat(staticlevel::xpPerUse[i]));
+		}
+
 		ok &= WriteKey(lines, "Enchanting", "bOverrideEnchanting", enchanting::overrideCost ? "1" : "0");
 		ok &= WriteKey(lines, "Enchanting", "fEnchantingCostBase", FormatFloat(enchanting::costBase));
 		ok &= WriteKey(lines, "Enchanting", "fEnchantingCostScale", FormatFloat(enchanting::costScale));
@@ -299,6 +369,23 @@ namespace settings
 			skills::cap[i] = defaults.cap[i];
 			skills::formulaCap[i] = defaults.formulaCap[i];
 		}
+		skillexp::overrideRates = defaults.overrideRates;
+		skillexp::toLevelMult = defaults.toLevelMult;
+		levelup::overrideRewards = defaults.overrideRewards;
+		levelup::perksPerLevel = defaults.lvl[0];
+		levelup::healthPerLevel = defaults.lvl[1];
+		levelup::magickaPerLevel = defaults.lvl[2];
+		levelup::staminaPerLevel = defaults.lvl[3];
+		levelup::carryWeightPerHealth = defaults.lvl[4];
+		levelup::carryWeightPerMagicka = defaults.lvl[5];
+		levelup::carryWeightPerStamina = defaults.lvl[6];
+		staticlevel::enabled = defaults.staticEnabled;
+		for (int i = 0; i < skilllist::kCount; ++i)
+		{
+			skillexp::mult[i] = defaults.skillMult[i];
+			staticlevel::xpPerUse[i] = defaults.perUse[i];
+		}
+
 		enchanting::overrideCost = defaults.overrideEnchanting;
 		enchanting::costBase = defaults.ench[0];
 		enchanting::costScale = defaults.ench[1];

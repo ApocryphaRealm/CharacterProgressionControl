@@ -177,6 +177,8 @@ namespace UI
 		SKSEMenuFramework::SetSection("Character Progression Control");
 		SKSEMenuFramework::AddSectionItem("Levelling", LevellingPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Skills", SkillsPanel::Render);
+		SKSEMenuFramework::AddSectionItem("Level Up", LevelUpPanel::Render);
+		SKSEMenuFramework::AddSectionItem("Static Levelling", StaticLevellingPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Enchanting", EnchantingPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Presets", PresetsPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Patches", PatchesPanel::Render);
@@ -281,7 +283,20 @@ namespace UI
 
 		bool over = skills::overrideCaps;
 		if (ImGuiMCP::Checkbox("Control skill caps", &over)) { skills::overrideCaps = over; }
-		HelpMarker("Off by default. While it is off this mod asserts nothing about your skills.");
+		HelpMarker("Off by default. While it is off this mod asserts nothing about your skills - "
+				   "with it off, not one instruction in the game is modified.");
+
+		bool rates = skillexp::overrideRates;
+		if (ImGuiMCP::Checkbox("Control skill experience rates", &rates)) { skillexp::overrideRates = rates; }
+		HelpMarker("Off by default. Turns on the per-skill experience multipliers below.");
+
+		if (skillexp::overrideRates)
+		{
+			NudgeableSlider("Skill increase -> level", &skillexp::toLevelMult, 0.0F, 10.0F, "%.2f", 0.05F);
+			HelpMarker("Multiplies what a skill increase pays toward your CHARACTER level. This is "
+					   "the other side of the level cost on the Levelling tab: raise it and levels "
+					   "come faster without changing what a level costs.");
+		}
 
 		ImGuiMCP::Spacing();
 		ImGuiMCP::SeparatorText("Your skills right now");
@@ -318,8 +333,95 @@ namespace UI
 						   "the skill itself reads. Leaving this at 100 keeps combat and prices "
 						   "balanced while the skill number keeps climbing.");
 			}
+			if (skillexp::overrideRates)
+			{
+				NudgeableSlider("Experience rate", &skillexp::mult[i], 0.0F, 10.0F, "%.2f", 0.05F);
+				HelpMarker("Multiplies what one use of this skill pays toward it. 1.00 is vanilla; "
+						   "below 1 is slower, above 1 is faster.");
+			}
 
 			ImGuiMCP::PopID();
+		}
+
+		ImGuiMCP::PopItemWidth();
+		RenderButtons();
+	}
+
+	// A tab whose engine patch is not active yet says so once, at the top, in plain words - the
+	// settings below it are real and saved, they simply do nothing until the hook lands.
+	void InertNotice(const char* a_group, const char* a_whatIsUnchanged)
+	{
+		if (Patches::IsInstalled(a_group)) { return; }
+		ImGuiMCP::TextWrapped("Not active in this build: %s. The values below are remembered and "
+							  "saved, so a configuration made now is ready the day it lands - see "
+							  "the Patches tab.", a_whatIsUnchanged);
+		ImGuiMCP::Spacing();
+	}
+
+	void __stdcall LevelUpPanel::Render()
+	{
+		using namespace settings;
+
+		ImGuiMCP::TextWrapped("What a level up gives you: the perk points, and the health, magicka, "
+							  "stamina and carry weight that come with the choice you make.");
+		ImGuiMCP::Spacing();
+		InertNotice("Level up rewards", "a level up still grants exactly what vanilla grants");
+
+		ImGuiMCP::PushItemWidth(260.0F);
+
+		bool over = levelup::overrideRewards;
+		if (ImGuiMCP::Checkbox("Control what a level up grants", &over)) { levelup::overrideRewards = over; }
+		HelpMarker("Off by default. While it is off this mod asserts nothing about level-up rewards.");
+
+		if (levelup::overrideRewards)
+		{
+			ImGuiMCP::SeparatorText("Perks");
+			NudgeableSlider("Perk points per level", &levelup::perksPerLevel, 0.0F, 10.0F, "%.2f", 0.25F);
+			HelpMarker("Vanilla is 1. Fractional values are allowed - 0.5 gives a perk every other level.");
+
+			ImGuiMCP::SeparatorText("Attributes");
+			NudgeableSlider("Health per level", &levelup::healthPerLevel, 0.0F, 100.0F, "%.0f", 1.0F);
+			NudgeableSlider("Magicka per level", &levelup::magickaPerLevel, 0.0F, 100.0F, "%.0f", 1.0F);
+			NudgeableSlider("Stamina per level", &levelup::staminaPerLevel, 0.0F, 100.0F, "%.0f", 1.0F);
+			HelpMarker("What the chosen attribute gains. Vanilla is 10 for each.");
+
+			ImGuiMCP::SeparatorText("Carry weight, per choice");
+			NudgeableSlider("...when health is chosen", &levelup::carryWeightPerHealth, 0.0F, 50.0F, "%.1f", 1.0F);
+			NudgeableSlider("...when magicka is chosen", &levelup::carryWeightPerMagicka, 0.0F, 50.0F, "%.1f", 1.0F);
+			NudgeableSlider("...when stamina is chosen", &levelup::carryWeightPerStamina, 0.0F, 50.0F, "%.1f", 1.0F);
+			HelpMarker("The cross terms. Vanilla gives 5 carry weight with stamina and none with the "
+					   "other two.");
+		}
+
+		ImGuiMCP::PopItemWidth();
+		RenderButtons();
+	}
+
+	void __stdcall StaticLevellingPanel::Render()
+	{
+		using namespace settings;
+
+		ImGuiMCP::TextWrapped("A fixed amount of experience per use of a skill, instead of vanilla's "
+							  "scaling - so a skill advances at the same rate at level 5 and level 50.");
+		ImGuiMCP::Spacing();
+		InertNotice("Static levelling", "skill experience still scales the vanilla way");
+
+		ImGuiMCP::PushItemWidth(200.0F);
+
+		bool on = staticlevel::enabled;
+		if (ImGuiMCP::Checkbox("Use static skill levelling", &on)) { staticlevel::enabled = on; }
+		HelpMarker("Off by default. While it is off, nothing about skill experience is asserted.");
+
+		if (staticlevel::enabled)
+		{
+			ImGuiMCP::Spacing();
+			ImGuiMCP::SeparatorText("Experience per use");
+			for (int i = 0; i < skilllist::kCount; ++i)
+			{
+				ImGuiMCP::PushID(skilllist::kIniName[i]);
+				NudgeableSlider(skilllist::kDisplayName[i], &staticlevel::xpPerUse[i], 0.0F, 100.0F, "%.2f", 0.25F);
+				ImGuiMCP::PopID();
+			}
 		}
 
 		ImGuiMCP::PopItemWidth();

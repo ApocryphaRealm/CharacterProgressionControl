@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.21)
 project(
 	CharacterProgressionControl
 	VERSION 0.1.0
-	LANGUAGES CXX
+	LANGUAGES CXX ASM_MASM
 )
 
 set(CMAKE_CXX_STANDARD 23)
@@ -19,6 +19,11 @@ configure_file(
 
 file(GLOB_RECURSE headers CONFIGURE_DEPENDS "include/*.h")
 file(GLOB_RECURSE sources CONFIGURE_DEPENDS "source/*.cpp")
+
+# The skill-cap trampoline stub is assembly on purpose - see the comment at the top of the file.
+# Keeping it in MASM means the assembler checks the encoding at build time, which a hand-written
+# byte array never would.
+list(APPEND sources "${CMAKE_CURRENT_SOURCE_DIR}/source/SkillCapStub.asm")
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${headers} ${sources})
 

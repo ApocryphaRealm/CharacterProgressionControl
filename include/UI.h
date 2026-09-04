@@ -18,6 +18,16 @@ namespace UI
 		void __stdcall Render();
 	}
 
+	namespace LevelUpPanel
+	{
+		void __stdcall Render();
+	}
+
+	namespace StaticLevellingPanel
+	{
+		void __stdcall Render();
+	}
+
 	namespace PresetsPanel
 	{
 		void __stdcall Render();

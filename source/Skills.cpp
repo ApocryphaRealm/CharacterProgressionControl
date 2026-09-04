@@ -8,6 +8,27 @@
 
 #include "utils/Logger.h"
 
+// The two symbols the assembly stub in SkillCapStub.asm refers to. They are defined here, in
+// ordinary C++, so the stub is nothing but the register shuffling that has to be assembly.
+//
+// CPC_GetSkillCap is a pure lookup: given the skill's ActorValue id it answers with the cap the
+// player configured, or vanilla's 100 when this feature is off or the id is not a skill. It is
+// deliberately silent - it can be reached often, and the standing rule is that nothing on a hot
+// path logs unconditionally.
+extern "C"
+{
+	std::uintptr_t CPC_SkillCapReturn = 0;   // where the stub resumes; set at install time
+	void CPC_SkillCapStub();                 // defined in SkillCapStub.asm
+
+	float CPC_GetSkillCap(std::uint32_t a_skillId)
+	{
+		constexpr float kVanillaCap = 100.0F;
+		if (!settings::skills::overrideCaps) { return kVanillaCap; }
+		if (a_skillId < 6 || a_skillId > 23) { return kVanillaCap; }
+		return settings::skills::cap[a_skillId - 6];
+	}
+}
+
 namespace Skills
 {
 	namespace
@@ -38,13 +59,16 @@ namespace Skills
 				return false;
 			}
 
-			// Step two, which is NOT done: writing the patch. Locating the site proves where the
-			// code is; it does not prove that a branch written over it behaves. That needs the
-			// game running, and shipping an untested code patch is how a mod corrupts a save. So
-			// the address is reported and nothing is written.
+			// Step two, still NOT done: redirecting the game to the stub. The stub itself is
+			// built and linked (SkillCapStub.asm, and CPC_GetSkillCap above), and the address it
+			// would be attached to is verified - but attaching it rewrites an instruction inside
+			// the running game, and that has never been executed once. It stays unattached until
+			// it has been watched working, because the failure mode is a crash rather than a
+			// wrong number.
 			a_reason = capSite.note +
-					   ", but the code patch itself is not written yet - that needs verifying in "
-					   "game before it is safe to ship. Skills cap at 100 as in vanilla.";
+					   ". The cap stub is built and its target verified, but it is not attached "
+					   "yet - that rewrites a live instruction and has to be watched working "
+					   "first. Skills cap at 100 as in vanilla.";
 			return false;
 		}
 	}
@@ -55,6 +79,39 @@ namespace Skills
 			"Skill caps",
 			"Where a skill stops advancing, and the value the game's own formulas read for it.",
 			InstallCapPatch);
+
+		// The remaining groups have their settings surfaces built and saved, so a configuration
+		// made now is ready the day each hook lands. They are registered rather than omitted
+		// precisely so the Patches tab lists what is NOT active - a feature that is configurable
+		// but inert has to say so, or the settings page is a lie.
+		Patches::Register(
+			"Skill experience rates",
+			"What one use of a skill pays toward that skill, and what a skill increase pays "
+			"toward a character level.",
+			[](std::string& a_reason) {
+				a_reason = "the settings are live and saved, but the hook that applies them is not "
+						   "written yet, so experience is earned exactly as in vanilla";
+				return false;
+			});
+
+		Patches::Register(
+			"Level up rewards",
+			"Perk points granted per level, and the health/magicka/stamina and carry weight a "
+			"level up grants.",
+			[](std::string& a_reason) {
+				a_reason = "the settings are live and saved, but the hook that applies them is not "
+						   "written yet, so a level up grants exactly what vanilla grants";
+				return false;
+			});
+
+		Patches::Register(
+			"Static levelling",
+			"A fixed experience amount per use of a skill, instead of the vanilla scaling.",
+			[](std::string& a_reason) {
+				a_reason = "the settings are live and saved, but the hook that applies them is not "
+						   "written yet, so skill experience still scales the vanilla way";
+				return false;
+			});
 	}
 
 	State GetState()

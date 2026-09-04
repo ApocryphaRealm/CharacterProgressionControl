@@ -43,6 +43,37 @@ namespace settings
 		inline float formulaCap[skilllist::kCount]{};      // fFormulaCap<Skill>:Skills
 	}
 
+	// Stage 3 - what a use of a skill pays, and what a skill increase pays toward a level.
+	// The values are live and saved now; the hooks that consult them are not written yet, which
+	// the Patches page states plainly rather than implying otherwise.
+	namespace skillexp
+	{
+		inline bool overrideRates = false;              // bOverrideSkillExp:SkillExperience
+		inline float mult[skilllist::kCount]{};         // fMult<Skill>:SkillExperience - 1.0 = vanilla
+		inline float toLevelMult = 1.0F;                // fSkillToLevelMult:SkillExperience
+	}
+
+	// Stage 4 - what a level up grants.
+	namespace levelup
+	{
+		inline bool overrideRewards = false;            // bOverrideLevelUpRewards:LevelUp
+		inline float perksPerLevel = 1.0F;              // fPerksPerLevel:LevelUp
+		inline float healthPerLevel = 10.0F;            // fHealthPerLevel:LevelUp
+		inline float magickaPerLevel = 10.0F;           // fMagickaPerLevel:LevelUp
+		inline float staminaPerLevel = 10.0F;           // fStaminaPerLevel:LevelUp
+		// The cross terms: carry weight gained when stamina (or magicka, or health) is chosen.
+		inline float carryWeightPerHealth = 0.0F;       // fCarryWeightPerHealth:LevelUp
+		inline float carryWeightPerMagicka = 0.0F;      // fCarryWeightPerMagicka:LevelUp
+		inline float carryWeightPerStamina = 5.0F;      // fCarryWeightPerStamina:LevelUp
+	}
+
+	// Stage 6 - a fixed amount per use instead of the vanilla scaling.
+	namespace staticlevel
+	{
+		inline bool enabled = false;                    // bStaticLevelling:StaticLevelling
+		inline float xpPerUse[skilllist::kCount]{};     // fPerUse<Skill>:StaticLevelling
+	}
+
 	namespace enchanting
 	{
 		// The charge-cost equation's scaling. Uncapping Enchanting is what breaks this, which is
