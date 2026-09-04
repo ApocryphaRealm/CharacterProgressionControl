@@ -7,6 +7,7 @@
 #include "PCH.h"
 
 #include "DevBenchTool.h"
+#include "Compat.h"
 #include "Enchanting.h"
 #include "Levelling.h"
 #include "Patches.h"
@@ -33,6 +34,7 @@ namespace
 			Enchanting::CaptureVanilla();
 			// Register every patch group first, then install them in one pass so each one's
 			// outcome is logged together and a failure is a reported fact, not a crash.
+			Compat::Detect();
 			Skills::Register();
 			Patches::InstallAll();
 			UI::Register();

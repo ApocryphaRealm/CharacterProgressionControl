@@ -3,6 +3,7 @@
 #include "DevBenchTool.h"
 
 #include "DevBench/DevBenchAPI.h"
+#include "Compat.h"
 #include "Enchanting.h"
 #include "Levelling.h"
 #include "Patches.h"
@@ -202,6 +203,24 @@ namespace DevBenchTool
 				const bool ok = Presets::Select(rest);
 				a_write(a_sink, std::format(R"({{"ok":{},"op":"preset","current":"{}"}})",
 											ok ? "true" : "false", EscapeJson(Presets::Current())).c_str());
+				return;
+			}
+			if (args.find("\"compat\"") != std::string_view::npos)
+			{
+				std::string rows;
+				bool first = true;
+				for (const auto& d : Compat::All())
+				{
+					if (!first) { rows += ","; }
+					first = false;
+					rows += std::format(R"({{"name":"{}","present":{},"consequence":"{}"}})",
+										EscapeJson(d.name), d.present ? "true" : "false",
+										EscapeJson(d.consequence));
+				}
+				a_write(a_sink, std::format(
+					R"({{"ok":true,"op":"compat","altExperience":{},"customSkills":{},"detected":[{}]}})",
+					Compat::AlternativeExperienceActive() ? "true" : "false",
+					Compat::CustomSkillsFrameworkPresent() ? "true" : "false", rows).c_str());
 				return;
 			}
 			if (args.find("\"patches\"") != std::string_view::npos)

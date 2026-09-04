@@ -4,6 +4,7 @@
 
 #include "SKSEMenuFramework.h"
 
+#include "Compat.h"
 #include "Enchanting.h"
 #include "Levelling.h"
 #include "Patches.h"
@@ -292,10 +293,24 @@ namespace UI
 
 		if (skillexp::overrideRates)
 		{
-			NudgeableSlider("Skill increase -> level", &skillexp::toLevelMult, 0.0F, 10.0F, "%.2f", 0.05F);
-			HelpMarker("Multiplies what a skill increase pays toward your CHARACTER level. This is "
-					   "the other side of the level cost on the Levelling tab: raise it and levels "
-					   "come faster without changing what a level costs.");
+			// Section 9's design rule: when another mod owns the income side, the setting that
+			// depends on it is shown disabled WITH THE REASON, rather than silently doing nothing.
+			if (Compat::AlternativeExperienceActive())
+			{
+				ImGuiMCP::TextDisabled("Skill increase -> level: not available");
+				ImGuiMCP::TextWrapped("Experience is installed and owns where character experience "
+									  "comes from, so this multiplier would do nothing. The level "
+									  "COST on the Levelling tab is unaffected - Experience's own "
+									  "page says mods editing those settings are compatible, and "
+									  "recommends them.");
+			}
+			else
+			{
+				NudgeableSlider("Skill increase -> level", &skillexp::toLevelMult, 0.0F, 10.0F, "%.2f", 0.05F);
+				HelpMarker("Multiplies what a skill increase pays toward your CHARACTER level. This is "
+						   "the other side of the level cost on the Levelling tab: raise it and levels "
+						   "come faster without changing what a level costs.");
+			}
 		}
 
 		ImGuiMCP::Spacing();
@@ -586,6 +601,19 @@ namespace UI
 							  "not active is not a fault - that part of the game simply behaves as it "
 							  "would without this mod.");
 		ImGuiMCP::Spacing();
+
+		ImGuiMCP::SeparatorText("What else is installed");
+		ImGuiMCP::TextWrapped("Detected at load. A conflict found here switches OUR feature off - "
+							  "never another mod's - and every switch stays yours to override.");
+		ImGuiMCP::Spacing();
+		for (const auto& d : Compat::All())
+		{
+			if (d.present) { ImGuiMCP::Text("%s: installed", d.name.c_str()); }
+			else { ImGuiMCP::TextDisabled("%s: not installed", d.name.c_str()); }
+			ImGuiMCP::TextWrapped("    %s", d.consequence.c_str());
+		}
+		ImGuiMCP::Spacing();
+		ImGuiMCP::SeparatorText("Engine patches");
 
 		const auto& groups = Patches::All();
 		if (groups.empty())
