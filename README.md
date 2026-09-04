@@ -4,7 +4,7 @@ One page for how a character grows: what a level costs, where experience comes f
 and rates, and what a level up grants. SKSE plugin, C++ with CommonLibSSE-NG, MIT, written from
 scratch. Skyrim Special Edition.
 
-**Version 0.1.0 - stages 1, 2, 7 and 8 of nine, verified in game 2026-09-03.** The plan is at
+**Version 1.0.0 - stages 1, 2, 7 and 8 of nine, verified in game 2026-09-03.** The plan is at
 `4. plans\character-progression-control`. The stages are out of order on purpose: everything that
 needs no engine hook is built first, so the mod is useful and safe long before the risky part.
 

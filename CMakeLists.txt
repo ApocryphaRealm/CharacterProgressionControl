@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 project(
 	CharacterProgressionControl
-	VERSION 0.1.0
+	VERSION 1.0.0
 	LANGUAGES CXX ASM_MASM
 )
 
@@ -53,3 +53,10 @@ target_link_libraries(
 )
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE include/PCH.h)
+
+# The generated version resource has to be COMPILED IN, not merely generated. configure_file
+# above writes version.rc and nothing else references it, so leaving this out builds a DLL with
+# no version resource at all - it reports an empty FileVersion and the packaging checks that read
+# the binary have nothing to read. Caught 2026-09-03 on this project's own build; the same
+# omission had already shipped once in the AUO fork.
+target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/version.rc)

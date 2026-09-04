@@ -1,6 +1,6 @@
 # Changelog
 
-Version 0.1.0
+Version 1.0.0
 Adds the Levelling tab, which controls what a character level costs.
 Adds the Skills tab, which shows every skill live and holds the cap, formula-cap and experience-rate settings.
 Adds the Level Up tab for perk points and the attribute and carry-weight gains a level grants.
