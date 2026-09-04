@@ -61,7 +61,13 @@ namespace UI
 				"igPopItemWidth",
 				"igPushID_Str",
 				"igPopID",
-				"igInputText"
+				"igInputText",
+				"igGetFrameHeight",
+				"igGetCursorScreenPos",
+				"igGetWindowDrawList",
+				"igInvisibleButton",
+				"ImDrawList_AddRectFilled",
+				"ImDrawList_AddCircleFilled"
 			};
 
 			for (const char* name : required)
@@ -211,7 +217,7 @@ namespace UI
 
 		bool changed = false;
 		bool over = levelling::overrideCost;
-		if (ImGuiMCP::Checkbox("Control the cost of a level", &over))
+		if (ImGuiMCP::Toggle("Control the cost of a level", &over))
 		{
 			levelling::overrideCost = over;
 			changed = true;
@@ -283,12 +289,12 @@ namespace UI
 		ImGuiMCP::PushItemWidth(200.0F);
 
 		bool over = skills::overrideCaps;
-		if (ImGuiMCP::Checkbox("Control skill caps", &over)) { skills::overrideCaps = over; }
+		if (ImGuiMCP::Toggle("Control skill caps", &over)) { skills::overrideCaps = over; }
 		HelpMarker("Off by default. While it is off this mod asserts nothing about your skills - "
 				   "with it off, not one instruction in the game is modified.");
 
 		bool rates = skillexp::overrideRates;
-		if (ImGuiMCP::Checkbox("Control skill experience rates", &rates)) { skillexp::overrideRates = rates; }
+		if (ImGuiMCP::Toggle("Control skill experience rates", &rates)) { skillexp::overrideRates = rates; }
 		HelpMarker("Off by default. Turns on the per-skill experience multipliers below.");
 
 		if (skillexp::overrideRates)
@@ -385,7 +391,7 @@ namespace UI
 		ImGuiMCP::PushItemWidth(260.0F);
 
 		bool over = levelup::overrideRewards;
-		if (ImGuiMCP::Checkbox("Control what a level up grants", &over)) { levelup::overrideRewards = over; }
+		if (ImGuiMCP::Toggle("Control what a level up grants", &over)) { levelup::overrideRewards = over; }
 		HelpMarker("Off by default. While it is off this mod asserts nothing about level-up rewards.");
 
 		if (levelup::overrideRewards)
@@ -424,7 +430,7 @@ namespace UI
 		ImGuiMCP::PushItemWidth(200.0F);
 
 		bool on = staticlevel::enabled;
-		if (ImGuiMCP::Checkbox("Use static skill levelling", &on)) { staticlevel::enabled = on; }
+		if (ImGuiMCP::Toggle("Use static skill levelling", &on)) { staticlevel::enabled = on; }
 		HelpMarker("Off by default. While it is off, nothing about skill experience is asserted.");
 
 		if (staticlevel::enabled)
@@ -556,7 +562,7 @@ namespace UI
 
 		bool changed = false;
 		bool over = enchanting::overrideCost;
-		if (ImGuiMCP::Checkbox("Control the enchantment charge cost", &over))
+		if (ImGuiMCP::Toggle("Control the enchantment charge cost", &over))
 		{
 			enchanting::overrideCost = over;
 			changed = true;
