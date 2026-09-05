@@ -28,8 +28,12 @@
 
 namespace Skills
 {
-	// Registers the cap patch group. Call at kDataLoaded, before Patches::InstallAll.
+	// Registers the cap patch groups. Call at kDataLoaded, before Patches::InstallAll.
 	void Register();
+
+	// The verified skill-cap site (0 until the cap patch has located it) - the stage-3 hooks use it to
+	// prove they found the same function.
+	std::uintptr_t CapSiteAddress();
 
 	struct SkillState
 	{

@@ -127,8 +127,73 @@ namespace Skills
 						 "the cap now comes from this mod's settings",
 						 site - base, regName, constAddr - base);
 			a_reason = located + ". Attached: each skill now stops advancing at the cap set on the Skills "
-								 "tab. (The formula cap - the value the game's own calculations read - is a "
-								 "separate site and is not patched yet; it stays vanilla.)";
+								 "tab. (The formula cap is its own patch group, listed next.)";
+			return true;
+		}
+
+		// ---- Formula caps: what the game's own formulas read for a skill --------------------------
+		//
+		// The reference (Skyrim Skill Uncapper) hooks the player's GetActorValue at its entry and
+		// clamps skill reads to the formula cap. The same thing, done the CommonLibSSE-NG way: a
+		// vtable hook on the player's ActorValueOwner (vfunc 01 = GetActorValue), which rewrites no
+		// instruction at all. The vtable is not assumed - the live player object's own vtable pointer
+		// is matched against PlayerCharacter's known vtables, and if none matches nothing is written.
+		//
+		// This runs on a hot path (every read of a player actor value), so it does one compare per
+		// call and never logs. One known cosmetic consequence, inherited from the reference: the
+		// vanilla skills menu reads through this too, so above the formula cap it shows the capped
+		// value, not the true level. This mod's own Skills tab reads the base value and is unaffected.
+		using GetActorValue_t = float(RE::ActorValueOwner*, RE::ActorValue);
+		REL::Relocation<GetActorValue_t> g_origGetActorValue;
+
+		float GetActorValue_Hook(RE::ActorValueOwner* a_this, RE::ActorValue a_av)
+		{
+			float v = g_origGetActorValue(a_this, a_av);
+			const auto id = static_cast<std::uint32_t>(a_av);
+			if (settings::skills::overrideCaps && id >= 6 && id <= 23)
+			{
+				const float cap = settings::skills::formulaCap[id - 6];
+				if (v > cap) { v = cap; }
+				if (v < 0.0F) { v = 0.0F; }
+			}
+			return v;
+		}
+
+		bool InstallFormulaCapPatch(std::string& a_reason)
+		{
+			if (!settings::skills::overrideCaps)
+			{
+				a_reason = "ready but not attached: Control skill caps is off. Turn it on and restart to "
+						   "attach it. Formulas read the true skill value, as in vanilla.";
+				return false;
+			}
+			auto* player = RE::PlayerCharacter::GetSingleton();
+			auto* avo = player ? player->AsActorValueOwner() : nullptr;
+			if (!avo)
+			{
+				a_reason = "the player object was not available when patches were installed; nothing was written";
+				return false;
+			}
+			const auto liveVtbl = *reinterpret_cast<const std::uintptr_t*>(avo);
+			int idx = -1;
+			for (std::size_t i = 0; i < std::size(RE::VTABLE_PlayerCharacter); ++i)
+			{
+				if (RE::VTABLE_PlayerCharacter[i].address() == liveVtbl) { idx = static_cast<int>(i); break; }
+			}
+			if (idx < 0)
+			{
+				a_reason = std::format("refused: the player's ActorValueOwner vtable (0x{:X}) matched none of "
+									   "PlayerCharacter's known vtables; nothing was written",
+									   liveVtbl - REL::Module::get().base());
+				return false;
+			}
+			REL::Relocation<std::uintptr_t> vtbl{ RE::VTABLE_PlayerCharacter[static_cast<std::size_t>(idx)] };
+			g_origGetActorValue = vtbl.write_vfunc(1, GetActorValue_Hook);   // 01 = GetActorValue
+			logger::info("Formula caps: hooked the player's ActorValueOwner::GetActorValue (PlayerCharacter vtable {}, "
+						 "0x{:X})", idx, liveVtbl - REL::Module::get().base());
+			a_reason = std::format("attached: the game's formulas read each skill at its formula cap (PlayerCharacter "
+								   "vtable {}). The vanilla skills menu shows the capped value above the cap; this "
+								   "mod's Skills tab shows the true level.", idx);
 			return true;
 		}
 	}
@@ -137,23 +202,19 @@ namespace Skills
 	{
 		Patches::Register(
 			"Skill caps",
-			"Where a skill stops advancing, and the value the game's own formulas read for it.",
+			"Where a skill stops advancing.",
 			InstallCapPatch);
+
+		Patches::Register(
+			"Formula caps",
+			"The value the game's own formulas read for a skill - so a skill can show 300 while the "
+			"combat maths treats it as its formula cap.",
+			InstallFormulaCapPatch);
 
 		// The remaining groups have their settings surfaces built and saved, so a configuration
 		// made now is ready the day each hook lands. They are registered rather than omitted
 		// precisely so the Patches tab lists what is NOT active - a feature that is configurable
 		// but inert has to say so, or the settings page is a lie.
-		Patches::Register(
-			"Skill experience rates",
-			"What one use of a skill pays toward that skill, and what a skill increase pays "
-			"toward a character level.",
-			[](std::string& a_reason) {
-				a_reason = "the settings are live and saved, but the hook that applies them is not "
-						   "written yet, so experience is earned exactly as in vanilla";
-				return false;
-			});
-
 		Patches::Register(
 			"Level up rewards",
 			"Perk points granted per level, and the health/magicka/stamina and carry weight a "
@@ -173,6 +234,8 @@ namespace Skills
 				return false;
 			});
 	}
+
+	std::uintptr_t CapSiteAddress() { return g_capSite; }
 
 	State GetState()
 	{

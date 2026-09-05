@@ -11,6 +11,11 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
+## 1.0.2 - 2026-09-05 - untested
+
+### Added
+- The formula cap is now active: with Control skill caps on, the value the game's own formulas read for a skill is held at fFormulaCap<Skill>, so a skill can advance past 100 while the combat maths treats it as its formula cap. The vanilla skills menu shows the capped value above the cap; this mod's Skills tab shows the true level.
+
 ## 1.0.1 - 2026-09-05 - untested
 
 ### Added
