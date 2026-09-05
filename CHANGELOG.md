@@ -11,7 +11,7 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
-## 1.0.4 - 2026-09-05 - untested
+## 1.0.4 - 2026-09-05 - working
 
 ### Added
 - The cpc.control tool gained points, grantpoints, allocate and swf ops for headless testing of the level-up menu.
