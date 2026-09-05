@@ -120,6 +120,7 @@ namespace settings
 				if (a_saw) { *a_saw = true; }
 			};
 			get("uloglevel:debug", debug::logLevel, ParseUInt);
+			get("bfollowdifficulty:difficulty", difficulty::follow, ParseBool);
 			get("boverridelevelcost:levelling", levelling::overrideCost, ParseBool);
 			get("flevelupbase:levelling", levelling::base, ParseFloat, &sawBase);
 			get("flevelupmult:levelling", levelling::mult, ParseFloat, &sawMult);
@@ -341,6 +342,7 @@ namespace settings
 
 		bool ok = true;
 		ok &= WriteKey(lines, "Debug", "uLogLevel", std::to_string(debug::logLevel));
+		ok &= WriteKey(lines, "Difficulty", "bFollowDifficulty", difficulty::follow ? "1" : "0");
 		ok &= WriteKey(lines, "Levelling", "bOverrideLevelCost", levelling::overrideCost ? "1" : "0");
 		ok &= WriteKey(lines, "Levelling", "fLevelUpBase", FormatFloat(levelling::base));
 		ok &= WriteKey(lines, "Levelling", "fLevelUpMult", FormatFloat(levelling::mult));
@@ -398,6 +400,7 @@ namespace settings
 
 	void RestoreDefaults()
 	{
+		difficulty::follow = false;
 		debug::logLevel = defaults.logLevel;
 		levelling::overrideCost = defaults.overrideCost;
 		levelling::base = defaults.base;

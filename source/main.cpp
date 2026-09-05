@@ -7,6 +7,7 @@
 #include "PCH.h"
 
 #include "DevBenchTool.h"
+#include "Difficulty.h"
 #include "Attributes.h"
 #include "Compat.h"
 #include "Enchanting.h"
@@ -48,6 +49,7 @@ namespace
 			MenuStrings::Install();
 			Patches::InstallAll();
 			UI::Register();
+			Difficulty::Install();
 			DevBenchTool::Init(true);
 			break;
 		case SKSE::MessagingInterface::kPostLoadGame:
@@ -55,6 +57,8 @@ namespace
 			// The co-save has been read by this point, so THIS character's preset selection is
 			// known, and applying it is what sets every value for this save.
 			Presets::ApplySelection();
+			// With following on, the game's difficulty overrides the character's own selection.
+			Difficulty::Sync("save loaded");
 			Levelling::RequestApply();
 			Enchanting::RequestApply();
 			break;

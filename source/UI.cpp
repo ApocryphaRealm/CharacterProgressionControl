@@ -5,6 +5,7 @@
 #include "SKSEMenuFramework.h"
 
 #include "Compat.h"
+#include "Difficulty.h"
 #include "Enchanting.h"
 #include "Levelling.h"
 #include "Patches.h"
@@ -521,6 +522,22 @@ namespace UI
 
 		const auto& all = Presets::All();
 		ImGuiMCP::Text("This character is using: %s", Presets::Current().c_str());
+		ImGuiMCP::Spacing();
+
+		ImGuiMCP::SeparatorText("Game difficulty");
+		bool follow = settings::difficulty::follow;
+		if (ImGuiMCP::Toggle("Follow the game's difficulty", &follow))
+		{
+			settings::difficulty::follow = follow;
+			OnMainThread([]() { statusMessage = Difficulty::OnFollowChanged(); });
+		}
+		HelpMarker("One configuration per difficulty. While this is on, the difficulty set in the game's own "
+				   "Settings decides which of six presets is in use - Difficulty - Novice, Apprentice, Adept, Expert, "
+				   "Master, Legendary - and changing it switches: what you had is saved into the old difficulty's "
+				   "preset and the new one's is loaded (made from the current configuration the first time). "
+				   "Saved with the mod's INI, so it stays on between sessions.");
+		ImGuiMCP::Text("The game is on %s%s", Difficulty::CurrentName(),
+					   settings::difficulty::follow ? (" -> preset \"" + Difficulty::PresetNameFor(Difficulty::Current()) + "\"").c_str() : "");
 		ImGuiMCP::Spacing();
 
 		ImGuiMCP::SeparatorText("Presets");

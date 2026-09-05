@@ -11,6 +11,11 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
+## 1.0.8 - 2026-09-05 - untested
+
+### Added
+- ONE CONFIGURATION PER GAME DIFFICULTY. A new toggle on the Presets page, Follow the game's difficulty (off by default; bFollowDifficulty in the INI): while it is on, the difficulty set in the game's own Settings decides which of six presets is in use - Difficulty - Novice, Apprentice, Adept, Expert, Master and Legendary, ordinary preset files in the Presets folder - and changing the difficulty switches them: what you had is saved into the old difficulty's preset and the new one's is loaded, created from the current configuration the first time that difficulty is met. The switch happens when the Journal Menu closes (where the game's Settings live) and when a save loads; nothing polls. The cpc.control tool gained op=difficulty, op=difficulty:<0-5> and op=follow:<0|1>.
+
 ## 1.0.7 - 2026-09-05 - working
 
 ### Fixed

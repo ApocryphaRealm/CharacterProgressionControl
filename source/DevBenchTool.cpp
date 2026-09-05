@@ -7,6 +7,7 @@
 #include "Enchanting.h"
 #include "Levelling.h"
 #include "Patches.h"
+#include "Difficulty.h"
 #include "Presets.h"
 #include "SkillList.h"
 #include "Skills.h"
@@ -388,6 +389,31 @@ namespace DevBenchTool
 					R"("moduleOffset":"0x{:X}","textBase":"0x{:X}","textSize":{},"note":"{}"}})",
 					r.found ? "true" : "false", r.matches, r.address,
 					r.found ? (r.address - base) : 0, base, size, EscapeJson(r.note)).c_str());
+				return;
+			}
+			// op=difficulty reads the game's difficulty, the follow flag and the preset it maps to;
+			// op=difficulty:<0..5> sets the game's difficulty as the Settings menu would, then syncs;
+			// op=follow:<0|1> flips the follow flag. The driving surface for the per-difficulty feature.
+			if (args.find("difficulty:") != std::string_view::npos)
+			{
+				const auto at = args.find("difficulty:") + 11;
+				int wanted = -1;
+				try { wanted = std::stoi(std::string(args.substr(at, 2))); } catch (...) { wanted = -1; }
+				const bool ok = Difficulty::SetGameDifficulty(wanted);
+				a_write(a_sink, std::format(R"({{"ok":{},"op":"difficulty","state":{}}})", ok ? "true" : "false", Difficulty::StatusJson()).c_str());
+				return;
+			}
+			if (args.find("follow:") != std::string_view::npos)
+			{
+				const auto at = args.find("follow:") + 7;
+				settings::difficulty::follow = (at < args.size() && args[at] == '1');
+				const auto status = Difficulty::OnFollowChanged();
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"follow","status":"{}","state":{}}})", EscapeJson(status), Difficulty::StatusJson()).c_str());
+				return;
+			}
+			if (args.find("\"difficulty\"") != std::string_view::npos)
+			{
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"difficulty","state":{}}})", Difficulty::StatusJson()).c_str());
 				return;
 			}
 			if (args.find("\"presets\"") != std::string_view::npos)

@@ -106,6 +106,13 @@ namespace settings
 		inline bool seeded = false;            // set once real values are in hand
 	}
 
+	// One configuration per game difficulty (Difficulty.cpp): when this is on, the game's
+	// difficulty decides which of six presets is in use and changing it switches them.
+	namespace difficulty
+	{
+		inline bool follow = false;   // bFollowDifficulty:Difficulty
+	}
+
 	void Init(const std::string& a_iniFileName);
 	bool Reload();
 	bool Save();
