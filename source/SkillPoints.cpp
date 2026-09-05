@@ -48,9 +48,14 @@ namespace SkillPoints
 			float remaining = Threshold(a_index);
 			if (remaining <= 0.0F) { remaining = 1.0F; }
 			float amount = remaining * 1.002F + 0.01F;
+#if RUNTIME_LINE == 17
+			{
+				if (auto* info = RE::ActorValueList::GetActorValueInfo(av); info && info->skill && info->skill->useMult != 0.0F)
+#else
 			if (auto* list = RE::ActorValueList::GetSingleton())
 			{
 				if (auto* info = list->GetActorValue(av); info && info->skill && info->skill->useMult != 0.0F)
+#endif
 				{
 					amount = (amount - info->skill->offsetMult) / info->skill->useMult;
 				}

@@ -77,9 +77,14 @@ namespace SkillExperience
 					// offset (the AVIF's AVSK block; measured 2026-09-05: 1 in -> 6.3 banked for One-Handed), so the
 					// share is expressed in those units to land exactly.
 					float target = a_skills->data->skills[i].levelThreshold * settings::staticlevel::xpPerUse[i] / 100.0F;
+#if RUNTIME_LINE == 17
+					{
+						if (auto* info = RE::ActorValueList::GetActorValueInfo(static_cast<RE::ActorValue>(a_skill)); info && info->skill && info->skill->useMult != 0.0F)
+#else
 					if (auto* list = RE::ActorValueList::GetSingleton())
 					{
 						if (auto* info = list->GetActorValue(static_cast<RE::ActorValue>(a_skill)); info && info->skill && info->skill->useMult != 0.0F)
+#endif
 						{
 							target = (target - info->skill->offsetMult) / info->skill->useMult;
 						}
