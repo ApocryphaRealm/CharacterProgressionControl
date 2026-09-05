@@ -2,6 +2,10 @@
 
 Version 1.0.7
 
+What changed in 1.0.7: a respec now also rewrites each reset skill's cached level and next-level
+threshold, so the first level after it costs what that level costs and not what the old, higher
+level cost.
+
 What changed in 1.0.6: a respec of the skill points - any mod can send the SKSE mod event
 CPC_RefundSkillPoints (Potion of Clarity does) and every skill above its starting value goes back to
 it, its experience clears, and the points this mod's cost tiers charged for the levels above come
