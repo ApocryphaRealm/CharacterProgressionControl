@@ -117,6 +117,40 @@ namespace DevBenchTool
 			// levels the skill up repeatedly until it meets the cap, so one large amount is a clean test:
 			// it stops at 100 with the patch off and passes it with the patch on. Testing only - it is
 			// how the cap patch is watched working without a keyboard. Game-thread work, so queued.
+			// "peek":<game offset>, "count":<n> - hex bytes of the game's code (testing).
+			if (args.find("\"peek\":") != std::string_view::npos)
+			{
+				const auto off = static_cast<std::uintptr_t>(ReadNumber(args, "\"peek\":"));
+				int count = static_cast<int>(ReadNumber(args, "\"count\":")); if (count <= 0 || count > 256) { count = 16; }
+				const auto* b = reinterpret_cast<const std::uint8_t*>(REL::Module::get().base() + off);
+				std::string hex; for (int i = 0; i < count; ++i) { hex += std::format("{:02X} ", b[i]); }
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"peek","offset":"0x{:X}","bytes":"{}"}})", off, hex).c_str());
+				return;
+			}
+			// "givexp":<n> - adds character experience directly (testing), so a level up is available
+			// without grinding skills.
+			if (args.find("\"givexp\":") != std::string_view::npos)
+			{
+				const float xp = ReadNumber(args, "\"givexp\":");
+				auto* player = RE::PlayerCharacter::GetSingleton();
+				auto* skills = player ? player->GetPlayerRuntimeData().skills : nullptr;
+				if (!skills || !skills->data) { a_write(a_sink, R"({"ok":false,"op":"givexp","error":"no character loaded"})"); return; }
+				skills->data->xp += xp;
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"givexp","xp":{:.1f},"threshold":{:.1f}}})", skills->data->xp, skills->data->levelThreshold).c_str());
+				return;
+			}
+			// "static":0|1 and "peruse":<pct> - static levelling live, every skill (testing).
+			if (args.find("\"static\":") != std::string_view::npos)
+			{
+				settings::staticlevel::enabled = ReadNumber(args, "\"static\":") != 0.0F;
+				if (args.find("\"peruse\":") != std::string_view::npos)
+				{
+					const float pct = ReadNumber(args, "\"peruse\":");
+					for (int i = 0; i < skilllist::kCount; ++i) { settings::staticlevel::xpPerUse[i] = pct; }
+				}
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"static","enabled":{},"perUseOneHanded":{:.2f}}})", settings::staticlevel::enabled, settings::staticlevel::xpPerUse[0]).c_str());
+				return;
+			}
 			if (args.find("\"advance\"") != std::string_view::npos)
 			{
 				const float xp = ReadNumber(args, "\"xp\":");
@@ -138,6 +172,33 @@ namespace DevBenchTool
 				return;
 			}
 
+			// "tolevel":<n> - the skill-increase -> level multiplier, live (testing). "rate":<n> with
+			// "skill":<i> - that skill's experience rate, live (testing).
+			if (args.find("\"tolevel\":") != std::string_view::npos)
+			{
+				settings::skillexp::toLevelMult = ReadNumber(args, "\"tolevel\":");
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"tolevel","value":{:.2f}}})", settings::skillexp::toLevelMult).c_str());
+				return;
+			}
+			if (args.find("\"rate\":") != std::string_view::npos)
+			{
+				const int idx = static_cast<int>(ReadNumber(args, "\"skill\":"));
+				if (idx < 0 || idx >= skilllist::kCount) { a_write(a_sink, R"({"ok":false,"op":"rate","error":"skill index 0..17"})"); return; }
+				settings::skillexp::mult[idx] = ReadNumber(args, "\"rate\":");
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"rate","skill":"{}","value":{:.2f}}})", skilllist::kIniName[idx], settings::skillexp::mult[idx]).c_str());
+				return;
+			}
+
+			// "perktable":"1:1,20:2" - replace the perk table live (testing).
+			if (const auto at = args.find("\"perktable\":\""); at != std::string_view::npos)
+			{
+				const auto start = at + 13;
+				const auto end = args.find('"', start);
+				const std::string text(args.substr(start, end == std::string_view::npos ? std::string_view::npos : end - start));
+				const bool ok = settings::levelup::ParsePerksTable(text);
+				a_write(a_sink, std::format(R"({{"ok":{},"op":"perktable","table":"{}"}})", ok ? "true" : "false", EscapeJson(settings::levelup::PerksTableText())).c_str());
+				return;
+			}
 			if (args.find("\"skills\"") != std::string_view::npos)
 			{
 				const auto sk = Skills::GetState();
@@ -157,12 +218,19 @@ namespace DevBenchTool
 						skilllist::kIniName[i], base, current, sk.skill[i].level, sk.skill[i].xp, sk.skill[i].levelThreshold,
 						settings::skills::cap[i], settings::skills::formulaCap[i]);
 				}
+				const int perkPoints = player ? player->GetGameStatsData().perkCount : -1;
+				auto av = [&](RE::ActorValue a) { return avo ? avo->GetBaseActorValue(a) : 0.0F; };
+				auto pv = [&](RE::ActorValue a) { return avo ? avo->GetActorValue(a) : 0.0F; };   // current (temporary included)
+				const std::string attrs = std::format(R"("health":{:.1f},"magicka":{:.1f},"stamina":{:.1f},"carryWeight":{:.1f},"healthPerm":{:.1f},"magickaPerm":{:.1f},"staminaPerm":{:.1f},"carryWeightPerm":{:.1f})",
+					av(RE::ActorValue::kHealth), av(RE::ActorValue::kMagicka), av(RE::ActorValue::kStamina), av(RE::ActorValue::kCarryWeight),
+					pv(RE::ActorValue::kHealth), pv(RE::ActorValue::kMagicka), pv(RE::ActorValue::kStamina), pv(RE::ActorValue::kCarryWeight));
 				a_write(a_sink, std::format(
-					R"({{"ok":true,"op":"skills","readable":{},"capsActive":{},"overrideCaps":{},)"
+					R"({{"ok":true,"op":"skills","readable":{},"capsActive":{},"overrideCaps":{},"perkPoints":{},"perkTable":"{}",{},)"
 					R"("characterLevel":{},"characterXp":{:.1f},"characterThreshold":{:.1f},"skills":[{}]}})",
 					sk.readable ? "true" : "false",
 					Patches::IsInstalled("Skill caps") ? "true" : "false",
 					settings::skills::overrideCaps ? "true" : "false",
+					perkPoints, EscapeJson(settings::levelup::PerksTableText()), attrs,
 					sk.characterLevel, sk.characterXp, sk.characterThreshold, rows).c_str());
 				return;
 			}

@@ -7,6 +7,7 @@
 #include "utils/Setting.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <cctype>
 #include <filesystem>
 #include <fstream>
@@ -35,7 +36,8 @@ namespace settings
 			float skillMult[skilllist::kCount];
 			float toLevelMult;
 			bool overrideRewards;
-			float lvl[7];   // perks, health, magicka, stamina, cw-per-health/magicka/stamina
+			float lvl[7];   // [0] unused since the perk table; health, magicka, stamina, cw-per-health/magicka/stamina
+			std::vector<levelup::PerkRow> perksByLevel;
 			bool staticEnabled;
 			float perUse[skilllist::kCount];
 		} defaults{};
@@ -74,6 +76,8 @@ namespace settings
 		{
 			try { a_out = std::stof(Trim(a_text)); return true; } catch (...) { return false; }
 		}
+
+		bool ParseText(const std::string& a_text, std::string& a_out) { a_out = Trim(a_text); return true; }
 
 		bool ParseUInt(const std::string& a_text, std::uint32_t& a_out)
 		{
@@ -142,7 +146,18 @@ namespace settings
 			}
 
 			get("boverrideleveluprewards:levelup", levelup::overrideRewards, ParseBool);
-			get("fperksperlevel:levelup", levelup::perksPerLevel, ParseFloat);
+			{
+				std::string table; bool sawTable = false;
+				get("sperksbylevel:levelup", table, ParseText, &sawTable);
+				if (sawTable) { if (!levelup::ParsePerksTable(table)) { logger::warn("sPerksByLevel \"{}\" is not valid; keeping the current table", table); } }
+				else
+				{
+					// A file from before the table: carry the old whole-number value into one row.
+					float old = 0.0F; bool sawOld = false;
+					get("fperksperlevel:levelup", old, ParseFloat, &sawOld);
+					if (sawOld) { levelup::perksByLevel = { { 1, static_cast<std::uint8_t>(std::clamp(static_cast<int>(old + 0.5F), 0, 20)) } }; }
+				}
+			}
 			get("fhealthperlevel:levelup", levelup::healthPerLevel, ParseFloat);
 			get("fmagickaperlevel:levelup", levelup::magickaPerLevel, ParseFloat);
 			get("fstaminaperlevel:levelup", levelup::staminaPerLevel, ParseFloat);
@@ -246,7 +261,7 @@ namespace settings
 		defaults.overrideRates = skillexp::overrideRates;
 		defaults.toLevelMult = skillexp::toLevelMult;
 		defaults.overrideRewards = levelup::overrideRewards;
-		defaults.lvl[0] = levelup::perksPerLevel;
+		defaults.perksByLevel = levelup::perksByLevel;
 		defaults.lvl[1] = levelup::healthPerLevel;
 		defaults.lvl[2] = levelup::magickaPerLevel;
 		defaults.lvl[3] = levelup::staminaPerLevel;
@@ -323,7 +338,7 @@ namespace settings
 		}
 
 		ok &= WriteKey(lines, "LevelUp", "bOverrideLevelUpRewards", levelup::overrideRewards ? "1" : "0");
-		ok &= WriteKey(lines, "LevelUp", "fPerksPerLevel", FormatFloat(levelup::perksPerLevel));
+		ok &= WriteKey(lines, "LevelUp", "sPerksByLevel", levelup::PerksTableText());
 		ok &= WriteKey(lines, "LevelUp", "fHealthPerLevel", FormatFloat(levelup::healthPerLevel));
 		ok &= WriteKey(lines, "LevelUp", "fMagickaPerLevel", FormatFloat(levelup::magickaPerLevel));
 		ok &= WriteKey(lines, "LevelUp", "fStaminaPerLevel", FormatFloat(levelup::staminaPerLevel));
@@ -372,7 +387,7 @@ namespace settings
 		skillexp::overrideRates = defaults.overrideRates;
 		skillexp::toLevelMult = defaults.toLevelMult;
 		levelup::overrideRewards = defaults.overrideRewards;
-		levelup::perksPerLevel = defaults.lvl[0];
+		levelup::perksByLevel = defaults.perksByLevel;
 		levelup::healthPerLevel = defaults.lvl[1];
 		levelup::magickaPerLevel = defaults.lvl[2];
 		levelup::staminaPerLevel = defaults.lvl[3];
@@ -417,4 +432,52 @@ namespace settings
 	}
 
 	const std::string& GetIniPath() { return iniPath; }
+
+	namespace levelup
+	{
+		int PerksAtLevel(std::uint16_t a_level)
+		{
+			int perks = 1;   // vanilla, if the table is somehow empty
+			for (const auto& row : perksByLevel)
+			{
+				if (row.fromLevel <= a_level) { perks = row.perks; } else { break; }   // sorted ascending
+			}
+			return perks;
+		}
+
+		std::string PerksTableText()
+		{
+			std::string out;
+			for (const auto& row : perksByLevel)
+			{
+				if (!out.empty()) { out += ","; }
+				out += std::to_string(row.fromLevel) + ":" + std::to_string(row.perks);
+			}
+			return out;
+		}
+
+		bool ParsePerksTable(const std::string& a_text)
+		{
+			std::vector<PerkRow> rows;
+			std::size_t pos = 0;
+			while (pos <= a_text.size())
+			{
+				const auto comma = a_text.find(',', pos);
+				const std::string item = a_text.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos);
+				pos = comma == std::string::npos ? a_text.size() + 1 : comma + 1;
+				const auto colon = item.find(':');
+				if (colon == std::string::npos) { if (item.find_first_not_of(" \t") == std::string::npos) { continue; } return false; }
+				char* end = nullptr;
+				const long lvl = std::strtol(item.c_str(), &end, 10);
+				if (end == item.c_str() || lvl < 1 || lvl > 1000) { return false; }
+				const long perks = std::strtol(item.c_str() + colon + 1, &end, 10);
+				if (end == item.c_str() + colon + 1 || perks < 0 || perks > 20) { return false; }
+				rows.push_back({ static_cast<std::uint16_t>(lvl), static_cast<std::uint8_t>(perks) });
+			}
+			if (rows.empty()) { return false; }
+			std::sort(rows.begin(), rows.end(), [](const PerkRow& a, const PerkRow& b) { return a.fromLevel < b.fromLevel; });
+			perksByLevel = std::move(rows);
+			return true;
+		}
+	}
 }

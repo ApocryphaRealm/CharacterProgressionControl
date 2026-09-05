@@ -210,29 +210,6 @@ namespace Skills
 			"The value the game's own formulas read for a skill - so a skill can show 300 while the "
 			"combat maths treats it as its formula cap.",
 			InstallFormulaCapPatch);
-
-		// The remaining groups have their settings surfaces built and saved, so a configuration
-		// made now is ready the day each hook lands. They are registered rather than omitted
-		// precisely so the Patches tab lists what is NOT active - a feature that is configurable
-		// but inert has to say so, or the settings page is a lie.
-		Patches::Register(
-			"Level up rewards",
-			"Perk points granted per level, and the health/magicka/stamina and carry weight a "
-			"level up grants.",
-			[](std::string& a_reason) {
-				a_reason = "the settings are live and saved, but the hook that applies them is not "
-						   "written yet, so a level up grants exactly what vanilla grants";
-				return false;
-			});
-
-		Patches::Register(
-			"Static levelling",
-			"A fixed experience amount per use of a skill, instead of the vanilla scaling.",
-			[](std::string& a_reason) {
-				a_reason = "the settings are live and saved, but the hook that applies them is not "
-						   "written yet, so skill experience still scales the vanilla way";
-				return false;
-			});
 	}
 
 	std::uintptr_t CapSiteAddress() { return g_capSite; }

@@ -7,12 +7,15 @@
 #include "PCH.h"
 
 #include "DevBenchTool.h"
+#include "Attributes.h"
 #include "Compat.h"
 #include "Enchanting.h"
+#include "LevelUp.h"
 #include "Levelling.h"
 #include "Patches.h"
 #include "Presets.h"
 #include "Settings.h"
+#include "SkillExperience.h"
 #include "Skills.h"
 #include "UI.h"
 
@@ -36,6 +39,9 @@ namespace
 			// outcome is logged together and a failure is a reported fact, not a crash.
 			Compat::Detect();
 			Skills::Register();
+			SkillExperience::Register();
+			LevelUp::Register();
+			Attributes::Register();
 			Patches::InstallAll();
 			UI::Register();
 			DevBenchTool::Init(true);
@@ -63,9 +69,9 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 	SKSE::Init(a_skse);
 	SKSE::log::init("CharacterProgressionControl");
 
-	// Trampoline space for the engine patches installed at kDataLoaded. One write_branch<5>
-	// needs 14 bytes; 64 leaves room for the patch groups still to come.
-	SKSE::AllocTrampoline(64);
+	// Trampoline space for the engine patches installed at kDataLoaded: each far branch or call
+	// takes 14 bytes and the skill-improve entry hook also parks a 19-byte prologue thunk here.
+	SKSE::AllocTrampoline(256);
 
 	settings::Init("CharacterProgressionControl.ini");
 	settings::ApplyLogLevel();

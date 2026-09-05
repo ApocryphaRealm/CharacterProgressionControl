@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace settings
 {
@@ -57,7 +58,15 @@ namespace settings
 	namespace levelup
 	{
 		inline bool overrideRewards = false;            // bOverrideLevelUpRewards:LevelUp
-		inline float perksPerLevel = 1.0F;              // fPerksPerLevel:LevelUp
+		// Whole perk points per level, as a table by level: from each listed level onward, that many
+		// per level up. Vanilla is one row, from level 1, 1 perk. Kept sorted by level; the lookup
+		// takes the last row at or below the level reached. There is no fractional perk and no
+		// carry-over - a level up grants a whole number.
+		struct PerkRow { std::uint16_t fromLevel; std::uint8_t perks; };
+		inline std::vector<PerkRow> perksByLevel{ { 1, 1 } };   // sPerksByLevel:LevelUp - "1:1,20:2,40:3"
+		int PerksAtLevel(std::uint16_t a_level);
+		std::string PerksTableText();                       // "1:1,20:2"
+		bool ParsePerksTable(const std::string& a_text);    // replaces the table when the text is valid
 		inline float healthPerLevel = 10.0F;            // fHealthPerLevel:LevelUp
 		inline float magickaPerLevel = 10.0F;           // fMagickaPerLevel:LevelUp
 		inline float staminaPerLevel = 10.0F;           // fStaminaPerLevel:LevelUp

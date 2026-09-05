@@ -27,6 +27,10 @@
 ; No code is copied: this is our own stub, our own settings and our own location check.
 
 EXTERN CPC_GetSkillCap:PROC          ; float CPC_GetSkillCap(unsigned int skillId)
+EXTERN CPC_LevelExp_Hook:PROC        ; float CPC_LevelExp_Hook(float value, unsigned int skillId)
+EXTERN CPC_LevelExpOriginal:QWORD    ; the game's level-experience function; set at install
+EXTERN CPC_PerkPool_Hook:PROC        ; void CPC_PerkPool_Hook(int count)
+EXTERN CPC_PerkPoolReturn:QWORD      ; filled in at install time - the instruction after the sequence
 
 .code
 
@@ -85,5 +89,66 @@ ENDM
 CAP_STUB CPC_SkillCapStubXmm8, xmm8
 ; AE shape: the level is copied to xmm8 and the cap loaded into xmm10 (Kasplat's listing).
 CAP_STUB CPC_SkillCapStubXmm10, xmm10
+
+; Stage 3, skill-to-level income. This takes the place of the game's `call` to its level-experience
+; function (float, with up to four float arguments in xmm0..xmm3 and the result in xmm0), so the
+; caller already treats every volatile register as clobbered and nothing needs preserving. The
+; original is called with xmm0..xmm3 exactly as the game set them, its result is scaled through the
+; hook (the skill id the caller keeps in rsi goes along as the second argument), and RET returns
+; to the game's call site with the scaled value in xmm0. RSP is 8 mod 16 on entry (after the
+; game's call); 28h brings it to 16-byte alignment with shadow space for both calls.
+CPC_LevelExpCallStub PROC
+    sub     rsp, 28h
+    call    qword ptr [CPC_LevelExpOriginal]
+    mov     edx, esi
+    call    CPC_LevelExp_Hook
+    add     rsp, 28h
+    ret
+CPC_LevelExpCallStub ENDP
+
+; Stage 4, perk points. This REPLACES the game's whole "perk pool += count" sequence (0x1C bytes,
+; via a 5-byte branch + NOPs), mid-function, so everything volatile is preserved. Contract there:
+; ebx = the count the game meant to add (negative for a removal). The hook applies this mod's table
+; through CommonLibSSE-NG's accessor and the stub jumps to the instruction after the sequence.
+CPC_PerkPoolStub PROC
+    push    rax
+    push    rcx
+    push    rdx
+    push    r8
+    push    r9
+    push    r10
+    push    r11
+    push    rbx
+    mov     rbx, rsp
+    sub     rsp, 60h
+    and     rsp, -16
+    movaps  xmmword ptr [rsp + 00h], xmm0
+    movaps  xmmword ptr [rsp + 10h], xmm1
+    movaps  xmmword ptr [rsp + 20h], xmm2
+    movaps  xmmword ptr [rsp + 30h], xmm3
+    movaps  xmmword ptr [rsp + 40h], xmm4
+    movaps  xmmword ptr [rsp + 50h], xmm5
+    mov     ecx, dword ptr [rbx]            ; the saved rbx (pushed last) = the game's ebx = the count
+    movsx   ecx, cl                         ; the game adds it as a signed byte
+    sub     rsp, 20h
+    call    CPC_PerkPool_Hook
+    add     rsp, 20h
+    movaps  xmm0, xmmword ptr [rsp + 00h]
+    movaps  xmm1, xmmword ptr [rsp + 10h]
+    movaps  xmm2, xmmword ptr [rsp + 20h]
+    movaps  xmm3, xmmword ptr [rsp + 30h]
+    movaps  xmm4, xmmword ptr [rsp + 40h]
+    movaps  xmm5, xmmword ptr [rsp + 50h]
+    mov     rsp, rbx
+    pop     rbx
+    pop     r11
+    pop     r10
+    pop     r9
+    pop     r8
+    pop     rdx
+    pop     rcx
+    pop     rax
+    jmp     qword ptr [CPC_PerkPoolReturn]
+CPC_PerkPoolStub ENDP
 
 END

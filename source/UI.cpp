@@ -386,7 +386,7 @@ namespace UI
 		ImGuiMCP::TextWrapped("What a level up gives you: the perk points, and the health, magicka, "
 							  "stamina and carry weight that come with the choice you make.");
 		ImGuiMCP::Spacing();
-		InertNotice("Level up rewards", "a level up still grants exactly what vanilla grants");
+		InertNotice("Attribute gains at level up", "the health/magicka/stamina and carry weight a level up grants are still vanilla");
 
 		ImGuiMCP::PushItemWidth(260.0F);
 
@@ -396,9 +396,38 @@ namespace UI
 
 		if (levelup::overrideRewards)
 		{
-			ImGuiMCP::SeparatorText("Perks");
-			NudgeableSlider("Perk points per level", &levelup::perksPerLevel, 0.0F, 10.0F, "%.2f", 0.25F);
-			HelpMarker("Vanilla is 1. Fractional values are allowed - 0.5 gives a perk every other level.");
+			ImGuiMCP::SeparatorText("Perk points per level");
+			ImGuiMCP::TextWrapped("Whole perk points, as a table by level: from each listed level onward, that many per "
+								   "level up. Vanilla is one row - from level 1, 1 perk.");
+			{
+				auto& rows = levelup::perksByLevel;
+				int removeAt = -1;
+				for (std::size_t i = 0; i < rows.size(); ++i)
+				{
+					ImGuiMCP::PushID(static_cast<int>(i));
+					int from = rows[i].fromLevel;
+					int perks = rows[i].perks;
+					ImGuiMCP::PushItemWidth(120.0F);
+					if (ImGuiMCP::InputInt("From level", &from)) { rows[i].fromLevel = static_cast<std::uint16_t>(std::clamp(from, 1, 1000)); }
+					ImGuiMCP::SameLine();
+					if (ImGuiMCP::InputInt("Perks", &perks)) { rows[i].perks = static_cast<std::uint8_t>(std::clamp(perks, 0, 20)); }
+					ImGuiMCP::PopItemWidth();
+					if (rows.size() > 1)
+					{
+						ImGuiMCP::SameLine();
+						if (ImGuiMCP::SmallButton("Remove")) { removeAt = static_cast<int>(i); }
+					}
+					ImGuiMCP::PopID();
+				}
+				if (removeAt >= 0) { rows.erase(rows.begin() + removeAt); }
+				if (ImGuiMCP::Button("Add a row"))
+				{
+					const auto last = rows.back();
+					rows.push_back({ static_cast<std::uint16_t>(std::min(1000, last.fromLevel + 10)), last.perks });
+				}
+				std::sort(rows.begin(), rows.end(), [](const levelup::PerkRow& a, const levelup::PerkRow& b) { return a.fromLevel < b.fromLevel; });
+			}
+			HelpMarker("The last row at or below the level reached applies. Each row is a whole number of perks.");
 
 			ImGuiMCP::SeparatorText("Attributes");
 			NudgeableSlider("Health per level", &levelup::healthPerLevel, 0.0F, 100.0F, "%.0f", 1.0F);
@@ -436,7 +465,9 @@ namespace UI
 		if (staticlevel::enabled)
 		{
 			ImGuiMCP::Spacing();
-			ImGuiMCP::SeparatorText("Experience per use");
+			ImGuiMCP::SeparatorText("Experience per use, as a percent of a skill level");
+			HelpMarker("1.0 = one use is 1% of the level, so 100 uses raise the skill by one level whether it is at 5 or at 50. "
+					   "Perk bonuses to skill use are not applied while this is on - the amount stays fixed.");
 			for (int i = 0; i < skilllist::kCount; ++i)
 			{
 				ImGuiMCP::PushID(skilllist::kIniName[i]);
