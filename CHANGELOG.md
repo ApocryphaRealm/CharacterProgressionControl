@@ -11,7 +11,7 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
-## 1.0.5 - 2026-09-05 - untested
+## 1.0.5 - 2026-09-05 - working
 
 ### Added
 - Added a Skyrim 1.7.99 / 1.7.104 build; the mod now installs as a FOMOD that picks the build for your game version (SE 1.5.97 / AE 1.6.1170, or Skyrim 1.7.x). On 1.7.x the skill caps, formula caps and attribute gains attach; the skill experience rates, skill-to-level income, static levelling and perk-table sites are not present in that build and those groups stay off and say so.
