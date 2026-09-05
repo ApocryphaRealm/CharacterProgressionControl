@@ -11,6 +11,11 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
+## 1.0.7 - 2026-09-05 - untested
+
+### Fixed
+- A respec now also rewrites each reset skill's cached level and next-level threshold, so the first level after it costs what that level costs and not what the old, higher level cost.
+
 ## 1.0.6 - 2026-09-05 - working
 
 ### Added

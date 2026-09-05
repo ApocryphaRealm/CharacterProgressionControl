@@ -1,6 +1,6 @@
 # Character Progression Control
 
-Version 1.0.6
+Version 1.0.7
 
 What changed in 1.0.6: a respec of the skill points - any mod can send the SKSE mod event
 CPC_RefundSkillPoints (Potion of Clarity does) and every skill above its starting value goes back to

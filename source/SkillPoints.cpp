@@ -260,7 +260,26 @@ namespace SkillPoints
 			int points = 0;
 			for (int lvl = start; lvl < current; ++lvl) { points += CostForLevel(lvl); }
 			avo->SetBaseActorValue(av, static_cast<float>(start));
-			if (skills && skills->data) { skills->data->skills[i].xp = 0.0F; }
+			if (skills && skills->data)
+			{
+				// The game caches each skill's level and next-level threshold in its progression data and
+				// only recomputes them when the skill LEVELS UP, so a reset must rewrite them: otherwise the
+				// first level after a respec would still cost what the old, higher level cost. Threshold =
+				// improveMult x level^fSkillUseCurve + improveOffset (the AVIF's AVSK block; measured 2026-09-05:
+				// One-Handed 20 -> 688.7, 22 -> 829.4 with mult 2 and curve 1.95).
+				auto& sd = skills->data->skills[i];
+				sd.level = static_cast<float>(start);
+				sd.xp = 0.0F;
+				float curve = 1.95F;
+				if (auto* gs = RE::GameSettingCollection::GetSingleton()) { if (auto* s = gs->GetSetting("fSkillUseCurve")) { curve = s->GetFloat(); } }
+#if RUNTIME_LINE == 17
+				auto* info = RE::ActorValueList::GetActorValueInfo(av);
+#else
+				auto* list = RE::ActorValueList::GetSingleton();
+				auto* info = list ? list->GetActorValue(av) : nullptr;
+#endif
+				if (info && info->skill) { sd.levelThreshold = info->skill->improveMult * std::pow(static_cast<float>(start), curve) + info->skill->improveOffset; }
+			}
 			refund += points; ++reset;
 			logger::info("skill points: {} {} -> {} refunds {} point(s)", skilllist::kIniName[i], current, start, points);
 		}
