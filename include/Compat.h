@@ -39,4 +39,5 @@ namespace Compat
 	// The findings other code asks about by name.
 	bool AlternativeExperienceActive();  // Experience or similar owns the skill-to-level path
 	bool CustomSkillsFrameworkPresent();
+	bool CarryWeightOwnedElsewhere();    // one of our own carry-weight-per-level mods is loaded
 }

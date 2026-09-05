@@ -13,6 +13,7 @@ namespace Compat
 		std::vector<Detection> detections;
 		bool altExperience = false;
 		bool customSkills = false;
+		bool carryElsewhere = false;
 		bool ran = false;
 
 		// A loaded SKSE plugin is a module in this process. Asking the loader is the truth;
@@ -47,6 +48,9 @@ namespace Compat
 		customSkills = ModuleLoaded("CustomSkills.dll");
 		const bool sslr = PluginLoaded("StaticSkillLeveling.esp");
 		const bool levelingFreedom = PluginLoaded("Leveling Freedom.esp");
+		// Our own carry-weight-per-level mods: both write the player's permanent carry weight from the
+		// level, so this mod's carry-weight cross terms would fight them (plan section 16B).
+		carryElsewhere = ModuleLoaded("CarryweightOnLevelUp.dll") || ModuleLoaded("CarryWeightPerLevel.dll");
 
 		altExperience = experience;
 
@@ -79,6 +83,13 @@ namespace Compat
 				  "meant to replace that whole arrangement, so run one or the other, not both."
 				: "not installed.");
 
+		Add("Carryweight on Level Up / Carry Weight Per Level", carryElsewhere,
+			carryElsewhere
+				? "installed, and it owns the carry weight a level grants. This mod's carry-weight cross terms "
+				  "on the Level Up tab stand down while it is loaded (a level up grants no carry weight from "
+				  "here); the attribute gains themselves still apply."
+				: "not installed - the carry weight a level grants is set on the Level Up tab.");
+
 		Add("Leveling Freedom", levelingFreedom,
 			levelingFreedom
 				? "installed, and it sets the same two level-cost values as the Levelling tab. "
@@ -94,6 +105,7 @@ namespace Compat
 	}
 
 	const std::vector<Detection>& All() { return detections; }
+	bool CarryWeightOwnedElsewhere() { return carryElsewhere; }
 	bool AlternativeExperienceActive() { return altExperience; }
 	bool CustomSkillsFrameworkPresent() { return customSkills; }
 }

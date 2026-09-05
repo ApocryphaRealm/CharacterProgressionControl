@@ -2,6 +2,7 @@
 
 #include "Attributes.h"
 
+#include "Compat.h"
 #include "Patches.h"
 #include "Settings.h"
 #include "Signature.h"
@@ -68,6 +69,7 @@ namespace Attributes
 			case kMagicka: amount = settings::levelup::magickaPerLevel; cw = settings::levelup::carryWeightPerMagicka; break;
 			default:       amount = settings::levelup::staminaPerLevel; cw = settings::levelup::carryWeightPerStamina; break;
 			}
+			if (Compat::CarryWeightOwnedElsewhere()) { cw = 0.0F; }   // one of our carry-weight mods owns it
 			gain->data.i = static_cast<std::int32_t>(amount + 0.5F);
 			carry->data.f = cw;
 			logger::info("attribute level-up: choice {} -> +{} attribute, +{:.1f} carry weight (vanilla {} / {:.1f})",
