@@ -1,0 +1,240 @@
+#include "PCH.h"
+
+#include "SkillPoints.h"
+
+#include "Patches.h"
+#include "Settings.h"
+#include "SkillList.h"
+
+#include "utils/Logger.h"
+
+#include <algorithm>
+#include <atomic>
+#include <cmath>
+#include <format>
+#include <sstream>
+
+namespace SkillPoints
+{
+	namespace
+	{
+		constexpr const char* kMenuPath = "_root.LevelUpMenu_mc.";
+		constexpr const char* kEvent = "SSL_SkillsDistributionCompleted";   // the movie's own event name
+		constexpr std::uint32_t kRecordVersion = 1;
+
+		int g_bank = 0;
+		std::uint16_t g_lastGranted = 0;
+		std::atomic<bool> g_applying{ false };
+		std::string g_menuStatus = "no level-up menu has opened yet";
+		bool g_fed = false;   // the movie accepted the settings on the last open
+
+		float Threshold(int a_index)
+		{
+			auto* player = RE::PlayerCharacter::GetSingleton();
+			auto* skills = player ? player->GetPlayerRuntimeData().skills : nullptr;
+			if (!skills || !skills->data) { return 0.0F; }
+			return skills->data->skills[a_index].levelThreshold - skills->data->skills[a_index].xp;
+		}
+
+		// One skill level through the game's own improve path: the amount that lands exactly on the
+		// threshold, expressed in the units the path multiplies (the AVIF's use mult / offset).
+		bool IncreaseOnce(int a_index)
+		{
+			auto* player = RE::PlayerCharacter::GetSingleton();
+			if (!player) { return false; }
+			const auto av = static_cast<RE::ActorValue>(6 + a_index);
+			auto* avo = player->AsActorValueOwner();
+			const float before = avo ? avo->GetBaseActorValue(av) : 0.0F;
+			float remaining = Threshold(a_index);
+			if (remaining <= 0.0F) { remaining = 1.0F; }
+			float amount = remaining * 1.002F + 0.01F;
+			if (auto* list = RE::ActorValueList::GetSingleton())
+			{
+				if (auto* info = list->GetActorValue(av); info && info->skill && info->skill->useMult != 0.0F)
+				{
+					amount = (amount - info->skill->offsetMult) / info->skill->useMult;
+				}
+			}
+			if (amount <= 0.0F) { amount = 0.01F; }
+			player->AddSkillExperience(av, amount);
+			const float after = avo ? avo->GetBaseActorValue(av) : 0.0F;
+			if (after <= before)
+			{
+				// rounding left it a hair short: a nudge of one percent of the threshold finishes it
+				player->AddSkillExperience(av, std::max(0.01F, amount * 0.02F));
+			}
+			return avo ? avo->GetBaseActorValue(av) > before : true;
+		}
+
+		void FeedMenu()
+		{
+			g_fed = false;
+			auto* ui = RE::UI::GetSingleton();
+			auto menu = ui ? ui->GetMenu(RE::LevelUpMenu::MENU_NAME) : RE::GPtr<RE::IMenu>{};
+			auto* movie = (menu && menu->uiMovie) ? menu->uiMovie.get() : nullptr;
+			if (!movie) { g_menuStatus = "the level-up menu opened but its movie was not reachable"; logger::warn("skill points: {}", g_menuStatus); return; }
+			RE::GFxValue result;
+			// caps: this mod's own per-skill caps (what the Skills tab holds; 100 is vanilla)
+			RE::GFxValue caps[skilllist::kCount];
+			for (int i = 0; i < skilllist::kCount; ++i) { caps[i] = RE::GFxValue(static_cast<double>(settings::skills::cap[i])); }
+			if (!movie->Invoke((std::string(kMenuPath) + "setSkillCaps").c_str(), &result, caps, skilllist::kCount))
+			{
+				g_menuStatus = "the level-up menu is not the skill-point one (no setSkillCaps) - install this mod's Interface\\levelupmenu.swf, or one of Static Skill Leveling Rewritten's skins";
+				logger::warn("skill points: {}", g_menuStatus);
+				return;
+			}
+			RE::GFxValue cfg[7] = { RE::GFxValue(-1.0), RE::GFxValue(static_cast<double>(settings::staticlevel::maxIncreasesPerSkill)), RE::GFxValue(static_cast<double>(g_bank)),
+									RE::GFxValue(static_cast<double>(settings::staticlevel::cost[0])), RE::GFxValue(static_cast<double>(settings::staticlevel::cost[1])),
+									RE::GFxValue(static_cast<double>(settings::staticlevel::cost[2])), RE::GFxValue(static_cast<double>(settings::staticlevel::cost[3])) };
+			movie->Invoke((std::string(kMenuPath) + "setLevelingSettings").c_str(), &result, cfg, 7);
+			// the player: the movie extends a form by id (SKSE's Scaleform extension) to read the skills
+			RE::GFxValue form;
+			movie->CreateObject(&form);
+			form.SetMember("formId", RE::GFxValue(20.0));
+			movie->Invoke((std::string(kMenuPath) + "setPlayer").c_str(), &result, &form, 1);
+			g_fed = true;
+			g_menuStatus = std::format("level-up menu fed: {} points in the bank, up to {} per skill, costs {}/{}/{}/{}", g_bank,
+									   settings::staticlevel::maxIncreasesPerSkill, settings::staticlevel::cost[0], settings::staticlevel::cost[1],
+									   settings::staticlevel::cost[2], settings::staticlevel::cost[3]);
+			logger::info("skill points: {}", g_menuStatus);
+		}
+
+		class MenuSink : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
+		{
+		public:
+			RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override
+			{
+				if (!a_event || !a_event->opening || a_event->menuName != RE::LevelUpMenu::MENU_NAME) { return RE::BSEventNotifyControl::kContinue; }
+				if (!settings::staticlevel::pointsEnabled) { return RE::BSEventNotifyControl::kContinue; }
+				auto* player = RE::PlayerCharacter::GetSingleton();
+				if (!player) { return RE::BSEventNotifyControl::kContinue; }
+				const auto level = player->GetLevel();
+				if (level > g_lastGranted)
+				{
+					const int granted = PointsForLevel(level);
+					g_bank += granted;
+					if (settings::staticlevel::pointsCap > 0) { g_bank = std::min(g_bank, settings::staticlevel::pointsCap); }
+					g_lastGranted = level;
+					logger::info("skill points: level {} grants {} points; bank {}", level, granted, g_bank);
+				}
+				FeedMenu();
+				return RE::BSEventNotifyControl::kContinue;
+			}
+		};
+
+		class ModSink : public RE::BSTEventSink<SKSE::ModCallbackEvent>
+		{
+		public:
+			RE::BSEventNotifyControl ProcessEvent(const SKSE::ModCallbackEvent* a_event, RE::BSTEventSource<SKSE::ModCallbackEvent>*) override
+			{
+				if (!a_event || a_event->eventName != kEvent) { return RE::BSEventNotifyControl::kContinue; }
+				if (!settings::staticlevel::pointsEnabled) { return RE::BSEventNotifyControl::kContinue; }
+				const std::string diffs = a_event->strArg.c_str();
+				const int remaining = static_cast<int>(a_event->numArg);
+				if (auto* tasks = SKSE::GetTaskInterface())
+				{
+					tasks->AddTask([diffs, remaining]() { ApplyAllocation(diffs, remaining); });
+				}
+				return RE::BSEventNotifyControl::kContinue;
+			}
+		};
+
+		MenuSink g_menuSink;
+		ModSink g_modSink;
+
+		bool Install(std::string& a_reason)
+		{
+			if (!settings::staticlevel::pointsEnabled)
+			{
+				a_reason = "ready but off: Use skill points is off. Turn it on and restart, and install the level-up menu file, "
+						   "for skills to advance by points spent at level up.";
+				return false;
+			}
+			if (auto* ui = RE::UI::GetSingleton()) { ui->AddEventSink(&g_menuSink); }
+			if (auto* src = SKSE::GetModCallbackEventSource()) { src->AddEventSink(&g_modSink); }
+			logger::info("Skill points: listening for the level-up menu and its allocation event; ordinary skill experience is not banked while this is on");
+			a_reason = "on: each level up grants points spent in the level-up menu; ordinary skill experience is not banked. "
+					   "Whether the installed level-up menu is the skill-point one shows here after the first level up.";
+			return true;
+		}
+	}
+
+	bool Applying() { return g_applying.load(); }
+	int Bank() { return g_bank; }
+	std::uint16_t LastGrantedLevel() { return g_lastGranted; }
+	const std::string& MenuStatus() { return g_menuStatus; }
+
+	int PointsForLevel(std::uint16_t a_level)
+	{
+		const float raw = static_cast<float>(settings::staticlevel::pointsPerLevel) + settings::staticlevel::pointsLevelMult * static_cast<float>(a_level);
+		return std::max(0, static_cast<int>(std::floor(raw)));
+	}
+
+	void Grant(int a_points)
+	{
+		g_bank = std::max(0, g_bank + a_points);
+		logger::info("skill points: {} granted by the test tool; bank {}", a_points, g_bank);
+	}
+
+	bool ApplyAllocation(const std::string& a_diffs, int a_remaining)
+	{
+		std::vector<int> diffs;
+		std::stringstream ss(a_diffs);
+		std::string part;
+		while (std::getline(ss, part, ';')) { diffs.push_back(part.empty() ? 0 : std::atoi(part.c_str())); }
+		if (diffs.size() != skilllist::kCount)
+		{
+			logger::warn("skill points: allocation \"{}\" has {} entries, expected {}; nothing applied", a_diffs, diffs.size(), skilllist::kCount);
+			return false;
+		}
+		g_applying = true;
+		int applied = 0;
+		for (int i = 0; i < skilllist::kCount; ++i)
+		{
+			for (int n = 0; n < diffs[i]; ++n)
+			{
+				if (IncreaseOnce(i)) { ++applied; }
+				else { logger::warn("skill points: {} did not rise on increase {} of {}", skilllist::kIniName[i], n + 1, diffs[i]); }
+			}
+		}
+		g_applying = false;
+		g_bank = std::max(0, a_remaining);
+		logger::info("skill points: applied {} increase(s) from the level-up menu; {} point(s) left in the bank", applied, g_bank);
+		g_menuStatus = std::format("last level up: {} skill increase(s) applied, {} point(s) banked", applied, g_bank);
+		return true;
+	}
+
+	void OnSave(SKSE::SerializationInterface* a_intfc)
+	{
+		if (!a_intfc || !a_intfc->OpenRecord(kRecord, kRecordVersion)) { logger::error("skill points: could not open the co-save record; the bank was not written"); return; }
+		const std::int32_t bank = g_bank;
+		const std::uint16_t last = g_lastGranted;
+		a_intfc->WriteRecordData(&bank, sizeof(bank));
+		a_intfc->WriteRecordData(&last, sizeof(last));
+	}
+
+	void ReadRecord(SKSE::SerializationInterface* a_intfc, std::uint32_t a_version, std::uint32_t a_length)
+	{
+		(void)a_version; (void)a_length;
+		std::int32_t bank = 0; std::uint16_t last = 0;
+		if (!a_intfc->ReadRecordData(&bank, sizeof(bank)) || !a_intfc->ReadRecordData(&last, sizeof(last))) { logger::warn("skill points: short co-save record; bank left at 0"); return; }
+		g_bank = std::max(0, bank);
+		g_lastGranted = last;
+		logger::info("skill points: this character has {} point(s) banked; points last granted at level {}", g_bank, g_lastGranted);
+	}
+
+	void OnRevert()
+	{
+		g_bank = 0;
+		g_lastGranted = 0;
+		g_menuStatus = "no level-up menu has opened yet";
+	}
+
+	void Register()
+	{
+		Patches::Register(
+			"Skill points",
+			"Skills advance by points spent in the level-up menu instead of by use.",
+			Install);
+	}
+}

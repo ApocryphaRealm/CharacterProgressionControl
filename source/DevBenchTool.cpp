@@ -11,6 +11,7 @@
 #include "SkillList.h"
 #include "Skills.h"
 #include "Attributes.h"
+#include "SkillPoints.h"
 #include "Settings.h"
 #include "Signature.h"
 #include "utils/Logger.h"
@@ -169,6 +170,56 @@ namespace DevBenchTool
 					});
 				}
 				a_write(a_sink, std::format(R"({{"ok":true,"op":"msgbox","button":{},"queued":true}})", button).c_str());
+				return;
+			}
+			// "points":1 - the skill-point state; "grantpoints":<n> banks points; "allocate":"n0;..;n17" with
+			// "remaining":<n> applies an allocation exactly as the level-up menu's event would (testing).
+			if (args.find("\"points\"") != std::string_view::npos)
+			{
+				auto* player = RE::PlayerCharacter::GetSingleton();
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"points","enabled":{},"bank":{},"lastGrantedLevel":{},"nextGrant":{},"status":"{}"}})",
+					settings::staticlevel::pointsEnabled, SkillPoints::Bank(), SkillPoints::LastGrantedLevel(),
+					SkillPoints::PointsForLevel(static_cast<std::uint16_t>((player ? player->GetLevel() : 0) + 1)), EscapeJson(SkillPoints::MenuStatus())).c_str());
+				return;
+			}
+			if (args.find("\"grantpoints\":") != std::string_view::npos)
+			{
+				SkillPoints::Grant(static_cast<int>(ReadNumber(args, "\"grantpoints\":")));
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"grantpoints","bank":{}}})", SkillPoints::Bank()).c_str());
+				return;
+			}
+			if (const auto at = args.find("\"allocate\":\""); at != std::string_view::npos)
+			{
+				const auto start = at + 12;
+				const auto end = args.find('"', start);
+				const std::string diffs(args.substr(start, end == std::string_view::npos ? 0 : end - start));
+				const int remaining = static_cast<int>(ReadNumber(args, "\"remaining\":"));
+				if (auto* tasks = SKSE::GetTaskInterface()) { tasks->AddTask([diffs, remaining]() { SkillPoints::ApplyAllocation(diffs, remaining); }); }
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"allocate","diffs":"{}","remaining":{},"queued":true}})", diffs, remaining).c_str());
+				return;
+			}
+			// "swf":"<menu>|<path>" - invokes an ActionScript function on an open menu's movie, no arguments
+			// (testing): e.g. "LevelUp Menu|_root.LevelUpMenu_mc.onehanded.skillIncrease".
+			if (const auto at = args.find("\"swf\":\""); at != std::string_view::npos)
+			{
+				const auto start = at + 7;
+				const auto end = args.find('"', start);
+				const std::string spec(args.substr(start, end == std::string_view::npos ? 0 : end - start));
+				const auto bar = spec.find('|');
+				if (bar == std::string::npos) { a_write(a_sink, R"({"ok":false,"op":"swf","error":"need menu|path"})"); return; }
+				const std::string menuName = spec.substr(0, bar), path = spec.substr(bar + 1);
+				if (auto* tasks = SKSE::GetTaskInterface())
+				{
+					tasks->AddUITask([menuName, path]() {
+						auto* ui2 = RE::UI::GetSingleton();
+						auto m = ui2 ? ui2->GetMenu(menuName) : RE::GPtr<RE::IMenu>{};
+						if (!m || !m->uiMovie) { logger::warn("swf op: menu {} not open", menuName); return; }
+						RE::GFxValue result;
+						const bool ok = m->uiMovie->Invoke(path.c_str(), &result, nullptr, 0);
+						logger::info("swf op: {} on {} -> {}", path, menuName, ok);
+					});
+				}
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"swf","menu":"{}","path":"{}","queued":true}})", menuName, path).c_str());
 				return;
 			}
 			// "peek":<game offset>, "count":<n> - hex bytes of the game's code (testing).

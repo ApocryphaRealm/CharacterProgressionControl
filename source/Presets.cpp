@@ -1,6 +1,7 @@
 #include "PCH.h"
 
 #include "Presets.h"
+#include "SkillPoints.h"
 
 #include "Enchanting.h"
 #include "Levelling.h"
@@ -197,6 +198,7 @@ namespace Presets
 		std::uint32_t type = 0, version = 0, length = 0;
 		while (a_intfc->GetNextRecordInfo(type, version, length))
 		{
+			if (type == SkillPoints::kRecord) { SkillPoints::ReadRecord(a_intfc, version, length); continue; }
 			if (type != kRecord) { continue; }
 			std::uint32_t nameLength = 0;
 			if (!a_intfc->ReadRecordData(&nameLength, sizeof(nameLength))) { continue; }

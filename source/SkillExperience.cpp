@@ -5,6 +5,7 @@
 #include "Patches.h"
 #include "Settings.h"
 #include "Signature.h"
+#include "SkillPoints.h"
 #include "Skills.h"
 
 #include "utils/Logger.h"
@@ -59,7 +60,15 @@ namespace SkillExperience
 			if (a_skill >= 6 && a_skill <= 23)
 			{
 				const auto i = a_skill - 6;
-				if (settings::staticlevel::enabled && a_skills && a_skills->data)
+				if (SkillPoints::Applying())
+				{
+					// a point-bought increase: the amount is already exactly what lands the level
+				}
+				else if (settings::staticlevel::pointsEnabled)
+				{
+					a_exp = 0.0F;   // skills advance only by points spent at level up
+				}
+				else if (settings::staticlevel::enabled && a_skills && a_skills->data)
 				{
 					// Static: every use is the same SHARE of the current skill level, whatever the game
 					// computed for it - so the level-5 and level-50 rates are equal, and perk modifiers
@@ -166,9 +175,15 @@ namespace SkillExperience
 			const auto base = REL::Module::get().base();
 			if (!settings::staticlevel::enabled)
 			{
+				// Skill points ride the same hook (ordinary experience must not bank while they are on).
+				if (settings::staticlevel::pointsEnabled)
+				{
+					if (!AttachImprove(a_reason)) { return false; }
+					logger::info("Static levelling: the skill-improve hook is attached for skill points (ordinary skill experience is not banked)");
+				}
 				a_reason = std::format("verified at game offset 0x{:X} (the skill-improve function). Ready but not applied: "
-									   "Use static skill levelling is off. Turn it on and restart to apply it.",
-									   g_improveEntry - base);
+									   "Use static skill levelling is off. Turn it on and restart to apply it.{}",
+									   g_improveEntry - base, settings::staticlevel::pointsEnabled ? " (Skill points are on, so ordinary skill experience is not banked.)" : "");
 				return false;
 			}
 			if (!AttachImprove(a_reason)) { return false; }
@@ -267,5 +282,6 @@ namespace SkillExperience
 extern "C" float CPC_LevelExp_Hook(float a_value, std::uint32_t a_skillId)
 {
 	(void)a_skillId;
+	if (SkillPoints::Applying()) { return 0.0F; }   // a point-spent level pays nothing toward the character level
 	return settings::skillexp::overrideRates ? a_value * settings::skillexp::toLevelMult : a_value;
 }

@@ -81,6 +81,17 @@ namespace settings
 	{
 		inline bool enabled = false;                    // bStaticLevelling:StaticLevelling
 		inline float xpPerUse[skilllist::kCount]{};     // fPerUse<Skill>:StaticLevelling
+
+		// The skill-point half: skills advance only by points spent in the level-up menu (Static
+		// Skill Leveling Rewritten's idea, reproduced here; the menu is its levelupmenu.swf or one of
+		// ours). Points per level = per-level + multiplier x level, banked when unspent. Cost tiers by
+		// the skill's current level: below 25, 25-49, 50-74, 75 and up.
+		inline bool pointsEnabled = false;             // bSkillPoints:StaticLevelling
+		inline int pointsPerLevel = 15;                 // iSkillPointsPerLevel:StaticLevelling
+		inline float pointsLevelMult = 2.0F;            // fSkillPointsLevelMult:StaticLevelling
+		inline int pointsCap = 0;                       // iSkillPointsCap:StaticLevelling (0 = no cap)
+		inline int maxIncreasesPerSkill = 5;            // iSkillIncreasesPerLevel:StaticLevelling
+		inline int cost[4] = { 3, 5, 7, 9 };            // iSkillCost0/25/50/75:StaticLevelling
 	}
 
 	namespace enchanting

@@ -16,6 +16,8 @@
 #include "Presets.h"
 #include "Settings.h"
 #include "SkillExperience.h"
+#include "MenuStrings.h"
+#include "SkillPoints.h"
 #include "Skills.h"
 #include "UI.h"
 
@@ -42,6 +44,8 @@ namespace
 			SkillExperience::Register();
 			LevelUp::Register();
 			Attributes::Register();
+			SkillPoints::Register();
+			MenuStrings::Install();
 			Patches::InstallAll();
 			UI::Register();
 			DevBenchTool::Init(true);
@@ -59,9 +63,9 @@ namespace
 		}
 	}
 
-	void SaveCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnSave(a_intfc); }
+	void SaveCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnSave(a_intfc); SkillPoints::OnSave(a_intfc); }
 	void LoadCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnLoad(a_intfc); }
-	void RevertCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnRevert(a_intfc); }
+	void RevertCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnRevert(a_intfc); SkillPoints::OnRevert(); }
 }
 
 SKSEPluginLoad(const SKSE::LoadInterface* a_skse)

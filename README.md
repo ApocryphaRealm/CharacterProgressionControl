@@ -1,13 +1,13 @@
 # Character Progression Control
 
-Version 1.0.3
+Version 1.0.4
 
 One page for how a character grows: what a level costs, where experience comes from, skill caps
 and rates, and what a level up grants. SKSE plugin, C++ with CommonLibSSE-NG, MIT, written from
 scratch. Skyrim Special Edition.
 
-**Version 1.0.3 - stages 1 to 8 of nine, every engine patch verified in game on Skyrim SE 1.5.97
-(2026-09-05).** The plan is at `4. plans\character-progression-control`. Stage 9 (alternative
+**Version 1.0.4 - stages 1 to 8 of nine, every engine patch verified in game on Skyrim SE 1.5.97
+(2026-09-05), and the skill-point half of static levelling added.** The plan is at `4. plans\character-progression-control`. Stage 9 (alternative
 experience sources) is a separate decision and is not started.
 
 What each patch group does, and how it was proven, is on the Patches tab in game and in the
@@ -16,6 +16,18 @@ experience rates and skill-to-level income (Skills tab), the perk table and attr
 their carry-weight cross terms (Level Up tab), and static levelling (its own tab) are all live.
 Every site is found by its byte shape in the running game, matched exactly once, proven by what
 it loads or compares before a byte is written, and with its setting off nothing is written at all.
+
+**Skill points (1.0.4).** With *Use skill points* on, skills advance only by points spent in the
+level-up menu: each level grants `points per level + multiplier x level` points, banked when
+unspent and kept in the co-save; the menu shows every skill with + and -, the four cost tiers
+(below 25, 25-49, 50-74, 75 and up) and a cap on increases per skill per level up; the choice is
+applied when the attribute is picked, through the game's own skill-improve path so the usual
+"skill increased" notice fires. Ordinary skill experience is not banked while it is on, and a
+point-spent level pays nothing toward the character level. The menu is Static Skill Leveling
+Rewritten's vanilla-look `Interface\levelupmenu.swf`, shipped with its authors' permission (see
+`dist\Interface\levelupmenu-CREDIT.txt`); its other skins fit the same contract. The DLL does what
+that mod's Papyrus did: it feeds the movie the caps, the settings and the player's skills when the
+menu opens and listens for the allocation the movie sends back.
 
 Finding that address is worth explaining, because it governs all future hook work here. The
 retail `SkyrimSE.exe` is **Steam-packed**: it carries a `.bind` section, its entry point sits

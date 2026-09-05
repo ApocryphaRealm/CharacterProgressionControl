@@ -40,6 +40,7 @@ namespace settings
 			std::vector<levelup::PerkRow> perksByLevel;
 			bool staticEnabled;
 			float perUse[skilllist::kCount];
+			bool pointsEnabled; int pointsPerLevel; float pointsLevelMult; int pointsCap; int maxIncreases; int cost[4];
 		} defaults{};
 
 		// Vanilla Skyrim stops every skill at 100, and that is what "default" means here.
@@ -166,6 +167,16 @@ namespace settings
 			get("fcarryweightperstamina:levelup", levelup::carryWeightPerStamina, ParseFloat);
 
 			get("bstaticlevelling:staticlevelling", staticlevel::enabled, ParseBool);
+			get("bskillpoints:staticlevelling", staticlevel::pointsEnabled, ParseBool);
+			{
+				float f;
+				f = static_cast<float>(staticlevel::pointsPerLevel); get("iskillpointsperlevel:staticlevelling", f, ParseFloat); staticlevel::pointsPerLevel = static_cast<int>(f);
+				get("fskillpointslevelmult:staticlevelling", staticlevel::pointsLevelMult, ParseFloat);
+				f = static_cast<float>(staticlevel::pointsCap); get("iskillpointscap:staticlevelling", f, ParseFloat); staticlevel::pointsCap = static_cast<int>(f);
+				f = static_cast<float>(staticlevel::maxIncreasesPerSkill); get("iskillincreasesperlevel:staticlevelling", f, ParseFloat); staticlevel::maxIncreasesPerSkill = static_cast<int>(f);
+				const char* costKeys[4] = { "iskillcost0:staticlevelling", "iskillcost25:staticlevelling", "iskillcost50:staticlevelling", "iskillcost75:staticlevelling" };
+				for (int i = 0; i < 4; ++i) { f = static_cast<float>(staticlevel::cost[i]); get(costKeys[i], f, ParseFloat); staticlevel::cost[i] = static_cast<int>(f); }
+			}
 			for (int i = 0; i < skilllist::kCount; ++i)
 			{
 				get((Lower(SkillKey("fPerUse", i)) + ":staticlevelling").c_str(), staticlevel::xpPerUse[i], ParseFloat);
@@ -269,6 +280,10 @@ namespace settings
 		defaults.lvl[5] = levelup::carryWeightPerMagicka;
 		defaults.lvl[6] = levelup::carryWeightPerStamina;
 		defaults.staticEnabled = staticlevel::enabled;
+		defaults.pointsEnabled = staticlevel::pointsEnabled; defaults.pointsPerLevel = staticlevel::pointsPerLevel;
+		defaults.pointsLevelMult = staticlevel::pointsLevelMult; defaults.pointsCap = staticlevel::pointsCap;
+		defaults.maxIncreases = staticlevel::maxIncreasesPerSkill;
+		for (int i = 0; i < 4; ++i) { defaults.cost[i] = staticlevel::cost[i]; }
 		for (int i = 0; i < skilllist::kCount; ++i)
 		{
 			defaults.skillMult[i] = skillexp::mult[i];
@@ -347,6 +362,15 @@ namespace settings
 		ok &= WriteKey(lines, "LevelUp", "fCarryWeightPerStamina", FormatFloat(levelup::carryWeightPerStamina));
 
 		ok &= WriteKey(lines, "StaticLevelling", "bStaticLevelling", staticlevel::enabled ? "1" : "0");
+		ok &= WriteKey(lines, "StaticLevelling", "bSkillPoints", staticlevel::pointsEnabled ? "1" : "0");
+		ok &= WriteKey(lines, "StaticLevelling", "iSkillPointsPerLevel", std::to_string(staticlevel::pointsPerLevel));
+		ok &= WriteKey(lines, "StaticLevelling", "fSkillPointsLevelMult", FormatFloat(staticlevel::pointsLevelMult));
+		ok &= WriteKey(lines, "StaticLevelling", "iSkillPointsCap", std::to_string(staticlevel::pointsCap));
+		ok &= WriteKey(lines, "StaticLevelling", "iSkillIncreasesPerLevel", std::to_string(staticlevel::maxIncreasesPerSkill));
+		ok &= WriteKey(lines, "StaticLevelling", "iSkillCost0", std::to_string(staticlevel::cost[0]));
+		ok &= WriteKey(lines, "StaticLevelling", "iSkillCost25", std::to_string(staticlevel::cost[1]));
+		ok &= WriteKey(lines, "StaticLevelling", "iSkillCost50", std::to_string(staticlevel::cost[2]));
+		ok &= WriteKey(lines, "StaticLevelling", "iSkillCost75", std::to_string(staticlevel::cost[3]));
 		for (int i = 0; i < skilllist::kCount; ++i)
 		{
 			ok &= WriteKey(lines, "StaticLevelling", SkillKey("fPerUse", i).c_str(), FormatFloat(staticlevel::xpPerUse[i]));
@@ -395,6 +419,10 @@ namespace settings
 		levelup::carryWeightPerMagicka = defaults.lvl[5];
 		levelup::carryWeightPerStamina = defaults.lvl[6];
 		staticlevel::enabled = defaults.staticEnabled;
+		staticlevel::pointsEnabled = defaults.pointsEnabled; staticlevel::pointsPerLevel = defaults.pointsPerLevel;
+		staticlevel::pointsLevelMult = defaults.pointsLevelMult; staticlevel::pointsCap = defaults.pointsCap;
+		staticlevel::maxIncreasesPerSkill = defaults.maxIncreases;
+		for (int i = 0; i < 4; ++i) { staticlevel::cost[i] = defaults.cost[i]; }
 		for (int i = 0; i < skilllist::kCount; ++i)
 		{
 			skillexp::mult[i] = defaults.skillMult[i];

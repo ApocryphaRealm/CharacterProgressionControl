@@ -11,6 +11,15 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
+## 1.0.4 - 2026-09-05 - untested
+
+### Added
+- The cpc.control tool gained points, grantpoints, allocate and swf ops for headless testing of the level-up menu.
+- Skill points: with Use skill points on, skills advance only by points spent in the level-up menu - each level grants points per level plus a multiplier times the level, banked when unspent, with cost tiers by skill level and a cap on increases per skill; the DLL feeds the menu and applies the allocation through the game's own skill-improve path, and the bank lives in the co-save. Ships Static Skill Leveling Rewritten's vanilla-look levelupmenu.swf with its authors' permission; its other skins fit the same contract.
+
+### Fixed
+- The shipped INI's perk-table key and the formula-cap note were stale; the INI now documents sPerksByLevel and says the formula cap is active.
+
 ## 1.0.3 - 2026-09-05 - working
 
 ### Added

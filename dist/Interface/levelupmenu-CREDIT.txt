@@ -1,0 +1,10 @@
+Interface\levelupmenu.swf - the skill-point level-up menu
+
+This file is Static Skill Leveling Rewritten's vanilla-look level-up menu (Nexus 89940, version 1.8,
+by RookMeister, noyou and Kredje), included with its authors' permission: the mod's permissions grant
+modification and asset use without asking, and its FAQ says "do what you want with sources". It is
+unchanged. Character Progression Control drives it from its DLL instead of Papyrus: the DLL feeds it
+the caps, the settings and the player's skills when it opens, and applies the allocation it sends back.
+
+If you use a UI replacer, Static Skill Leveling Rewritten's other skins of this same menu (Nordic,
+Untarnished, Dear Diary) fit the same contract - install one of them over this file.

@@ -12,6 +12,7 @@
 #include "SkillList.h"
 #include "Skills.h"
 #include "Settings.h"
+#include "SkillPoints.h"
 
 #include "utils/Logger.h"
 #include "utils/Toggle.h"
@@ -474,6 +475,32 @@ namespace UI
 				NudgeableSlider(skilllist::kDisplayName[i], &staticlevel::xpPerUse[i], 0.0F, 100.0F, "%.2f", 0.25F);
 				ImGuiMCP::PopID();
 			}
+		}
+
+		ImGuiMCP::Spacing();
+		ImGuiMCP::SeparatorText("Skill points");
+		ImGuiMCP::TextWrapped("Skills advance only by points spent in the level-up menu: each level grants points, the menu "
+							  "shows every skill with + and -, and the choice applies when you pick your attribute. Needs the "
+							  "skill-point level-up menu file (this mod ships one; Static Skill Leveling Rewritten's skins fit too).");
+		bool pts = staticlevel::pointsEnabled;
+		if (ImGuiMCP::Toggle("Use skill points", &pts)) { staticlevel::pointsEnabled = pts; }
+		HelpMarker("Off by default. While on, ordinary skill experience is not banked - use only counts through points - and a "
+				   "point-spent level pays nothing toward the character level. Takes effect after a restart.");
+		if (staticlevel::pointsEnabled)
+		{
+			if (ImGuiMCP::InputInt("Points per level", &staticlevel::pointsPerLevel)) { staticlevel::pointsPerLevel = std::clamp(staticlevel::pointsPerLevel, 0, 500); }
+			NudgeableSlider("Plus, per character level", &staticlevel::pointsLevelMult, -10.0F, 20.0F, "%.1f", 0.5F);
+			HelpMarker("Points granted at a level = points per level + this x the level, whole numbers. Negative slows the curve.");
+			if (ImGuiMCP::InputInt("Bank cap (0 = none)", &staticlevel::pointsCap)) { staticlevel::pointsCap = std::clamp(staticlevel::pointsCap, 0, 100000); }
+			if (ImGuiMCP::InputInt("Most increases per skill, per level up", &staticlevel::maxIncreasesPerSkill)) { staticlevel::maxIncreasesPerSkill = std::clamp(staticlevel::maxIncreasesPerSkill, 1, 100); }
+			ImGuiMCP::TextWrapped("Cost of one skill level, by the skill's current level:");
+			const char* tiers[4] = { "Below 25", "25 to 49", "50 to 74", "75 and up" };
+			for (int i = 0; i < 4; ++i) { if (ImGuiMCP::InputInt(tiers[i], &staticlevel::cost[i])) { staticlevel::cost[i] = std::clamp(staticlevel::cost[i], 1, 1000); } }
+			if (auto* player = RE::PlayerCharacter::GetSingleton())
+			{
+				ImGuiMCP::Text("This character: %d point(s) banked; the next level grants %d.", SkillPoints::Bank(), SkillPoints::PointsForLevel(static_cast<std::uint16_t>(player->GetLevel() + 1)));
+			}
+			ImGuiMCP::TextWrapped("%s", SkillPoints::MenuStatus().c_str());
 		}
 
 		ImGuiMCP::PopItemWidth();
