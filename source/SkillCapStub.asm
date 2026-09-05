@@ -2,40 +2,88 @@
 ;
 ; WHY THIS IS ASSEMBLY AND NOT A BYTE ARRAY:
 ; the patch site is not a call we can redirect - it is a 9-byte instruction that loads the
-; constant 100.0 into XMM8, and replacing it means jumping to code of our own that puts a
-; different number there and jumps back. That code has to obey a register contract exactly. Hand
+; constant 100.0 into a register, and replacing it means calling code of our own that puts a
+; different number there and returns. That code has to obey a register contract exactly. Hand
 ; encoding it as a blob of hex would be untestable and unreviewable; written here, the assembler
 ; validates every instruction at build time and the contract is readable.
 ;
-; THE CONTRACT AT THE PATCH SITE (Skyrim SE 1.5.97), which is what makes this correct:
-;   RSI   holds the skill's ActorValue id (6 = One-handed ... 23 = Enchanting)
-;   XMM0  holds the skill's CURRENT level and must survive untouched - the code after the
-;         patch site compares XMM0 against the cap, so clobbering it breaks the comparison
-;   XMM8  is where the maximum must end up
-; So: move the id into the first integer argument, preserve XMM0 across the call, take our
-; float result out of XMM0, put it in XMM8, restore XMM0, and jump back.
+; THE CONTRACT AT THE PATCH SITE (Skyrim SE 1.5.97, Address Library 41561 + 0x76), read from
+; the working reference - Kasplat's Skyrim Skill Uncapper, whose Nexus permissions allow it:
+;   ESI    holds the skill's ActorValue id (6 = One-handed ... 23 = Enchanting)
+;   XMM0   holds the skill's CURRENT level and must survive untouched - the instruction right
+;          after the site is `comiss xmm0, xmm10`
+;   the maximum goes into XMM8 on Skyrim SE 1.5.97 (Kassent's 2017 site: `comiss xmm6, xmm8`)
+;          and into XMM10 on the AE shape (Kasplat's listing: `comiss xmm0, xmm10`) - one stub per
+;          shape below, chosen at install time from which shape the scan actually found
+; The site is reached by a 5-byte CALL; the 4 bytes after it are NOPs, so a plain RET resumes
+; the game at the instruction after the original 9-byte load.
 ;
-; The shadow space matters. The x64 calling convention requires 32 bytes of shadow space for the
-; callee, so RSP drops by 0x30: 0x20 of shadow plus room to park XMM0 at [RSP+0x28].
+; This stub inserts a CALL into the MIDDLE of a game function, so it preserves every volatile
+; register the compiled callee may clobber (RAX, RCX, RDX, R8-R11, XMM0-XMM5) and aligns the
+; stack to 16 bytes before calling, as the x64 convention requires. XMM6-XMM15 are callee-saved,
+; so the callee preserves them itself; XMM10 is set deliberately, after the call.
 ;
-; Technique credited to the Skyrim Skill Uncapper lineage (Kassent, Vadfromnu, Elys, Kasplat) -
-; the register contract was read from their published SE source, which their Nexus permissions
-; allow. No code is copied: this is our own stub, our own settings and our own scan.
+; Technique credited to the Skyrim Skill Uncapper lineage (Kassent, Vadfromnu, Elys, Kasplat).
+; No code is copied: this is our own stub, our own settings and our own location check.
 
 EXTERN CPC_GetSkillCap:PROC          ; float CPC_GetSkillCap(unsigned int skillId)
-EXTERN CPC_SkillCapReturn:QWORD      ; filled in at install time - where to resume
 
 .code
 
-CPC_SkillCapStub PROC
-    mov     rcx, rsi                        ; skill id -> first integer argument
-    sub     rsp, 30h                        ; 20h shadow space + room for the saved XMM0
-    movss   dword ptr [rsp + 28h], xmm0     ; preserve the current skill level
+CAP_STUB MACRO name, capreg
+name PROC
+    ; --- preserve every volatile general-purpose register the game may still need ---
+    push    rax
+    push    rcx
+    push    rdx
+    push    r8
+    push    r9
+    push    r10
+    push    r11
+    push    rbx                             ; non-volatile: holds the pre-alignment RSP for us
+    mov     rbx, rsp
+
+    ; --- 16-byte-aligned save area for XMM0..XMM5 (6 x 16 bytes), then the call ---
+    sub     rsp, 60h
+    and     rsp, -16
+    movaps  xmmword ptr [rsp + 00h], xmm0
+    movaps  xmmword ptr [rsp + 10h], xmm1
+    movaps  xmmword ptr [rsp + 20h], xmm2
+    movaps  xmmword ptr [rsp + 30h], xmm3
+    movaps  xmmword ptr [rsp + 40h], xmm4
+    movaps  xmmword ptr [rsp + 50h], xmm5
+
+    mov     ecx, esi                        ; skill id -> first integer argument
+    sub     rsp, 20h                        ; shadow space; RSP stays 16-byte aligned
     call    CPC_GetSkillCap                 ; returns the cap in XMM0
-    movss   xmm8, xmm0                      ; the cap belongs in XMM8
-    movss   xmm0, dword ptr [rsp + 28h]     ; restore the current skill level
-    add     rsp, 30h
-    jmp     qword ptr [CPC_SkillCapReturn]  ; back to the instruction after the patch
-CPC_SkillCapStub ENDP
+    add     rsp, 20h
+    movss   capreg, xmm0                    ; the maximum belongs in the register this shape uses
+
+    ; --- restore XMM0..XMM5 (XMM0 = the current level, which the compare needs intact) ---
+    movaps  xmm0, xmmword ptr [rsp + 00h]
+    movaps  xmm1, xmmword ptr [rsp + 10h]
+    movaps  xmm2, xmmword ptr [rsp + 20h]
+    movaps  xmm3, xmmword ptr [rsp + 30h]
+    movaps  xmm4, xmmword ptr [rsp + 40h]
+    movaps  xmm5, xmmword ptr [rsp + 50h]
+    mov     rsp, rbx
+    pop     rbx
+
+    ; --- restore the general-purpose registers in reverse order and resume ---
+    pop     r11
+    pop     r10
+    pop     r9
+    pop     r8
+    pop     rdx
+    pop     rcx
+    pop     rax
+    ret                                     ; back to the NOPs after the call, then the game
+name ENDP
+ENDM
+
+; SE 1.5.97 shape: the cap is loaded straight into xmm8 (Kassent's 2017 site).
+CAP_STUB CPC_SkillCapStubXmm8, xmm8
+; AE shape: the level is copied to xmm8 and the cap loaded into xmm10 (Kasplat's listing).
+CAP_STUB CPC_SkillCapStubXmm10, xmm10
 
 END

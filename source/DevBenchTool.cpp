@@ -112,16 +112,49 @@ namespace DevBenchTool
 				}
 			}
 
+			// op=advance, "xp":<n>, "skill":<0..17> (0 = One-handed) - feed REAL skill experience through
+			// the game's own AddSkillExperience, the exact path the skill-cap patch sits on. The game
+			// levels the skill up repeatedly until it meets the cap, so one large amount is a clean test:
+			// it stops at 100 with the patch off and passes it with the patch on. Testing only - it is
+			// how the cap patch is watched working without a keyboard. Game-thread work, so queued.
+			if (args.find("\"advance\"") != std::string_view::npos)
+			{
+				const float xp = ReadNumber(args, "\"xp\":");
+				const int idx = static_cast<int>(ReadNumber(args, "\"skill\":"));
+				if (xp <= 0.0F || idx < 0 || idx >= skilllist::kCount)
+				{
+					a_write(a_sink, R"({"ok":false,"op":"advance","error":"need \"xp\":<n> above 0 and \"skill\":<0..17>"})");
+					return;
+				}
+				const auto av = static_cast<RE::ActorValue>(6 + idx);   // skill ids run 6..23, matching CPC_GetSkillCap
+				if (auto* tasks = SKSE::GetTaskInterface())
+				{
+					tasks->AddTask([av, xp]() {
+						if (auto* player = RE::PlayerCharacter::GetSingleton()) { player->AddSkillExperience(av, xp); }
+					});
+				}
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"advance","skill":"{}","xp":{:.1f},"queued":true}})",
+											skilllist::kIniName[idx], xp).c_str());
+				return;
+			}
+
 			if (args.find("\"skills\"") != std::string_view::npos)
 			{
 				const auto sk = Skills::GetState();
+				// The ActorValue is what the cap check actually reads (the site calls GetBaseActorValue);
+				// PlayerSkills' own `level` field lags it (measured 2026-09-05), so report both.
+				auto* player = RE::PlayerCharacter::GetSingleton();
+				auto* avo = player ? player->AsActorValueOwner() : nullptr;
 				std::string rows;
 				for (int i = 0; i < skilllist::kCount; ++i)
 				{
+					const auto av = static_cast<RE::ActorValue>(6 + i);
+					const float base = avo ? avo->GetBaseActorValue(av) : 0.0F;
+					const float current = avo ? avo->GetActorValue(av) : 0.0F;
 					if (i) { rows += ","; }
 					rows += std::format(
-						R"({{"skill":"{}","level":{:.1f},"xp":{:.1f},"threshold":{:.1f},"cap":{:.1f},"formulaCap":{:.1f}}})",
-						skilllist::kIniName[i], sk.skill[i].level, sk.skill[i].xp, sk.skill[i].levelThreshold,
+						R"({{"skill":"{}","base":{:.1f},"current":{:.1f},"level":{:.1f},"xp":{:.1f},"threshold":{:.1f},"cap":{:.1f},"formulaCap":{:.1f}}})",
+						skilllist::kIniName[i], base, current, sk.skill[i].level, sk.skill[i].xp, sk.skill[i].levelThreshold,
 						settings::skills::cap[i], settings::skills::formulaCap[i]);
 				}
 				a_write(a_sink, std::format(

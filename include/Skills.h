@@ -12,12 +12,15 @@
 // Levelling tab: the cost this mod computes can be compared against the threshold the game is
 // actually holding.
 //
-// The half that is NOT real yet: raising the caps. Letting a skill advance past 100, and
-// separately controlling the value the game's own formulas use, both need engine hooks, and an
-// engine hook needs a verified Address Library ID. Inventing one crashes somebody's game, so the
-// cap patch is registered as a patch group whose installer reports honestly that it is not
-// implemented. The settings below are stored and shown, and they do nothing until that group
-// installs - which the Patches tab states plainly rather than implying otherwise.
+// The half that is real as of 1.0.1: the ADVANCE cap. The game's skill-advance routine loads the
+// constant 100.0 at one site and compares the skill against it; Skills.cpp finds that site by its
+// byte shape (matched exactly once), proves it by the register it loads and the 100.0 constant,
+// and only then redirects the load to CPC_GetSkillCap through a trampoline call. Watched working
+// in game 2026-09-05 on SE 1.5.97: a cap of 60 stopped One-handed at exactly 60 through six real
+// increments. Opt-in: with Control skill caps off not a byte is written.
+//
+// Still NOT real: the FORMULA cap - the value the game's own calculations read for a skill - is a
+// separate site and is not patched; the Patches tab and the group's status say so plainly.
 
 #include "SkillList.h"
 

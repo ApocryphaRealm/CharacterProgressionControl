@@ -63,6 +63,10 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 	SKSE::Init(a_skse);
 	SKSE::log::init("CharacterProgressionControl");
 
+	// Trampoline space for the engine patches installed at kDataLoaded. One write_branch<5>
+	// needs 14 bytes; 64 leaves room for the patch groups still to come.
+	SKSE::AllocTrampoline(64);
+
 	settings::Init("CharacterProgressionControl.ini");
 	settings::ApplyLogLevel();
 

@@ -4,16 +4,17 @@ One page for how a character grows: what a level costs, where experience comes f
 and rates, and what a level up grants. SKSE plugin, C++ with CommonLibSSE-NG, MIT, written from
 scratch. Skyrim Special Edition.
 
-**Version 1.0.0 - stages 1, 2, 7 and 8 of nine, verified in game 2026-09-03.** The plan is at
+**Version 1.0.1 - stages 1, 2, 7 and 8 of nine; the skill cap patch verified in game 2026-09-05.** The plan is at
 `4. plans\character-progression-control`. The stages are out of order on purpose: everything that
 needs no engine hook is built first, so the mod is useful and safe long before the risky part.
 
-Stage 2 is deliberately partial, and the mod says so out loud rather than implying otherwise: the
-Skills tab and its settings are real, the skill *cap patch* is not. The **address is now verified**
-- the signature resolves to exactly one place in the running game (RVA `0x6E6201` on 1.5.97) - but
-locating the site is not the same as proving that a branch written over it behaves, and that needs
-testing in game before it is safe to ship. So the patch group reports the address it found and
-writes nothing, and skills cap at 100 exactly as in vanilla until it does.
+Stage 2's skill *cap patch* is now real (1.0.1): with **Control skill caps** on, each skill stops
+advancing at the cap set on the Skills tab. The site is found by its byte shape in the running game
+(matched exactly once, at game offset `0x6E6218` on 1.5.97) and then proven before a byte is written
+- the register it loads and the constant it loads (exactly 100.0) both have to check out - and it was
+watched working in game: a cap of 60 stopped One-handed at exactly 60 through six real increments.
+With the setting off nothing is written. What is still not real is the *formula cap* - the value the
+game's own calculations read for a skill - which is a separate site; the Patches tab says so.
 
 Finding that address is worth explaining, because it governs all future hook work here. The
 retail `SkyrimSE.exe` is **Steam-packed**: it carries a `.bind` section, its entry point sits
