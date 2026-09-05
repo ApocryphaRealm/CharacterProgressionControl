@@ -2,6 +2,11 @@
 
 Version 1.0.6
 
+What changed in 1.0.6: a respec of the skill points - any mod can send the SKSE mod event
+CPC_RefundSkillPoints (Potion of Clarity does) and every skill above its starting value goes back to
+it, its experience clears, and the points this mod's cost tiers charged for the levels above come
+back to the bank; a point-bought skill level now pays nothing toward the character level.
+
 One page for how a character grows: what a level costs, where experience comes from, skill caps
 and rates, and what a level up grants. SKSE plugin, C++ with CommonLibSSE-NG, MIT, written from
 scratch. Skyrim Special Edition.
