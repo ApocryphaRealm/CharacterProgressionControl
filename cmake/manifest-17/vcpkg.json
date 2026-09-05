@@ -1,6 +1,6 @@
 {
   "name": "characterprogressioncontrol-17",
-  "version-string": "1.0.5",
+  "version-string": "1.0.6",
   "description": "Character Progression Control - one page for how a character grows. [Skyrim 1.7.x build line: CommonLibSSE-NG 7.2.0, cmake/ports-17]",
   "homepage": "https://github.com/ApocryphaRealm/CharacterProgressionControl",
   "license": "MIT",

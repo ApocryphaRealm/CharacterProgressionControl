@@ -36,6 +36,12 @@ namespace SkillPoints
 	int PointsForLevel(std::uint16_t a_level);
 	const std::string& MenuStatus();   // what the last level-up menu did
 
+	// A respec: every skill above its starting value goes back to it, its experience clears, and the
+	// points this mod's cost tiers charged for the levels above come back to the bank. Any mod can ask
+	// for it by sending the SKSE mod event "CPC_RefundSkillPoints" (Potion of Clarity does); no-op
+	// while skill points are off. Returns the points refunded. Main thread only.
+	int RefundAll();
+
 	// Testing: bank points; apply an allocation as the menu would ("n0;n1;...;n17", remaining).
 	void Grant(int a_points);
 	bool ApplyAllocation(const std::string& a_diffs, int a_remaining);

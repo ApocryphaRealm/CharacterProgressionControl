@@ -11,6 +11,11 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
+## 1.0.6 - 2026-09-05 - untested
+
+### Added
+- A respec of the skill points: any mod can send the SKSE mod event CPC_RefundSkillPoints (Potion of Clarity does) and every skill above its starting value goes back to it, its experience clears, and the points this mod's cost tiers charged for the levels above come back to the bank; the cpc.control tool gained a refund op.
+
 ## 1.0.5 - 2026-09-05 - working
 
 ### Added

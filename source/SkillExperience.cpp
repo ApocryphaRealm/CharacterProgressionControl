@@ -250,17 +250,25 @@ namespace SkillExperience
 									   "skill-improve function, found {}; nothing was written", fnEntry - base, calls);
 				return false;
 			}
-			if (!settings::skillexp::overrideRates)
+			if (!settings::skillexp::overrideRates && !settings::staticlevel::pointsEnabled)
 			{
 				a_reason = std::format("verified: the level-experience call at game offset 0x{:X} (function at 0x{:X}). Ready but not "
 									   "attached: Control skill experience rates is off. Turn it on and restart to attach it.",
 									   callSite - base, fnEntry - base);
 				return false;
 			}
+			// Skill points ride this hook too: a point-bought skill level must pay nothing toward the character
+			// level, and the hook is where that is decided (it passes vanilla through when rates are off).
 			CPC_LevelExpOriginal = fnEntry;
 			SKSE::GetTrampoline().write_call<5>(callSite, reinterpret_cast<std::uintptr_t>(&CPC_LevelExpCallStub));
 			logger::info("Skill-to-level income: the level-experience call at game offset 0x{:X} now goes through this mod "
 						 "(function at 0x{:X}); a skill increase pays fSkillToLevelMult times vanilla", callSite - base, fnEntry - base);
+			if (!settings::skillexp::overrideRates)
+			{
+				a_reason = std::format("attached at game offset 0x{:X} for skill points only: a point-bought skill level pays nothing toward "
+									   "the character level; ordinary increases pay vanilla (Control skill experience rates is off).", callSite - base);
+				return true;
+			}
 			a_reason = std::format("attached at game offset 0x{:X}: a skill increase pays vanilla times the Skill increase -> "
 								   "level multiplier.", callSite - base);
 			return true;

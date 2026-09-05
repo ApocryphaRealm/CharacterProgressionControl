@@ -21,6 +21,8 @@ namespace SkillPoints
 	{
 		constexpr const char* kMenuPath = "_root.LevelUpMenu_mc.";
 		constexpr const char* kEvent = "SSL_SkillsDistributionCompleted";   // the movie's own event name
+		constexpr const char* kRefundEvent = "CPC_RefundSkillPoints";        // what a respec mod sends us
+		constexpr int kSkillBase = 15;
 		constexpr std::uint32_t kRecordVersion = 1;
 
 		int g_bank = 0;
@@ -128,11 +130,37 @@ namespace SkillPoints
 			}
 		};
 
+		// A skill's untrained value, the same two readings Potion of Clarity takes: the player's own NPC
+		// record and 15 plus the race's boost; the higher is right in every observed case.
+		int StartingLevel(RE::PlayerCharacter* a_player, RE::ActorValue a_skill)
+		{
+			int fromRecord = kSkillBase;
+			const std::uint32_t index = static_cast<std::uint32_t>(a_skill) - 6;
+			if (auto* npc = a_player->GetActorBase(); npc && index < RE::TESNPC::Skills::kTotal) { fromRecord = static_cast<int>(npc->playerSkills.values[index]); }
+			int fromRace = kSkillBase;
+			if (auto* race = a_player->GetRace())
+			{
+				for (const auto& boost : race->data.skillBoosts) { if (boost.skill.get() == a_skill) { fromRace += static_cast<int>(boost.bonus); } }
+			}
+			return std::max(fromRecord, fromRace);
+		}
+
+		int CostForLevel(int a_level)
+		{
+			const int tier = a_level < 25 ? 0 : a_level < 50 ? 1 : a_level < 75 ? 2 : 3;
+			return settings::staticlevel::cost[tier];
+		}
+
 		class ModSink : public RE::BSTEventSink<SKSE::ModCallbackEvent>
 		{
 		public:
 			RE::BSEventNotifyControl ProcessEvent(const SKSE::ModCallbackEvent* a_event, RE::BSTEventSource<SKSE::ModCallbackEvent>*) override
 			{
+				if (a_event && a_event->eventName == kRefundEvent)
+				{
+					if (auto* tasks = SKSE::GetTaskInterface()) { tasks->AddTask([]() { RefundAll(); }); }
+					return RE::BSEventNotifyControl::kContinue;
+				}
 				if (!a_event || a_event->eventName != kEvent) { return RE::BSEventNotifyControl::kContinue; }
 				if (!settings::staticlevel::pointsEnabled) { return RE::BSEventNotifyControl::kContinue; }
 				const std::string diffs = a_event->strArg.c_str();
@@ -213,6 +241,34 @@ namespace SkillPoints
 		logger::info("skill points: applied {} increase(s) from the level-up menu; {} point(s) left in the bank", applied, g_bank);
 		g_menuStatus = std::format("last level up: {} skill increase(s) applied, {} point(s) banked", applied, g_bank);
 		return true;
+	}
+
+	int RefundAll()
+	{
+		if (!settings::staticlevel::pointsEnabled) { logger::info("skill points: a refund was asked for, but skill points are off; nothing to refund"); return 0; }
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		auto* avo = player ? player->AsActorValueOwner() : nullptr;
+		auto* skills = player ? player->GetPlayerRuntimeData().skills : nullptr;
+		if (!player || !avo) { return 0; }
+		int refund = 0, reset = 0;
+		for (int i = 0; i < skilllist::kCount; ++i)
+		{
+			const auto av = static_cast<RE::ActorValue>(6 + i);
+			const int start = StartingLevel(player, av);
+			const int current = static_cast<int>(avo->GetBaseActorValue(av));
+			if (current <= start) { continue; }
+			int points = 0;
+			for (int lvl = start; lvl < current; ++lvl) { points += CostForLevel(lvl); }
+			avo->SetBaseActorValue(av, static_cast<float>(start));
+			if (skills && skills->data) { skills->data->skills[i].xp = 0.0F; }
+			refund += points; ++reset;
+			logger::info("skill points: {} {} -> {} refunds {} point(s)", skilllist::kIniName[i], current, start, points);
+		}
+		g_bank += refund;
+		if (settings::staticlevel::pointsCap > 0) { g_bank = std::min(g_bank, settings::staticlevel::pointsCap); }
+		g_menuStatus = std::format("respec: {} skill(s) reset, {} point(s) refunded; bank {}", reset, refund, g_bank);
+		logger::info("skill points: {}", g_menuStatus);
+		return refund;
 	}
 
 	void OnSave(SKSE::SerializationInterface* a_intfc)

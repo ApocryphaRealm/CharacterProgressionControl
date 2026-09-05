@@ -182,6 +182,12 @@ namespace DevBenchTool
 					SkillPoints::PointsForLevel(static_cast<std::uint16_t>((player ? player->GetLevel() : 0) + 1)), EscapeJson(SkillPoints::MenuStatus())).c_str());
 				return;
 			}
+			if (args.find("\"refund\"") != std::string_view::npos)
+			{
+				if (auto* tasks = SKSE::GetTaskInterface()) { tasks->AddTask([]() { SkillPoints::RefundAll(); }); }
+				a_write(a_sink, R"({"ok":true,"op":"refund","queued":true})");
+				return;
+			}
 			if (args.find("\"grantpoints\":") != std::string_view::npos)
 			{
 				SkillPoints::Grant(static_cast<int>(ReadNumber(args, "\"grantpoints\":")));

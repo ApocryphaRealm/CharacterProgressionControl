@@ -1,6 +1,6 @@
 # Character Progression Control
 
-Version 1.0.5
+Version 1.0.6
 
 One page for how a character grows: what a level costs, where experience comes from, skill caps
 and rates, and what a level up grants. SKSE plugin, C++ with CommonLibSSE-NG, MIT, written from
