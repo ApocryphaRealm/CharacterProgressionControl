@@ -1,6 +1,6 @@
 # Character Progression Control
 
-Version 1.0.4
+Version 1.0.5
 
 One page for how a character grows: what a level costs, where experience comes from, skill caps
 and rates, and what a level up grants. SKSE plugin, C++ with CommonLibSSE-NG, MIT, written from
@@ -16,6 +16,15 @@ experience rates and skill-to-level income (Skills tab), the perk table and attr
 their carry-weight cross terms (Level Up tab), and static levelling (its own tab) are all live.
 Every site is found by its byte shape in the running game, matched exactly once, proven by what
 it loads or compares before a byte is written, and with its setting off nothing is written at all.
+
+**Two build lines (1.0.5).** The package is a FOMOD: one DLL for Skyrim SE 1.5.97 / AE 1.6.1170
+(CommonLibSSE-NG 3.7.0, MIT throughout) and one for Skyrim 1.7.99 / 1.7.104 (CommonLibSSE-NG 7.2.0,
+distributed under GPL-3.0-or-later with the library's exceptions - its licence texts install with
+it). Every site is found by shape at runtime, so a group simply reports itself off on a build where
+its shape is absent: on 1.7.104 the skill caps, formula caps and attribute gains attach; the skill
+experience rates, skill-to-level income, static levelling and perk-table sites are not present there
+and those groups stay off and say so on the Patches tab (skill points still work, but ordinary skill
+experience cannot be suppressed on that build and the group says that too).
 
 **Skill points (1.0.4).** With *Use skill points* on, skills advance only by points spent in the
 level-up menu: each level grants `points per level + multiplier x level` points, banked when

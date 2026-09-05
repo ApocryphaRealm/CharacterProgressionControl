@@ -267,6 +267,8 @@ namespace SkillExperience
 		}
 	}
 
+	bool ImproveHookAttached() { return g_origImprove.address() != 0; }
+
 	void Register()
 	{
 		Patches::Register(

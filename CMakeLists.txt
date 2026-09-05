@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 project(
 	CharacterProgressionControl
-	VERSION 1.0.4
+	VERSION 1.0.5
 	LANGUAGES CXX ASM_MASM
 )
 

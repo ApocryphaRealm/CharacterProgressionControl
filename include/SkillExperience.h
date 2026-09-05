@@ -15,4 +15,7 @@ namespace SkillExperience
 {
 	// Registers the two patch groups. Call at kDataLoaded, before Patches::InstallAll.
 	void Register();
+
+	// True once the skill-improve entry hook is attached (rates, static levelling or skill points asked for it).
+	bool ImproveHookAttached();
 }

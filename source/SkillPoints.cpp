@@ -4,6 +4,7 @@
 
 #include "Patches.h"
 #include "Settings.h"
+#include "SkillExperience.h"
 #include "SkillList.h"
 
 #include "utils/Logger.h"
@@ -158,8 +159,13 @@ namespace SkillPoints
 			if (auto* ui = RE::UI::GetSingleton()) { ui->AddEventSink(&g_menuSink); }
 			if (auto* src = SKSE::GetModCallbackEventSource()) { src->AddEventSink(&g_modSink); }
 			logger::info("Skill points: listening for the level-up menu and its allocation event; ordinary skill experience is not banked while this is on");
-			a_reason = "on: each level up grants points spent in the level-up menu; ordinary skill experience is not banked. "
+			const bool suppressed = SkillExperience::ImproveHookAttached();
+			a_reason = std::string("on: each level up grants points spent in the level-up menu") +
+					   (suppressed ? "; ordinary skill experience is not banked. "
+								   : ". Ordinary skill experience is NOT suppressed on this build of the game (its skill-improve site is not "
+									 "present), so skills also still advance by use. ") +
 					   "Whether the installed level-up menu is the skill-point one shows here after the first level up.";
+			if (!suppressed) { logger::warn("Skill points: the skill-improve site is not present in this build, so ordinary skill experience still banks alongside points"); }
 			return true;
 		}
 	}
