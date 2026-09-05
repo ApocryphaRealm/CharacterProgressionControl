@@ -30,7 +30,9 @@ EXTERN CPC_GetSkillCap:PROC          ; float CPC_GetSkillCap(unsigned int skillI
 EXTERN CPC_LevelExp_Hook:PROC        ; float CPC_LevelExp_Hook(float value, unsigned int skillId)
 EXTERN CPC_LevelExpOriginal:QWORD    ; the game's level-experience function; set at install
 EXTERN CPC_PerkPool_Hook:PROC        ; void CPC_PerkPool_Hook(int count)
-EXTERN CPC_PerkPoolReturn:QWORD      ; filled in at install time - the instruction after the sequence
+EXTERN CPC_PerkPoolReturn:QWORD       ; filled in at install time - the instruction after the sequence
+EXTERN CPC_PerkPoolPlayer:QWORD      ; address of the game's player-pointer global
+EXTERN CPC_PerkPoolNewCount:DWORD    ; the new perk count the hook settled on
 
 .code
 
@@ -148,6 +150,11 @@ CPC_PerkPoolStub PROC
     pop     rdx
     pop     rcx
     pop     rax
+    ; leave the registers as the replaced sequence would have: rdx = the player, ecx = eax = the new count
+    mov     rdx, qword ptr [CPC_PerkPoolPlayer]
+    mov     rdx, qword ptr [rdx]
+    mov     ecx, dword ptr [CPC_PerkPoolNewCount]
+    mov     eax, ecx
     jmp     qword ptr [CPC_PerkPoolReturn]
 CPC_PerkPoolStub ENDP
 

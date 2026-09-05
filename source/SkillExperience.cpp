@@ -89,7 +89,7 @@ namespace SkillExperience
 				if (k < 24 && a_skill >= 6 && a_skill <= 23)
 				{
 					const bool ok = a_skills && a_skills->data;
-					logger::info("improve call #{}: skill {} in {:.2f} -> out {:.2f} (level {:.1f}, xp {:.1f}/{:.1f}) args {} {} {} {}", k, a_skill, incoming, a_exp,
+					logger::trace("improve call #{}: skill {} in {:.2f} -> out {:.2f} (level {:.1f}, xp {:.1f}/{:.1f}) args {} {} {} {}", k, a_skill, incoming, a_exp,
 								 ok ? a_skills->data->skills[a_skill - 6].level : -1.0F, ok ? a_skills->data->skills[a_skill - 6].xp : -1.0F,
 								 ok ? a_skills->data->skills[a_skill - 6].levelThreshold : -1.0F, a_1, a_2, a_3, a_4);
 				}

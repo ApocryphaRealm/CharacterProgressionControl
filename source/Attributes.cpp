@@ -34,6 +34,7 @@ namespace Attributes
 		using Fn_t = std::uint64_t(void*, std::uint8_t);
 		REL::Relocation<Fn_t> g_orig;
 		std::uintptr_t g_entry = 0;
+		std::uintptr_t g_choose = 0;   // the LevelUp Menu's choose-attribute function (menu, av) - test driving only
 
 		RE::Setting* Find(const char* a_name)
 		{
@@ -43,7 +44,7 @@ namespace Attributes
 
 		std::uint64_t Hook(void* a_unk0, std::uint8_t a_unk1)
 		{
-			logger::info("attribute level-up: hook entered (arg0 {}, arg1 {})", a_unk0 != nullptr, a_unk1);
+			logger::trace("attribute level-up: hook entered (arg0 {}, arg1 {})", a_unk0 != nullptr, a_unk1);
 			if (!settings::levelup::overrideRewards || !a_unk0) { return g_orig(a_unk0, a_unk1); }
 			const auto choice = *reinterpret_cast<const std::uint32_t*>(static_cast<const char*>(a_unk0) + kChoiceOffset);
 			auto* gain = Find("iAVDhmsLevelUp");
@@ -77,6 +78,50 @@ namespace Attributes
 			return r;
 		}
 
+		// The LevelUp Menu's choose-attribute function - what its addHealth/addMagicka/addStamina delegate
+		// handlers jump to - resolved from the "addHealth" string: its one code reference is the delegate
+		// registration, the handler's address is loaded right beside it, and the handler is three
+		// instructions ending in a jump to the function. Testing only: the cpc.control levelup op drives
+		// the game's own level-up with it, headlessly. Not a patch site; nothing is written.
+		void ResolveChooseFunction()
+		{
+			const auto& mod = REL::Module::get();
+			const auto base = mod.base();
+			const auto text = mod.segment(REL::Segment::textx);
+			const auto rdata = mod.segment(REL::Segment::rdata);
+			const std::uintptr_t t0 = text.address(), t1 = t0 + text.size();
+			const char* needle = "addHealth";
+			const std::size_t nlen = std::strlen(needle) + 1;
+			std::uintptr_t strAddr = 0;
+			for (std::uintptr_t p = rdata.address(); p + nlen <= rdata.address() + rdata.size(); ++p)
+			{
+				if (std::memcmp(reinterpret_cast<const void*>(p), needle, nlen) == 0) { strAddr = p; break; }
+			}
+			if (!strAddr) { logger::debug("levelup test op: \"addHealth\" string not found"); return; }
+			for (std::uintptr_t p = t0; p + 4 <= t1 && !g_choose; ++p)
+			{
+				const auto rel = *reinterpret_cast<const std::int32_t*>(p);
+				if (p + 4 + static_cast<std::intptr_t>(rel) != strAddr) { continue; }
+				for (std::uintptr_t q = p - 0x20; q < p + 0x20 && !g_choose; ++q)
+				{
+					const auto* b2 = reinterpret_cast<const std::uint8_t*>(q);
+					if ((b2[0] != 0x48 && b2[0] != 0x4C) || b2[1] != 0x8D || (b2[2] & 0xC7) != 0x05) { continue; }
+					const auto r2 = *reinterpret_cast<const std::int32_t*>(q + 3);
+					const auto tgt = q + 7 + static_cast<std::intptr_t>(r2);
+					if (tgt < t0 || tgt >= t1) { continue; }
+					const auto* h = reinterpret_cast<const std::uint8_t*>(tgt);
+					// handler shape: mov rcx,[rcx+18h]; test rcx,rcx; jz +A; mov edx,<av>; jmp <choose>
+					if (h[0] == 0x48 && h[1] == 0x8B && h[2] == 0x49 && h[3] == 0x18 && h[9] == 0xBA && h[14] == 0xE9)
+					{
+						const auto jrel = *reinterpret_cast<const std::int32_t*>(h + 15);
+						g_choose = tgt + 19 + static_cast<std::intptr_t>(jrel);
+						logger::debug("levelup test op: the LevelUp Menu's choose-attribute function is at game offset 0x{:X}", g_choose - base);
+					}
+				}
+			}
+			if (!g_choose) { logger::debug("levelup test op: choose-attribute function not resolved; the op is unavailable"); }
+		}
+
 		bool Install(std::string& a_reason)
 		{
 			const auto found = Signature::Find(kSig, -kEntryBack);
@@ -90,64 +135,7 @@ namespace Attributes
 									   entry - base, b[0], b[1], b[2], b[3], b[4], b[5]);
 				return false;
 			}
-			{
-				// DIAGNOSTIC: the bytes around the entry, to see how the routine is reached.
-				const auto* b = reinterpret_cast<const std::uint8_t*>(entry - 0x40);
-				for (int row = 0; row < 0x60; row += 32)
-				{
-					std::string hex; for (int i = 0; i < 32; ++i) { hex += std::format("{:02X} ", b[row + i]); }
-					logger::info("attribute-routine entry{:+#x}: {}", row - 0x40, hex);
-				}
-			}
-			{
-				// DIAGNOSTIC: every RIP-relative reference in the game's code to the two settings this routine
-				// reads - any other site is another copy of the attribute gain (the one the menu runs).
-				auto* gs = Find("iAVDhmsLevelUp"); auto* cw = Find("fLevelUpCarryWeightMod");
-				const auto& mod = REL::Module::get();
-				const auto text = mod.segment(REL::Segment::textx);
-				const std::uintptr_t t0 = text.address(), t1 = t0 + text.size();
-				const std::uintptr_t targets[2] = { gs ? reinterpret_cast<std::uintptr_t>(&gs->data) : 0, cw ? reinterpret_cast<std::uintptr_t>(&cw->data) : 0 };
-				logger::info("refs scan: text 0x{:X}..0x{:X}, iAVDhmsLevelUp data at 0x{:X}, fLevelUpCarryWeightMod data at 0x{:X}", t0 - base, t1 - base, targets[0] - base, targets[1] - base);
-				int hits = 0;
-				for (std::uintptr_t p = t0; p + 4 <= t1 && hits < 40; ++p)
-				{
-					const auto rel = *reinterpret_cast<const std::int32_t*>(p);
-					const auto tgt = p + 4 + static_cast<std::intptr_t>(rel);
-					for (int k = 0; k < 2; ++k)
-					{
-						if (targets[k] && tgt == targets[k])
-						{
-							const auto* b = reinterpret_cast<const std::uint8_t*>(p - 4);
-							std::string hex; for (int i = 0; i < 12; ++i) { hex += std::format("{:02X} ", b[i]); }
-							logger::info("refs scan: {} referenced at game offset 0x{:X} (rel at -4..+8: {})", k == 0 ? "iAVDhmsLevelUp" : "fLevelUpCarryWeightMod", p - 4 - base, hex);
-							++hits;
-							if (p - 4 < entry || p - 4 > entry + 0x200)
-							{
-								// The E8 call that follows the read: dump its target too.
-								for (std::uintptr_t q = p; q < p + 0x40; ++q)
-								{
-									if (*reinterpret_cast<const std::uint8_t*>(q) != 0xE8) { continue; }
-									const auto callee = q + 5 + static_cast<std::intptr_t>(*reinterpret_cast<const std::int32_t*>(q + 1));
-									const auto* c = reinterpret_cast<const std::uint8_t*>(callee);
-									for (int row = 0; row < 0x100; row += 32)
-									{
-										std::string h3; for (int i = 0; i < 32; ++i) { h3 += std::format("{:02X} ", c[row + i]); }
-										logger::info("callee dump 0x{:X}: {}", callee + row - base, h3);
-									}
-									break;
-								}
-								const auto* d = reinterpret_cast<const std::uint8_t*>(p - 4 - 0xA0);
-								for (int row = 0; row < 0x140; row += 32)
-								{
-									std::string h2; for (int i = 0; i < 32; ++i) { h2 += std::format("{:02X} ", d[row + i]); }
-									logger::info("refs dump 0x{:X}: {}", p - 4 - 0xA0 + row - base, h2);
-								}
-							}
-						}
-					}
-				}
-				logger::info("refs scan: {} hits", hits);
-			}
+			ResolveChooseFunction();
 			g_entry = entry;
 			if (!settings::levelup::overrideRewards)
 			{
@@ -165,12 +153,6 @@ namespace Attributes
 			std::memcpy(thunk + 12, &resume, 8);
 			g_orig = REL::Relocation<Fn_t>(reinterpret_cast<std::uintptr_t>(thunk));
 			trampoline.write_branch<5>(entry, Hook);
-			{
-				const auto* b = reinterpret_cast<const std::uint8_t*>(entry);
-				auto* gs = Find("iAVDhmsLevelUp"); auto* cw = Find("fLevelUpCarryWeightMod");
-				logger::info("attribute level-up: bytes at entry after the write: {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}; iAVDhmsLevelUp={} fLevelUpCarryWeightMod={:.1f}; hook at 0x{:X}",
-							 b[0], b[1], b[2], b[3], b[4], b[5], gs ? gs->data.i : -1, cw ? cw->data.f : -1.0F, reinterpret_cast<std::uintptr_t>(&Hook) - base);
-			}
 			const bool gate = std::memcmp(reinterpret_cast<const void*>(entry + kGateOffset), kGate, 6) == 0;
 			if (gate) { REL::safe_fill(entry + kGateOffset + 4, 0x90, 2); }
 			else
@@ -186,6 +168,8 @@ namespace Attributes
 			return true;
 		}
 	}
+
+	std::uintptr_t ChooseAddress() { return g_choose; }
 
 	void Register()
 	{

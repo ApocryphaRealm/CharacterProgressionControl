@@ -10,6 +10,7 @@
 #include "Presets.h"
 #include "SkillList.h"
 #include "Skills.h"
+#include "Attributes.h"
 #include "Settings.h"
 #include "Signature.h"
 #include "utils/Logger.h"
@@ -117,6 +118,59 @@ namespace DevBenchTool
 			// levels the skill up repeatedly until it meets the cap, so one large amount is a clean test:
 			// it stops at 100 with the patch off and passes it with the patch on. Testing only - it is
 			// how the cap patch is watched working without a keyboard. Game-thread work, so queued.
+			// "levelup":"health|magicka|stamina" - presses that button on the game's own LevelUp Menu
+			// (testing): the menu's button handler is invoked on its movie, exactly what a click does.
+			if (const auto at = args.find("\"levelup\":\""); at != std::string_view::npos)
+			{
+				const auto start = at + 11;
+				const auto end = args.find('"', start);
+				const std::string which(args.substr(start, end == std::string_view::npos ? 0 : end - start));
+				const std::uint32_t av = which == "health" ? 0x18 : which == "magicka" ? 0x19 : which == "stamina" ? 0x1A : 0;
+				if (!av) { a_write(a_sink, R"({"ok":false,"op":"levelup","error":"health|magicka|stamina"})"); return; }
+				const auto choose = Attributes::ChooseAddress();
+				if (!choose) { a_write(a_sink, R"({"ok":false,"op":"levelup","error":"choose-attribute function not resolved"})"); return; }
+				const char* fn = "(direct)";
+				auto* ui = RE::UI::GetSingleton();
+				auto menu = ui ? ui->GetMenu(RE::LevelUpMenu::MENU_NAME) : RE::GPtr<RE::IMenu>{};
+				if (!menu || !menu->uiMovie) { a_write(a_sink, R"({"ok":false,"op":"levelup","error":"LevelUp Menu is not open"})"); return; }
+				const std::string fnName = fn;
+				if (auto* tasks = SKSE::GetTaskInterface())
+				{
+					tasks->AddUITask([av, choose]() {
+						auto* ui2 = RE::UI::GetSingleton();
+						auto m = ui2 ? ui2->GetMenu(RE::LevelUpMenu::MENU_NAME) : RE::GPtr<RE::IMenu>{};
+						if (!m) { logger::warn("levelup op: menu gone before the UI task ran"); return; }
+						// exactly what the menu's addHealth/addMagicka/addStamina delegate handlers do
+						using Choose_t = void(RE::IMenu*, std::uint32_t);
+						reinterpret_cast<Choose_t*>(choose)(m.get(), av);
+						logger::info("levelup op: called the choose-attribute function with av 0x{:X}", av);
+					});
+				}
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"levelup","invoke":"{}","queued":true}})", fnName).c_str());
+				return;
+			}
+			// "msgbox":<button index> - presses that button on the game's open message box (testing):
+			// the same GameDelegate call the box's own buttons make.
+			if (args.find("\"msgbox\":") != std::string_view::npos)
+			{
+				const int button = static_cast<int>(ReadNumber(args, "\"msgbox\":"));
+				if (auto* tasks = SKSE::GetTaskInterface())
+				{
+					tasks->AddUITask([button]() {
+						auto* ui2 = RE::UI::GetSingleton();
+						auto m = ui2 ? ui2->GetMenu(RE::MessageBoxMenu::MENU_NAME) : RE::GPtr<RE::IMenu>{};
+						if (!m || !m->uiMovie) { logger::warn("msgbox op: no message box open"); return; }
+						RE::GFxValue arr; m->uiMovie->CreateArray(&arr);
+						RE::GFxValue idx(static_cast<double>(button)); arr.PushBack(idx);
+						RE::GFxValue fnArgs[2]; fnArgs[0] = RE::GFxValue("buttonPress"); fnArgs[1] = arr;
+						RE::GFxValue result;
+						const bool ok = m->uiMovie->Invoke("_global.gfx.io.GameDelegate.call", &result, fnArgs, 2);
+						logger::info("msgbox op: GameDelegate.call(buttonPress, {}) -> {}", button, ok);
+					});
+				}
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"msgbox","button":{},"queued":true}})", button).c_str());
+				return;
+			}
 			// "peek":<game offset>, "count":<n> - hex bytes of the game's code (testing).
 			if (args.find("\"peek\":") != std::string_view::npos)
 			{

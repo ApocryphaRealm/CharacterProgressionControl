@@ -14,4 +14,7 @@ namespace Attributes
 {
 	// Registers the patch group. Call at kDataLoaded, before Patches::InstallAll.
 	void Register();
+
+	// Testing: the game's own LevelUp Menu choose-attribute function (menu, av), 0 if not resolved.
+	std::uintptr_t ChooseAddress();
 }

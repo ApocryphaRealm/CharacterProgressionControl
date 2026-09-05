@@ -4,17 +4,16 @@ One page for how a character grows: what a level costs, where experience comes f
 and rates, and what a level up grants. SKSE plugin, C++ with CommonLibSSE-NG, MIT, written from
 scratch. Skyrim Special Edition.
 
-**Version 1.0.1 - stages 1, 2, 7 and 8 of nine; the skill cap patch verified in game 2026-09-05.** The plan is at
-`4. plans\character-progression-control`. The stages are out of order on purpose: everything that
-needs no engine hook is built first, so the mod is useful and safe long before the risky part.
+**Version 1.0.3 - stages 1 to 8 of nine, every engine patch verified in game on Skyrim SE 1.5.97
+(2026-09-05).** The plan is at `4. plans\character-progression-control`. Stage 9 (alternative
+experience sources) is a separate decision and is not started.
 
-Stage 2's skill *cap patch* is now real (1.0.1): with **Control skill caps** on, each skill stops
-advancing at the cap set on the Skills tab. The site is found by its byte shape in the running game
-(matched exactly once, at game offset `0x6E6218` on 1.5.97) and then proven before a byte is written
-- the register it loads and the constant it loads (exactly 100.0) both have to check out - and it was
-watched working in game: a cap of 60 stopped One-handed at exactly 60 through six real increments.
-With the setting off nothing is written. What is still not real is the *formula cap* - the value the
-game's own calculations read for a skill - which is a separate site; the Patches tab says so.
+What each patch group does, and how it was proven, is on the Patches tab in game and in the
+source comments; the short version: the skill cap and formula cap (Skills tab), the skill
+experience rates and skill-to-level income (Skills tab), the perk table and attribute gains with
+their carry-weight cross terms (Level Up tab), and static levelling (its own tab) are all live.
+Every site is found by its byte shape in the running game, matched exactly once, proven by what
+it loads or compares before a byte is written, and with its setting off nothing is written at all.
 
 Finding that address is worth explaining, because it governs all future hook work here. The
 retail `SkyrimSE.exe` is **Steam-packed**: it carries a `.bind` section, its entry point sits

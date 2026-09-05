@@ -15,6 +15,8 @@
 extern "C"
 {
 	std::uintptr_t CPC_PerkPoolReturn = 0;   // where the stub resumes: the instruction after the sequence
+	std::uintptr_t CPC_PerkPoolPlayer = 0;   // the game's player-pointer global the sequence loads into rdx
+	std::int32_t   CPC_PerkPoolNewCount = 0; // what the sequence leaves in ecx/eax: the new perk count
 	void CPC_PerkPoolStub();                 // SkillCapStub.asm
 
 	// Called by the stub with the count the game was about to add (positive on a level up; negative
@@ -31,6 +33,7 @@ extern "C"
 			delta = settings::levelup::PerksAtLevel(player->GetLevel());
 		}
 		const int sum = std::clamp(static_cast<int>(stats.perkCount) + delta, 0, 127);
+		CPC_PerkPoolNewCount = sum;
 		logger::info("level up: perk points {} -> {} (game wanted {:+}, this mod granted {:+} at level {})",
 					 stats.perkCount, sum, a_count, delta, player->GetLevel());
 		stats.perkCount = static_cast<std::int8_t>(sum);
@@ -86,6 +89,12 @@ namespace LevelUp
 			{
 				a_reason = located + ". Ready but not attached: Control what a level up grants is off. Turn it on and restart to attach it. A level up grants exactly what vanilla grants.";
 				return false;
+			}
+			// The sequence's own register effects are reproduced by the stub: rdx = the player pointer it
+			// loads (rip-relative in its first instruction), ecx/eax = the new count.
+			{
+				std::int32_t rel = 0; std::memcpy(&rel, b + 3, 4);
+				CPC_PerkPoolPlayer = site + 7 + static_cast<std::intptr_t>(rel);
 			}
 			CPC_PerkPoolReturn = site + kSequenceLength;
 			SKSE::GetTrampoline().write_branch<5>(site, reinterpret_cast<std::uintptr_t>(&CPC_PerkPoolStub));
