@@ -250,7 +250,8 @@ namespace SkillExperience
 									   "skill-improve function, found {}; nothing was written", fnEntry - base, calls);
 				return false;
 			}
-			if (!settings::skillexp::overrideRates && !settings::staticlevel::pointsEnabled)
+			const bool replaceMode = settings::experience::enabled && !settings::experience::skillsPay;
+			if (!settings::skillexp::overrideRates && !settings::staticlevel::pointsEnabled && !replaceMode)
 			{
 				a_reason = std::format("verified: the level-experience call at game offset 0x{:X} (function at 0x{:X}). Ready but not "
 									   "attached: Control skill experience rates is off. Turn it on and restart to attach it.",
@@ -263,6 +264,12 @@ namespace SkillExperience
 			SKSE::GetTrampoline().write_call<5>(callSite, reinterpret_cast<std::uintptr_t>(&CPC_LevelExpCallStub));
 			logger::info("Skill-to-level income: the level-experience call at game offset 0x{:X} now goes through this mod "
 						 "(function at 0x{:X}); a skill increase pays fSkillToLevelMult times vanilla", callSite - base, fnEntry - base);
+			if (replaceMode)
+			{
+				a_reason = std::format("attached at game offset 0x{:X}: skill increases pay NOTHING toward the character level - experience comes from the "
+									   "Experience tab's sources only (Skill increases still pay toward your level is off).", callSite - base);
+				return true;
+			}
 			if (!settings::skillexp::overrideRates)
 			{
 				a_reason = std::format("attached at game offset 0x{:X} for skill points only: a point-bought skill level pays nothing toward "
@@ -298,5 +305,8 @@ extern "C" float CPC_LevelExp_Hook(float a_value, std::uint32_t a_skillId)
 {
 	(void)a_skillId;
 	if (SkillPoints::Applying()) { return 0.0F; }   // a point-spent level pays nothing toward the character level
+	// No logging in here: this runs inside the asm call stub, and a logger call from it was followed by a
+	// crash on the first skill increase (2026-09-06 00:04) - keep it a leaf.
+	if (settings::experience::enabled && !settings::experience::skillsPay) { return 0.0F; }   // replace mode: experience comes from the Experience tab's sources only
 	return settings::skillexp::overrideRates ? a_value * settings::skillexp::toLevelMult : a_value;
 }

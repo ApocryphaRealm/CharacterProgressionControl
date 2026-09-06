@@ -13,6 +13,11 @@ namespace UI
 		void __stdcall Render();
 	}
 
+	namespace ExperiencePanel
+	{
+		void __stdcall Render();
+	}
+
 	namespace SkillsPanel
 	{
 		void __stdcall Render();

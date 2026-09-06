@@ -17,7 +17,7 @@ scratch. Skyrim Special Edition.
 
 **Version 1.0.4 - stages 1 to 8 of nine, every engine patch verified in game on Skyrim SE 1.5.97
 (2026-09-05), and the skill-point half of static levelling added.** The plan is at `4. plans\character-progression-control`. Stage 9 (alternative
-experience sources) is a separate decision and is not started.
+experience sources) shipped in 1.1.1 as the Experience tab.
 
 What each patch group does, and how it was proven, is on the Patches tab in game and in the
 source comments; the short version: the skill cap and formula cap (Skills tab), the skill
@@ -59,6 +59,11 @@ and `cpc.control op=scan` exposes the same scanner for finding new ones.
 - **Levelling tab** - what a character level costs. Skyrim works the cost of your next level out
   as `base + (per-level x your level)`, and this tab owns those two numbers. It needs no engine
   patch of any kind, which is why it is first.
+- **Experience tab** - stage 9: character experience from what you do. Quests completed (an
+  amount per kind), locations discovered and cleared, kills (base plus per victim level), books
+  read - alongside skill use or instead of it. Written from scratch on the game's own story events;
+  every amount is this mod's own number. Off by default; stands down while the Experience mod is
+  loaded.
 - **Skills tab** - every skill live (level, experience, threshold) straight from the game's own
   progression data, plus the cap and formula-cap settings for all eighteen. The cap patch itself
   is not implemented yet and the tab says so; the values are stored and saved regardless.

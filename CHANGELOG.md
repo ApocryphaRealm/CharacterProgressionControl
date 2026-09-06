@@ -11,6 +11,11 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
+## 1.1.1 - 2026-09-05 - untested
+
+### Added
+- THE EXPERIENCE TAB - stage 9, alternative experience sources, written from scratch on the game's own story events. With Earn experience from quests, exploration and kills on (off by default; bAlternativeExperience in the INI), character experience comes from quests completed (an amount per kind: main, faction, Daedric, side, miscellaneous, other), locations discovered, locations cleared, kills (a base amount plus an amount per level of the victim; kills by followers and summons optionally) and books read (skill books separately) - alongside skill use, or, with Skill increases still pay toward your level off, instead of it (the level-income patch then returns nothing for a skill increase; attaches at startup). When a grant crosses the next level's cost the game's own level-up notice is shown. What each character has earned from each source is kept in the co-save and read out on the tab. Stands down while the Experience mod is loaded. The cpc.control tool gained op=experience, op=experience:<0|1>, op=skillspay:<0|1> and "xpsim":"quest|location|cleared|kill|book".
+
 ## 1.1.0 - 2026-09-05 - working
 
 ### Added

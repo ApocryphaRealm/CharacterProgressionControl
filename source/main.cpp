@@ -13,6 +13,7 @@
 #include "CarryWeight.h"
 #include "Compat.h"
 #include "Enchanting.h"
+#include "ExperienceSources.h"
 #include "LevelUp.h"
 #include "Levelling.h"
 #include "Patches.h"
@@ -54,6 +55,7 @@ namespace
 			UI::Register();
 			Difficulty::Install();
 			CarryWeight::Install();
+			ExperienceSources::Install();
 			DevBenchTool::Init(true);
 			break;
 		case SKSE::MessagingInterface::kPostLoadGame:
@@ -76,9 +78,9 @@ namespace
 		}
 	}
 
-	void SaveCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnSave(a_intfc); SkillPoints::OnSave(a_intfc); Attributes::OnSave(a_intfc); CarryWeight::OnSave(a_intfc); }
+	void SaveCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnSave(a_intfc); SkillPoints::OnSave(a_intfc); Attributes::OnSave(a_intfc); CarryWeight::OnSave(a_intfc); ExperienceSources::OnSave(a_intfc); }
 	void LoadCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnLoad(a_intfc); }
-	void RevertCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnRevert(a_intfc); SkillPoints::OnRevert(); Attributes::OnRevert(); CarryWeight::OnRevert(); }
+	void RevertCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnRevert(a_intfc); SkillPoints::OnRevert(); Attributes::OnRevert(); CarryWeight::OnRevert(); ExperienceSources::OnRevert(); }
 }
 
 SKSEPluginLoad(const SKSE::LoadInterface* a_skse)

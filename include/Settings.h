@@ -155,6 +155,27 @@ namespace settings
 		inline float global[5] = { kUnset, kUnset, kUnset, kUnset, kUnset };          // f<Setting>:Regeneration
 	}
 
+	// Stage 9 - alternative experience sources (the Experience tab). Character experience from what
+	// the character does; every amount is this mod's own number, tunable. Off = nothing is granted.
+	namespace experience
+	{
+		inline bool enabled = false;          // bAlternativeExperience:Experience
+		inline bool skillsPay = true;         // bSkillsStillPayTowardLevel:Experience - 0 = replace (skill increases pay nothing)
+		inline float questMain = 300.0F;      // fQuestMain:Experience
+		inline float questFaction = 200.0F;   // fQuestFaction:Experience (guilds, Companions, Dark Brotherhood, civil war, DLC lines)
+		inline float questDaedric = 250.0F;   // fQuestDaedric:Experience
+		inline float questSide = 100.0F;      // fQuestSide:Experience
+		inline float questMisc = 25.0F;       // fQuestMisc:Experience (miscellaneous objectives)
+		inline float questOther = 50.0F;      // fQuestOther:Experience (quests with no type)
+		inline float location = 30.0F;        // fLocationDiscovered:Experience
+		inline float cleared = 80.0F;         // fLocationCleared:Experience
+		inline float killBase = 1.0F;         // fKillBase:Experience
+		inline float killPerLevel = 1.0F;     // fKillPerLevel:Experience (times the victim's level)
+		inline bool followerKills = false;    // bCountFollowerKills:Experience
+		inline float book = 10.0F;            // fBookRead:Experience
+		inline float skillBook = 25.0F;       // fSkillBookRead:Experience
+	}
+
 	void Init(const std::string& a_iniFileName);
 	bool Reload();
 	bool Save();

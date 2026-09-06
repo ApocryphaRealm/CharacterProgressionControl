@@ -5,6 +5,7 @@
 #include "DevBench/DevBenchAPI.h"
 #include "Compat.h"
 #include "Enchanting.h"
+#include "ExperienceSources.h"
 #include "Levelling.h"
 #include "Patches.h"
 #include "Difficulty.h"
@@ -397,6 +398,41 @@ namespace DevBenchTool
 					R"("moduleOffset":"0x{:X}","textBase":"0x{:X}","textSize":{},"note":"{}"}})",
 					r.found ? "true" : "false", r.matches, r.address,
 					r.found ? (r.address - base) : 0, base, size, EscapeJson(r.note)).c_str());
+				return;
+			}
+			// The Experience tab: op=experience reads it (controls, character xp/threshold, tallies, the last grant);
+			// op=experience:<0|1> and op=skillspay:<0|1> flip the controls; "xpsim":"quest|location|cleared|kill|book"
+			// grants that source's configured amount as if its event had fired (testing the grant path headlessly;
+			// the kill uses the base amount plus one level).
+			if (args.find("experience:") != std::string_view::npos)
+			{
+				settings::experience::enabled = ReadNumber(args, "experience:") != 0.0F;
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"experience","enabled":{}}})", settings::experience::enabled ? "true" : "false").c_str());
+				return;
+			}
+			if (args.find("skillspay:") != std::string_view::npos)
+			{
+				settings::experience::skillsPay = ReadNumber(args, "skillspay:") != 0.0F;
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"skillspay","skillsPay":{}}})", settings::experience::skillsPay ? "true" : "false").c_str());
+				return;
+			}
+			if (const auto sim = ExtractString(args, "xpsim"); !sim.empty())
+			{
+				using S = ExperienceSources::Source;
+				S source = S::kQuest; float amount = settings::experience::questSide; std::string what = "simulated side quest";
+				if (sim == "location") { source = S::kLocation; amount = settings::experience::location; what = "simulated location discovered"; }
+				else if (sim == "cleared") { source = S::kCleared; amount = settings::experience::cleared; what = "simulated location cleared"; }
+				else if (sim == "kill") { source = S::kKill; amount = settings::experience::killBase + settings::experience::killPerLevel; what = "simulated kill (level 1)"; }
+				else if (sim == "book") { source = S::kBook; amount = settings::experience::book; what = "simulated book read"; }
+				else if (sim != "quest") { a_write(a_sink, R"({"ok":false,"op":"xpsim","error":"quest|location|cleared|kill|book"})"); return; }
+				if (!ExperienceSources::Controlling()) { a_write(a_sink, R"({"ok":false,"op":"xpsim","error":"the Experience tab is off or standing down"})"); return; }
+				if (auto* tasks = SKSE::GetTaskInterface()) { tasks->AddTask([source, amount, what]() { ExperienceSources::Grant(source, amount, what); }); }
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"xpsim","source":"{}","amount":{:.1f},"queued":true}})", sim, amount).c_str());
+				return;
+			}
+			if (args.find("\"experience\"") != std::string_view::npos)
+			{
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"experience","state":{}}})", ExperienceSources::StatusJson()).c_str());
 				return;
 			}
 			// The Difficulty tab: op=difficultyvalues reads it (controls, the game's difficulty, every configured and

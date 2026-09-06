@@ -10,6 +10,7 @@
 #include "Difficulty.h"
 #include "DifficultyValues.h"
 #include "Enchanting.h"
+#include "ExperienceSources.h"
 #include "Levelling.h"
 #include "Patches.h"
 #include "Presets.h"
@@ -195,6 +196,7 @@ namespace UI
 
 		SKSEMenuFramework::SetSection("Character Progression Control");
 		SKSEMenuFramework::AddSectionItem("Levelling", LevellingPanel::Render);
+		SKSEMenuFramework::AddSectionItem("Experience", ExperiencePanel::Render);
 		SKSEMenuFramework::AddSectionItem("Skills", SkillsPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Level Up", LevelUpPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Attributes", AttributesPanel::Render);
@@ -679,6 +681,79 @@ namespace UI
 		ImGuiMCP::Spacing();
 		if (ImGuiMCP::Button("Apply now")) { DifficultyValues::RequestApply(); statusMessage = "Applied."; }
 		HelpMarker("Re-writes the values. It also runs by itself when a save loads, when the game's difficulty changes, and when you change anything above.");
+
+		RenderButtons();
+	}
+
+	void __stdcall ExperiencePanel::Render()
+	{
+		using namespace settings;
+
+		ImGuiMCP::TextWrapped("Character experience from what you do: quests completed, places discovered, dungeons cleared, kills "
+							  "and books read - alongside skill use, or instead of it. Every amount is this mod's own number; tune it "
+							  "against the Levelling tab's level cost.");
+		ImGuiMCP::Spacing();
+		if (ExperienceSources::StandingDown())
+		{
+			ImGuiMCP::TextWrapped("Standing down: the Experience mod is loaded and owns where experience comes from. Nothing here is granted while it is.");
+		}
+
+		ImGuiMCP::PushItemWidth(260.0F);
+		bool on = experience::enabled;
+		if (ImGuiMCP::Toggle("Earn experience from quests, exploration and kills", &on)) { experience::enabled = on; }
+		HelpMarker("Off by default. While it is off nothing is granted and the game levels exactly as before.");
+		if (experience::enabled)
+		{
+			bool pay = experience::skillsPay;
+			if (ImGuiMCP::Toggle("Skill increases still pay toward your level", &pay)) { experience::skillsPay = pay; }
+			HelpMarker("On: the sources below add to what skill use already pays (supplement). Off: skill increases pay nothing "
+					   "toward your level and the sources below are the only way to level (replace).");
+			if (!experience::skillsPay && !Patches::IsInstalled("Skill-to-level income"))
+			{
+				ImGuiMCP::TextWrapped("Restart the game for skill increases to stop paying: the level-income patch attaches at startup and was not needed when this session started.");
+			}
+
+			ImGuiMCP::SeparatorText("Quests completed, by kind");
+			NudgeableSlider("Main quest", &experience::questMain, 0.0F, 2000.0F, "%.0f", 10.0F);
+			NudgeableSlider("Faction quest", &experience::questFaction, 0.0F, 2000.0F, "%.0f", 10.0F);
+			HelpMarker("The guilds, the Companions, the Dark Brotherhood, the civil war, and the Dawnguard and Dragonborn lines.");
+			NudgeableSlider("Daedric quest", &experience::questDaedric, 0.0F, 2000.0F, "%.0f", 10.0F);
+			NudgeableSlider("Side quest", &experience::questSide, 0.0F, 2000.0F, "%.0f", 10.0F);
+			NudgeableSlider("Miscellaneous objective", &experience::questMisc, 0.0F, 500.0F, "%.0f", 5.0F);
+			NudgeableSlider("Other quest", &experience::questOther, 0.0F, 2000.0F, "%.0f", 10.0F);
+			HelpMarker("Quests the game gives no kind - many mod-added ones.");
+
+			ImGuiMCP::SeparatorText("Exploration");
+			NudgeableSlider("Location discovered", &experience::location, 0.0F, 500.0F, "%.0f", 5.0F);
+			NudgeableSlider("Location cleared", &experience::cleared, 0.0F, 1000.0F, "%.0f", 10.0F);
+
+			ImGuiMCP::SeparatorText("Kills");
+			NudgeableSlider("Per kill", &experience::killBase, 0.0F, 200.0F, "%.1f", 1.0F);
+			NudgeableSlider("Plus, per level of the victim", &experience::killPerLevel, 0.0F, 20.0F, "%.1f", 0.5F);
+			bool fk = experience::followerKills;
+			if (ImGuiMCP::Toggle("Count kills by followers and summons", &fk)) { experience::followerKills = fk; }
+
+			ImGuiMCP::SeparatorText("Books");
+			NudgeableSlider("Book read", &experience::book, 0.0F, 200.0F, "%.0f", 1.0F);
+			NudgeableSlider("Skill book read", &experience::skillBook, 0.0F, 500.0F, "%.0f", 5.0F);
+		}
+		ImGuiMCP::PopItemWidth();
+
+		ImGuiMCP::Spacing();
+		ImGuiMCP::SeparatorText("What that means right now");
+		{
+			const auto st = ExperienceSources::GetState();
+			auto* player = RE::PlayerCharacter::GetSingleton();
+			auto* skills = player ? player->GetInfoRuntimeData().skills : nullptr;
+			if (skills && skills->data)
+			{
+				ImGuiMCP::Text("Level %u: %.0f of %.0f experience toward the next", static_cast<unsigned>(player->GetLevel()), skills->data->xp, skills->data->levelThreshold);
+			}
+			ImGuiMCP::Text("This character, since the count began: %u quests (%.0f), %u locations (%.0f), %u cleared (%.0f), %u kills (%.0f), %u books (%.0f)",
+						   st.count[0], st.xp[0], st.count[1], st.xp[1], st.count[2], st.xp[2], st.count[3], st.xp[3], st.count[4], st.xp[4]);
+			if (!st.last.empty()) { ImGuiMCP::Text("Last: %s", st.last.c_str()); }
+			if (!experience::enabled) { ImGuiMCP::TextDisabled("Not granting anything - experience comes from skill use, as in vanilla."); }
+		}
 
 		RenderButtons();
 	}

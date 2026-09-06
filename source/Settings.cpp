@@ -171,6 +171,21 @@ namespace settings
 			get("fstartingmagicka:attributes", attributes::starting[1], ParseFloat);
 			get("fstartingstamina:attributes", attributes::starting[2], ParseFloat);
 			get("bcontrolcarryweight:carryweight", carryweight::control, ParseBool);
+			get("balternativeexperience:experience", experience::enabled, ParseBool);
+			get("bskillsstillpaytowardlevel:experience", experience::skillsPay, ParseBool);
+			get("fquestmain:experience", experience::questMain, ParseFloat);
+			get("fquestfaction:experience", experience::questFaction, ParseFloat);
+			get("fquestdaedric:experience", experience::questDaedric, ParseFloat);
+			get("fquestside:experience", experience::questSide, ParseFloat);
+			get("fquestmisc:experience", experience::questMisc, ParseFloat);
+			get("fquestother:experience", experience::questOther, ParseFloat);
+			get("flocationdiscovered:experience", experience::location, ParseFloat);
+			get("flocationcleared:experience", experience::cleared, ParseFloat);
+			get("fkillbase:experience", experience::killBase, ParseFloat);
+			get("fkillperlevel:experience", experience::killPerLevel, ParseFloat);
+			get("bcountfollowerkills:experience", experience::followerKills, ParseBool);
+			get("fbookread:experience", experience::book, ParseFloat);
+			get("fskillbookread:experience", experience::skillBook, ParseFloat);
 			get("fstartingcarryweight:carryweight", carryweight::starting, ParseFloat);
 			get("fcarryweightperlevel:carryweight", carryweight::perLevel, ParseFloat);
 			get("bcontroldamage:damage", damage::control, ParseBool);
@@ -393,6 +408,22 @@ namespace settings
 		ok &= WriteKey(lines, "CarryWeight", "fStartingCarryWeight", FormatFloat(carryweight::starting));
 		ok &= WriteKey(lines, "CarryWeight", "fCarryWeightPerLevel", FormatFloat(carryweight::perLevel));
 
+		ok &= WriteKey(lines, "Experience", "bAlternativeExperience", experience::enabled ? "1" : "0");
+		ok &= WriteKey(lines, "Experience", "bSkillsStillPayTowardLevel", experience::skillsPay ? "1" : "0");
+		ok &= WriteKey(lines, "Experience", "fQuestMain", FormatFloat(experience::questMain));
+		ok &= WriteKey(lines, "Experience", "fQuestFaction", FormatFloat(experience::questFaction));
+		ok &= WriteKey(lines, "Experience", "fQuestDaedric", FormatFloat(experience::questDaedric));
+		ok &= WriteKey(lines, "Experience", "fQuestSide", FormatFloat(experience::questSide));
+		ok &= WriteKey(lines, "Experience", "fQuestMisc", FormatFloat(experience::questMisc));
+		ok &= WriteKey(lines, "Experience", "fQuestOther", FormatFloat(experience::questOther));
+		ok &= WriteKey(lines, "Experience", "fLocationDiscovered", FormatFloat(experience::location));
+		ok &= WriteKey(lines, "Experience", "fLocationCleared", FormatFloat(experience::cleared));
+		ok &= WriteKey(lines, "Experience", "fKillBase", FormatFloat(experience::killBase));
+		ok &= WriteKey(lines, "Experience", "fKillPerLevel", FormatFloat(experience::killPerLevel));
+		ok &= WriteKey(lines, "Experience", "bCountFollowerKills", experience::followerKills ? "1" : "0");
+		ok &= WriteKey(lines, "Experience", "fBookRead", FormatFloat(experience::book));
+		ok &= WriteKey(lines, "Experience", "fSkillBookRead", FormatFloat(experience::skillBook));
+
 		ok &= WriteKey(lines, "Damage", "bControlDamage", damage::control ? "1" : "0");
 		{
 			constexpr const char* names[6] = { "Novice", "Apprentice", "Adept", "Expert", "Master", "Legendary" };
@@ -471,6 +502,21 @@ namespace settings
 		carryweight::control = false;
 		carryweight::starting = 300.0F;
 		carryweight::perLevel = 5.0F;
+		experience::enabled = false;
+		experience::skillsPay = true;
+		experience::questMain = 300.0F;
+		experience::questFaction = 200.0F;
+		experience::questDaedric = 250.0F;
+		experience::questSide = 100.0F;
+		experience::questMisc = 25.0F;
+		experience::questOther = 50.0F;
+		experience::location = 30.0F;
+		experience::cleared = 80.0F;
+		experience::killBase = 1.0F;
+		experience::killPerLevel = 1.0F;
+		experience::followerKills = false;
+		experience::book = 10.0F;
+		experience::skillBook = 25.0F;
 		damage::control = false;
 		{ constexpr float to[6] = { 0.50F, 0.75F, 1.00F, 1.50F, 2.00F, 3.00F }, by[6] = { 2.00F, 1.50F, 1.00F, 0.75F, 0.50F, 0.25F };
 		  for (int d = 0; d < 6; ++d) { damage::toPlayer[d] = to[d]; damage::byPlayer[d] = by[d]; } }

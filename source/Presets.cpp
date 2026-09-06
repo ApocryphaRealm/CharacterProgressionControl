@@ -4,6 +4,7 @@
 #include "Attributes.h"
 #include "CarryWeight.h"
 #include "DifficultyValues.h"
+#include "ExperienceSources.h"
 #include "SkillPoints.h"
 
 #include "Enchanting.h"
@@ -207,6 +208,7 @@ namespace Presets
 			if (type == SkillPoints::kRecord) { SkillPoints::ReadRecord(a_intfc, version, length); continue; }
 			if (type == Attributes::kRecord) { Attributes::ReadRecord(a_intfc, version, length); continue; }
 			if (type == CarryWeight::kRecord) { CarryWeight::ReadRecord(a_intfc, version, length); continue; }
+			if (type == ExperienceSources::kRecord) { ExperienceSources::ReadRecord(a_intfc, version, length); continue; }
 			if (type != kRecord) { continue; }
 			std::uint32_t nameLength = 0;
 			if (!a_intfc->ReadRecordData(&nameLength, sizeof(nameLength))) { continue; }
