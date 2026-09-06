@@ -93,18 +93,50 @@ CAP_STUB CPC_SkillCapStubXmm8, xmm8
 CAP_STUB CPC_SkillCapStubXmm10, xmm10
 
 ; Stage 3, skill-to-level income. This takes the place of the game's `call` to its level-experience
-; function (float, with up to four float arguments in xmm0..xmm3 and the result in xmm0), so the
-; caller already treats every volatile register as clobbered and nothing needs preserving. The
-; original is called with xmm0..xmm3 exactly as the game set them, its result is scaled through the
-; hook (the skill id the caller keeps in rsi goes along as the second argument), and RET returns
-; to the game's call site with the scaled value in xmm0. RSP is 8 mod 16 on entry (after the
-; game's call); 28h brings it to 16-byte alignment with shadow space for both calls.
+; function (float, with up to four float arguments in xmm0..xmm3 and the result in xmm0). The original
+; is called with xmm0..xmm3 exactly as the game set them, its result is scaled through the hook (the
+; skill id the caller keeps in rsi goes along as the second argument), and RET returns to the game's
+; call site with the scaled value in xmm0.
+;
+; THE CALL SITE IS NOT AN ORDINARY ONE. The compiler built it knowing exactly which registers the
+; original leaf touches, so the game RELIES ON THE REST SURVIVING THE CALL: the instruction right
+; after it is `addss xmm0, [rcx]` - rcx still holds the experience field (measured 2026-09-06: a
+; logger call inside the hook clobbered rcx and the game read 0xFFFFFFFFFFFFFFFF, crash log
+; crash-2026-09-06-04-04-19.log). A compiled C++ hook may clobber any volatile register, so every
+; one the original does not provably clobber is preserved around the hook call: rcx, rdx, r8-r11 and
+; xmm1-xmm5 (the original converts through eax - `cvttss2si eax, xmm1` is in its shape - so rax is
+; not relied on). RSP is 8 mod 16 on entry (after the game's call); 28h aligns it for the original,
+; and after six pushes (48 bytes) 78h aligns it again with room for five XMM saves above the shadow.
 CPC_LevelExpCallStub PROC
     sub     rsp, 28h
-    call    qword ptr [CPC_LevelExpOriginal]
-    mov     edx, esi
-    call    CPC_LevelExp_Hook
+    call    qword ptr [CPC_LevelExpOriginal]  ; the game's own function, the clobber set the site expects
     add     rsp, 28h
+    push    rcx
+    push    rdx
+    push    r8
+    push    r9
+    push    r10
+    push    r11
+    sub     rsp, 78h                          ; [rsp..+20h) shadow space, [rsp+20h..+70h) XMM1..XMM5
+    movaps  xmmword ptr [rsp + 20h], xmm1
+    movaps  xmmword ptr [rsp + 30h], xmm2
+    movaps  xmmword ptr [rsp + 40h], xmm3
+    movaps  xmmword ptr [rsp + 50h], xmm4
+    movaps  xmmword ptr [rsp + 60h], xmm5
+    mov     edx, esi                          ; skill id -> second argument (xmm0 = the value, first)
+    call    CPC_LevelExp_Hook                 ; result in xmm0
+    movaps  xmm1, xmmword ptr [rsp + 20h]
+    movaps  xmm2, xmmword ptr [rsp + 30h]
+    movaps  xmm3, xmmword ptr [rsp + 40h]
+    movaps  xmm4, xmmword ptr [rsp + 50h]
+    movaps  xmm5, xmmword ptr [rsp + 60h]
+    add     rsp, 78h
+    pop     r11
+    pop     r10
+    pop     r9
+    pop     r8
+    pop     rdx
+    pop     rcx
     ret
 CPC_LevelExpCallStub ENDP
 

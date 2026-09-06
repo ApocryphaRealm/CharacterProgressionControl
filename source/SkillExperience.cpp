@@ -303,10 +303,15 @@ namespace SkillExperience
 
 extern "C" float CPC_LevelExp_Hook(float a_value, std::uint32_t a_skillId)
 {
-	(void)a_skillId;
-	if (SkillPoints::Applying()) { return 0.0F; }   // a point-spent level pays nothing toward the character level
-	// No logging in here: this runs inside the asm call stub, and a logger call from it was followed by a
-	// crash on the first skill increase (2026-09-06 00:04) - keep it a leaf.
-	if (settings::experience::enabled && !settings::experience::skillsPay) { return 0.0F; }   // replace mode: experience comes from the Experience tab's sources only
-	return settings::skillexp::overrideRates ? a_value * settings::skillexp::toLevelMult : a_value;
+	// This runs inside CPC_LevelExpCallStub, which preserves every register the game's call site relies on
+	// (rcx above all - the site adds the result to [rcx] the instruction after the call), so ordinary code,
+	// logging included, is safe here. It is called once per skill increase, never per frame.
+	float result = a_value;
+	const char* why = "vanilla";
+	if (SkillPoints::Applying()) { result = 0.0F; why = "a point-spent level pays nothing"; }
+	else if (settings::experience::enabled && !settings::experience::skillsPay) { result = 0.0F; why = "replace mode - experience comes from the Experience tab's sources only"; }
+	else if (settings::skillexp::overrideRates) { result = a_value * settings::skillexp::toLevelMult; why = "times the Skill increase -> level multiplier"; }
+	else if (settings::experience::enabled) { why = "supplement mode - vanilla, alongside the Experience tab's sources"; }
+	logger::debug("level income: skill {} increase pays {:.1f} -> {:.1f} ({})", a_skillId, a_value, result, why);
+	return result;
 }

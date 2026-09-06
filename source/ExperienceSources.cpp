@@ -152,7 +152,14 @@ namespace ExperienceSources
 		skills->data->xp += a_amount;
 		const bool nowAvailable = before < threshold && skills->data->xp >= threshold;
 		logger::info("experience sources: {} -> +{:.0f} experience ({:.0f} -> {:.0f} of {:.0f}{})", a_what, a_amount, before, skills->data->xp, threshold, nowAvailable ? "; a level up is available" : "");
-		if (nowAvailable) { RE::DebugNotification(LevelUpNotice()); }
+		if (nowAvailable)
+		{
+#if RUNTIME_LINE == 17
+			RE::SendHUDMessage::ShowHUDMessage(LevelUpNotice(), nullptr, true);   // CommonLibSSE-NG 7.x has no RE::DebugNotification
+#else
+			RE::DebugNotification(LevelUpNotice());
+#endif
+		}
 		std::scoped_lock l(g_lock);
 		g_state.count[a_source] += 1;
 		g_state.xp[a_source] += a_amount;
