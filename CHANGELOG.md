@@ -11,6 +11,16 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
+## 1.0.9 - 2026-09-05 - untested
+
+### Added
+- THE CARRY WEIGHT TAB. Carryweight on Level Up's shape, now a tab here: with Control carry weight on (off by default; bControlCarryWeight in the INI) your permanent carry weight is starting + per level x (level - 1), recalculated when a save loads, when you level up (the level event and the attribute choice itself), when a value changes and on Apply now - nothing polls. The net amount added is kept in the co-save, so turning it off takes exactly that away again. While it is on, the per-choice carry weight is not applied (the formula sets the total), and it stands down while Carryweight on Level Up or Carry Weight Per Level is loaded. The cpc.control tool gained op=carryweight, op=carryweight:<0|1>, op=cwstart:<n>, op=cwperlevel:<n> and op=cwapply.
+- THE ATTRIBUTES TAB. Starting health, magicka and stamina (Control starting attributes, off by default; bControlStartingAttributes and fStartingHealth/Magicka/Stamina), applied as (value - 100) on top of your race's own start as this mod's permanent modifier and taken away again when turned off; the per-level gains, moved here from the Level Up tab; and a live readout, race start + this mod + per level x invested. The game keeps no count of attribute choices, so this mod counts every one itself from the moment it is installed on a character (co-save) and says from which level the count began instead of guessing at earlier ones. The cpc.control tool gained op=attributes, op=attributes:<0|1> and op=starthealth/startmagicka/startstamina:<n>.
+
+### Changed
+- The attribute level-up patch attaches whenever its site is found, because it is the counter, and Control what a level up grants no longer needs a restart: while it is off the patch hands the game its own numbers - carry weight on the stamina choice only - exactly as vanilla.
+- The Level Up tab keeps the perk table and the master switch; the attribute and carry-weight sliders live on the two new tabs.
+
 ## 1.0.8 - 2026-09-05 - untested
 
 ### Added

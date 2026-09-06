@@ -23,6 +23,16 @@ namespace UI
 		void __stdcall Render();
 	}
 
+	namespace AttributesPanel
+	{
+		void __stdcall Render();
+	}
+
+	namespace CarryWeightPanel
+	{
+		void __stdcall Render();
+	}
+
 	namespace StaticLevellingPanel
 	{
 		void __stdcall Render();

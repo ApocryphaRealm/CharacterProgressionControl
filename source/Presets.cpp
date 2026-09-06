@@ -1,6 +1,8 @@
 #include "PCH.h"
 
 #include "Presets.h"
+#include "Attributes.h"
+#include "CarryWeight.h"
 #include "SkillPoints.h"
 
 #include "Enchanting.h"
@@ -46,6 +48,8 @@ namespace Presets
 		{
 			Levelling::RequestApply();
 			Enchanting::RequestApply();
+			Attributes::RequestApply();
+			CarryWeight::RequestApply();
 		}
 	}
 
@@ -199,6 +203,8 @@ namespace Presets
 		while (a_intfc->GetNextRecordInfo(type, version, length))
 		{
 			if (type == SkillPoints::kRecord) { SkillPoints::ReadRecord(a_intfc, version, length); continue; }
+			if (type == Attributes::kRecord) { Attributes::ReadRecord(a_intfc, version, length); continue; }
+			if (type == CarryWeight::kRecord) { CarryWeight::ReadRecord(a_intfc, version, length); continue; }
 			if (type != kRecord) { continue; }
 			std::uint32_t nameLength = 0;
 			if (!a_intfc->ReadRecordData(&nameLength, sizeof(nameLength))) { continue; }

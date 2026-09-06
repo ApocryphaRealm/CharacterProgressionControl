@@ -4,6 +4,8 @@
 
 #include "SKSEMenuFramework.h"
 
+#include "Attributes.h"
+#include "CarryWeight.h"
 #include "Compat.h"
 #include "Difficulty.h"
 #include "Enchanting.h"
@@ -138,6 +140,8 @@ namespace UI
 					const bool ok = settings::Reload();
 					Levelling::Apply();
 					Enchanting::Apply();
+					Attributes::Apply();
+					CarryWeight::Apply();
 					statusMessage = ok ? "Settings reloaded from the INI."
 									   : "Could not read the INI. See the log for why.";
 				});
@@ -152,6 +156,8 @@ namespace UI
 					settings::RestoreDefaults();
 					Levelling::Apply();
 					Enchanting::Apply();
+					Attributes::Apply();
+					CarryWeight::Apply();
 					logger::debug("Restored default settings");
 				});
 				statusMessage = "Defaults restored - the values this install had before the mod. Press Save to keep them.";
@@ -187,6 +193,8 @@ namespace UI
 		SKSEMenuFramework::AddSectionItem("Levelling", LevellingPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Skills", SkillsPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Level Up", LevelUpPanel::Render);
+		SKSEMenuFramework::AddSectionItem("Attributes", AttributesPanel::Render);
+		SKSEMenuFramework::AddSectionItem("Carry Weight", CarryWeightPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Static Levelling", StaticLevellingPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Enchanting", EnchantingPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Presets", PresetsPanel::Render);
@@ -388,7 +396,7 @@ namespace UI
 		ImGuiMCP::TextWrapped("What a level up gives you: the perk points, and the health, magicka, "
 							  "stamina and carry weight that come with the choice you make.");
 		ImGuiMCP::Spacing();
-		InertNotice("Attribute gains at level up", "the health/magicka/stamina and carry weight a level up grants are still vanilla");
+		InertNotice("Attribute gains at level up", "the health/magicka/stamina and carry weight a level up grants are still vanilla; the perk table is separate");
 
 		ImGuiMCP::PushItemWidth(260.0F);
 
@@ -431,21 +439,152 @@ namespace UI
 			}
 			HelpMarker("The last row at or below the level reached applies. Each row is a whole number of perks.");
 
-			ImGuiMCP::SeparatorText("Attributes");
-			NudgeableSlider("Health per level", &levelup::healthPerLevel, 0.0F, 100.0F, "%.0f", 1.0F);
-			NudgeableSlider("Magicka per level", &levelup::magickaPerLevel, 0.0F, 100.0F, "%.0f", 1.0F);
-			NudgeableSlider("Stamina per level", &levelup::staminaPerLevel, 0.0F, 100.0F, "%.0f", 1.0F);
-			HelpMarker("What the chosen attribute gains. Vanilla is 10 for each.");
-
-			ImGuiMCP::SeparatorText("Carry weight, per choice");
-			NudgeableSlider("...when health is chosen", &levelup::carryWeightPerHealth, 0.0F, 50.0F, "%.1f", 1.0F);
-			NudgeableSlider("...when magicka is chosen", &levelup::carryWeightPerMagicka, 0.0F, 50.0F, "%.1f", 1.0F);
-			NudgeableSlider("...when stamina is chosen", &levelup::carryWeightPerStamina, 0.0F, 50.0F, "%.1f", 1.0F);
-			HelpMarker("The cross terms. Vanilla gives 5 carry weight with stamina and none with the "
-					   "other two.");
+			ImGuiMCP::Spacing();
+			ImGuiMCP::TextWrapped("The health, magicka and stamina a level up grants are on the Attributes tab, and the carry weight per choice is on the Carry Weight tab; both apply while this is on.");
 		}
 
 		ImGuiMCP::PopItemWidth();
+		RenderButtons();
+	}
+
+	void __stdcall AttributesPanel::Render()
+	{
+		using namespace settings;
+
+		ImGuiMCP::TextWrapped("Starting health, magicka and stamina, and what each gains on a level up where you choose it. "
+							  "The game keeps no count of those choices, so this mod counts every one itself from the moment "
+							  "it is installed on a character.");
+		ImGuiMCP::Spacing();
+		InertNotice("Attribute gains at level up", "attribute choices are not being counted and a level up grants what vanilla grants");
+
+		ImGuiMCP::PushItemWidth(260.0F);
+		bool changed = false;
+
+		bool control = attributes::control;
+		if (ImGuiMCP::Toggle("Control starting attributes", &control)) { attributes::control = control; changed = true; }
+		HelpMarker("Off by default. On: each starting value below is applied on top of your race's own start as this "
+				   "mod's permanent modifier, and taken away again if you turn this off. Nothing is asserted while it is off.");
+
+		if (attributes::control)
+		{
+			ImGuiMCP::SeparatorText("Starting values");
+			changed |= NudgeableSlider("Starting health", &attributes::starting[0], 10.0F, 1000.0F, "%.0f", 10.0F);
+			changed |= NudgeableSlider("Starting magicka", &attributes::starting[1], 10.0F, 1000.0F, "%.0f", 10.0F);
+			changed |= NudgeableSlider("Starting stamina", &attributes::starting[2], 10.0F, 1000.0F, "%.0f", 10.0F);
+			HelpMarker("What the attribute starts at, for a race whose vanilla start is 100. A race that starts higher or "
+					   "lower keeps its difference: the value is applied as (this - 100) on top of the race's own start.");
+		}
+
+		ImGuiMCP::SeparatorText("Gain per level up");
+		NudgeableSlider("Health per level", &levelup::healthPerLevel, 0.0F, 100.0F, "%.0f", 1.0F);
+		NudgeableSlider("Magicka per level", &levelup::magickaPerLevel, 0.0F, 100.0F, "%.0f", 1.0F);
+		NudgeableSlider("Stamina per level", &levelup::staminaPerLevel, 0.0F, 100.0F, "%.0f", 1.0F);
+		HelpMarker("What the chosen attribute gains. Vanilla is 10 for each.");
+		if (!levelup::overrideRewards)
+		{
+			ImGuiMCP::TextDisabled("Applied while \"Control what a level up grants\" on the Level Up tab is on. It is off, so a level up grants vanilla's 10.");
+		}
+
+		if (changed) { Attributes::RequestApply(); }
+		ImGuiMCP::PopItemWidth();
+
+		ImGuiMCP::Spacing();
+		ImGuiMCP::SeparatorText("What that means right now");
+		const auto s = Attributes::GetState();
+		if (!s.haveHistory) { ImGuiMCP::TextDisabled("No character loaded yet."); }
+		else
+		{
+			constexpr const char* names[3] = { "Health", "Magicka", "Stamina" };
+			for (int i = 0; i < 3; ++i)
+			{
+				const auto& r = s.row[i];
+				ImGuiMCP::Text("%s: race start %.0f %+.0f from this mod + %.0f x %u invested = %.0f   (permanent %.0f, now %.0f)",
+							   names[i], r.raceStart, r.applied, r.perLevel, r.invested,
+							   r.raceStart + r.applied + r.perLevel * static_cast<float>(r.invested), r.permanent, r.current);
+			}
+			if (s.sinceLevel > 1)
+			{
+				ImGuiMCP::TextWrapped("Counted since level %u, when this mod first saw this character. The %u earlier level-ups are unknown "
+									  "and are not guessed at: where the sum and the permanent value differ, that history (or another mod) is the difference.",
+									  s.sinceLevel, s.sinceLevel - 1);
+			}
+			else { ImGuiMCP::TextDisabled("Counted since level 1 - the whole history is known."); }
+			if (!Attributes::Counting()) { ImGuiMCP::TextDisabled("Not counting: the level-up patch is not attached (see the Patches tab)."); }
+		}
+		ImGuiMCP::Spacing();
+		if (ImGuiMCP::Button("Apply now")) { Attributes::RequestApply(); statusMessage = "Applied."; }
+		HelpMarker("Re-applies the starting values and refreshes the readout. It also runs by itself when a save loads, at each "
+				   "level up, and when you change anything above - nothing runs in the background.");
+
+		RenderButtons();
+	}
+
+	void __stdcall CarryWeightPanel::Render()
+	{
+		using namespace settings;
+
+		ImGuiMCP::TextWrapped("Carry weight as a formula of your level: starting + per level x (level - 1), applied to your permanent "
+							  "carry weight (enchantments and spells are left alone). It is recalculated when a save loads, when you "
+							  "level up, when you change a value here, and when you press Apply now - nothing runs in the background.");
+		ImGuiMCP::Spacing();
+
+		ImGuiMCP::PushItemWidth(260.0F);
+		bool changed = false;
+		bool control = carryweight::control;
+		if (ImGuiMCP::Toggle("Control carry weight", &control)) { carryweight::control = control; changed = true; }
+		HelpMarker("Off by default. While it is off nothing is asserted, and anything this mod had added is taken away again.");
+
+		const auto s = CarryWeight::GetState();
+		if (carryweight::control && !s.standDown.empty())
+		{
+			ImGuiMCP::TextWrapped("Standing down: %s. Nothing here is applied while it is.", s.standDown.c_str());
+		}
+		if (carryweight::control)
+		{
+			ImGuiMCP::SeparatorText("The formula");
+			changed |= NudgeableSlider("Starting carry weight", &carryweight::starting, 0.0F, 2000.0F, "%.0f", 10.0F);
+			HelpMarker("Carry weight at level 1. Vanilla is 300.");
+			changed |= NudgeableSlider("Per level", &carryweight::perLevel, 0.0F, 50.0F, "%.1f", 0.5F);
+			HelpMarker("Added for every level after the first, whichever attribute you choose.");
+		}
+
+		ImGuiMCP::SeparatorText("Per choice at level up");
+		if (carryweight::control)
+		{
+			ImGuiMCP::TextDisabled("Off while the formula controls carry weight: it sets the total, so a per-choice gain would be undone at the next recalculation.");
+		}
+		else
+		{
+			NudgeableSlider("...when health is chosen", &levelup::carryWeightPerHealth, 0.0F, 50.0F, "%.1f", 1.0F);
+			NudgeableSlider("...when magicka is chosen", &levelup::carryWeightPerMagicka, 0.0F, 50.0F, "%.1f", 1.0F);
+			NudgeableSlider("...when stamina is chosen", &levelup::carryWeightPerStamina, 0.0F, 50.0F, "%.1f", 1.0F);
+			HelpMarker("The cross terms. Vanilla gives 5 carry weight with stamina and none with the other two.");
+			if (!levelup::overrideRewards)
+			{
+				ImGuiMCP::TextDisabled("Applied while \"Control what a level up grants\" on the Level Up tab is on. It is off, so stamina gives vanilla's 5.");
+			}
+			if (Compat::CarryWeightOwnedElsewhere()) { ImGuiMCP::TextDisabled("Zeroed: one of our standalone carry-weight mods is loaded and owns carry weight."); }
+		}
+		if (changed) { CarryWeight::RequestApply(); }
+		ImGuiMCP::PopItemWidth();
+
+		ImGuiMCP::Spacing();
+		ImGuiMCP::SeparatorText("What that means right now");
+		if (s.playerLevel == 0) { ImGuiMCP::TextDisabled("No character loaded yet."); }
+		else
+		{
+			if (s.controlling)
+			{
+				ImGuiMCP::Text("Level %u: %.0f + %.1f x %u = %.0f", static_cast<unsigned>(s.playerLevel), carryweight::starting, carryweight::perLevel,
+							   static_cast<unsigned>(s.playerLevel > 0 ? s.playerLevel - 1 : 0), s.target);
+			}
+			ImGuiMCP::Text("Permanent carry weight %.0f, now %.0f with temporary effects; net added by this mod %.0f", s.permanent, s.current, s.applied);
+			if (!s.controlling) { ImGuiMCP::TextDisabled("Not controlling carry weight - the values above are whatever the game is using."); }
+		}
+		ImGuiMCP::Spacing();
+		if (ImGuiMCP::Button("Apply now")) { CarryWeight::RequestApply(); statusMessage = "Applied."; }
+		HelpMarker("Recalculates now. It also runs by itself when a save loads, at each level up, and when you change anything above.");
+
 		RenderButtons();
 	}
 

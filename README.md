@@ -22,7 +22,7 @@ experience sources) is a separate decision and is not started.
 What each patch group does, and how it was proven, is on the Patches tab in game and in the
 source comments; the short version: the skill cap and formula cap (Skills tab), the skill
 experience rates and skill-to-level income (Skills tab), the perk table and attribute gains with
-their carry-weight cross terms (Level Up tab), and static levelling (its own tab) are all live.
+their carry-weight cross terms (Attributes and Carry Weight tabs), and static levelling (its own tab) are all live.
 Every site is found by its byte shape in the running game, matched exactly once, proven by what
 it loads or compares before a byte is written, and with its setting off nothing is written at all.
 
@@ -65,6 +65,15 @@ and `cpc.control op=scan` exposes the same scanner for finding new ones.
 - **Enchanting tab** - how the cost of using an enchanted item scales with the Enchanting skill.
   This is the equation uncapping Enchanting breaks, which is why it sits beside the caps. Another
   no-hook tab: they are the game's own settings.
+- **Attributes tab** - starting health, magicka and stamina (applied on top of your race's own
+  start as this mod's permanent modifier, taken away again when turned off), what each gains on a
+  level up where you choose it, and a live readout of race start + this mod + per level x invested.
+  The game keeps no count of attribute choices, so this mod counts every one from the moment it is
+  installed on a character and says from which level the count began.
+- **Carry Weight tab** - Carryweight on Level Up's formula as a tab: permanent carry weight =
+  starting + per level x (level - 1), recalculated when a save loads, at each level up, when a value
+  changes and on Apply now. Nothing polls; the net amount added lives in the co-save so turning it
+  off takes exactly that away again. Stands down while either standalone carry-weight mod is loaded.
 - **Presets tab** - a preset is a file in this mod's Presets folder, in the same format as its
   INI. Whichever is selected is what the mod is using - no hidden merge - and **the selection
   belongs to the character** while the files are shared, so two saves can sit on different presets

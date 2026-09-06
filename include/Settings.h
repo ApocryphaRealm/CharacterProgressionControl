@@ -76,6 +76,24 @@ namespace settings
 		inline float carryWeightPerStamina = 5.0F;      // fCarryWeightPerStamina:LevelUp
 	}
 
+	// The Attributes tab (1.0.9): starting health, magicka and stamina. Applied as (value - 100) on
+	// top of the RACE's own start as this mod's permanent modifier, so a race that starts higher or
+	// lower keeps its difference; the per-level gains stay under levelup. Off = nothing asserted.
+	namespace attributes
+	{
+		inline bool control = false;                              // bControlStartingAttributes:Attributes
+		inline float starting[3] = { 100.0F, 100.0F, 100.0F };    // fStartingHealth/fStartingMagicka/fStartingStamina:Attributes
+	}
+
+	// The Carry Weight tab (1.0.9): Carryweight on Level Up's shape - permanent carry weight =
+	// starting + per level x (level - 1), recalculated on load, level-up, change and Apply now.
+	namespace carryweight
+	{
+		inline bool control = false;        // bControlCarryWeight:CarryWeight
+		inline float starting = 300.0F;     // fStartingCarryWeight:CarryWeight
+		inline float perLevel = 5.0F;       // fCarryWeightPerLevel:CarryWeight
+	}
+
 	// Stage 6 - a fixed amount per use instead of the vanilla scaling.
 	namespace staticlevel
 	{

@@ -9,6 +9,7 @@
 #include "DevBenchTool.h"
 #include "Difficulty.h"
 #include "Attributes.h"
+#include "CarryWeight.h"
 #include "Compat.h"
 #include "Enchanting.h"
 #include "LevelUp.h"
@@ -50,6 +51,7 @@ namespace
 			Patches::InstallAll();
 			UI::Register();
 			Difficulty::Install();
+			CarryWeight::Install();
 			DevBenchTool::Init(true);
 			break;
 		case SKSE::MessagingInterface::kPostLoadGame:
@@ -61,15 +63,19 @@ namespace
 			Difficulty::Sync("save loaded");
 			Levelling::RequestApply();
 			Enchanting::RequestApply();
+			// The count of attribute choices and the two permanent modifiers (starting attributes,
+			// carry weight) belong to this character; both start from what the co-save said.
+			Attributes::OnGameLoaded();
+			CarryWeight::RequestApply();
 			break;
 		default:
 			break;
 		}
 	}
 
-	void SaveCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnSave(a_intfc); SkillPoints::OnSave(a_intfc); }
+	void SaveCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnSave(a_intfc); SkillPoints::OnSave(a_intfc); Attributes::OnSave(a_intfc); CarryWeight::OnSave(a_intfc); }
 	void LoadCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnLoad(a_intfc); }
-	void RevertCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnRevert(a_intfc); SkillPoints::OnRevert(); }
+	void RevertCallback(SKSE::SerializationInterface* a_intfc) { Presets::OnRevert(a_intfc); SkillPoints::OnRevert(); Attributes::OnRevert(); CarryWeight::OnRevert(); }
 }
 
 SKSEPluginLoad(const SKSE::LoadInterface* a_skse)

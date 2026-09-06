@@ -166,6 +166,13 @@ namespace settings
 			get("fcarryweightperhealth:levelup", levelup::carryWeightPerHealth, ParseFloat);
 			get("fcarryweightpermagicka:levelup", levelup::carryWeightPerMagicka, ParseFloat);
 			get("fcarryweightperstamina:levelup", levelup::carryWeightPerStamina, ParseFloat);
+			get("bcontrolstartingattributes:attributes", attributes::control, ParseBool);
+			get("fstartinghealth:attributes", attributes::starting[0], ParseFloat);
+			get("fstartingmagicka:attributes", attributes::starting[1], ParseFloat);
+			get("fstartingstamina:attributes", attributes::starting[2], ParseFloat);
+			get("bcontrolcarryweight:carryweight", carryweight::control, ParseBool);
+			get("fstartingcarryweight:carryweight", carryweight::starting, ParseFloat);
+			get("fcarryweightperlevel:carryweight", carryweight::perLevel, ParseFloat);
 
 			get("bstaticlevelling:staticlevelling", staticlevel::enabled, ParseBool);
 			get("bskillpoints:staticlevelling", staticlevel::pointsEnabled, ParseBool);
@@ -363,6 +370,15 @@ namespace settings
 		ok &= WriteKey(lines, "LevelUp", "fCarryWeightPerMagicka", FormatFloat(levelup::carryWeightPerMagicka));
 		ok &= WriteKey(lines, "LevelUp", "fCarryWeightPerStamina", FormatFloat(levelup::carryWeightPerStamina));
 
+		ok &= WriteKey(lines, "Attributes", "bControlStartingAttributes", attributes::control ? "1" : "0");
+		ok &= WriteKey(lines, "Attributes", "fStartingHealth", FormatFloat(attributes::starting[0]));
+		ok &= WriteKey(lines, "Attributes", "fStartingMagicka", FormatFloat(attributes::starting[1]));
+		ok &= WriteKey(lines, "Attributes", "fStartingStamina", FormatFloat(attributes::starting[2]));
+
+		ok &= WriteKey(lines, "CarryWeight", "bControlCarryWeight", carryweight::control ? "1" : "0");
+		ok &= WriteKey(lines, "CarryWeight", "fStartingCarryWeight", FormatFloat(carryweight::starting));
+		ok &= WriteKey(lines, "CarryWeight", "fCarryWeightPerLevel", FormatFloat(carryweight::perLevel));
+
 		ok &= WriteKey(lines, "StaticLevelling", "bStaticLevelling", staticlevel::enabled ? "1" : "0");
 		ok &= WriteKey(lines, "StaticLevelling", "bSkillPoints", staticlevel::pointsEnabled ? "1" : "0");
 		ok &= WriteKey(lines, "StaticLevelling", "iSkillPointsPerLevel", std::to_string(staticlevel::pointsPerLevel));
@@ -421,6 +437,11 @@ namespace settings
 		levelup::carryWeightPerHealth = defaults.lvl[4];
 		levelup::carryWeightPerMagicka = defaults.lvl[5];
 		levelup::carryWeightPerStamina = defaults.lvl[6];
+		attributes::control = false;
+		for (float& v : attributes::starting) { v = 100.0F; }
+		carryweight::control = false;
+		carryweight::starting = 300.0F;
+		carryweight::perLevel = 5.0F;
 		staticlevel::enabled = defaults.staticEnabled;
 		staticlevel::pointsEnabled = defaults.pointsEnabled; staticlevel::pointsPerLevel = defaults.pointsPerLevel;
 		staticlevel::pointsLevelMult = defaults.pointsLevelMult; staticlevel::pointsCap = defaults.pointsCap;

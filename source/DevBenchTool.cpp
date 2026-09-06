@@ -12,6 +12,7 @@
 #include "SkillList.h"
 #include "Skills.h"
 #include "Attributes.h"
+#include "CarryWeight.h"
 #include "SkillPoints.h"
 #include "Settings.h"
 #include "Signature.h"
@@ -414,6 +415,61 @@ namespace DevBenchTool
 			if (args.find("\"difficulty\"") != std::string_view::npos)
 			{
 				a_write(a_sink, std::format(R"({{"ok":true,"op":"difficulty","state":{}}})", Difficulty::StatusJson()).c_str());
+				return;
+			}
+			// The Attributes tab: op=attributes reads it (control, count since which level, per-attribute rows);
+			// op=attributes:<0|1> flips the starting-value control; op=starthealth:<n> / startmagicka:<n> /
+			// startstamina:<n> set a starting value. Each applies at once (queued on the game thread).
+			if (args.find("attributes:") != std::string_view::npos)
+			{
+				settings::attributes::control = ReadNumber(args, "attributes:") != 0.0F;
+				Attributes::RequestApply();
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"attributes","control":{},"queued":true}})", settings::attributes::control ? "true" : "false").c_str());
+				return;
+			}
+			for (const auto& [key, index] : { std::pair{ "starthealth:", 0 }, std::pair{ "startmagicka:", 1 }, std::pair{ "startstamina:", 2 } })
+			{
+				if (args.find(key) != std::string_view::npos)
+				{
+					settings::attributes::starting[index] = ReadNumber(args, key);
+					Attributes::RequestApply();
+					a_write(a_sink, std::format(R"({{"ok":true,"op":"{}","value":{:.1f},"queued":true}})", key, settings::attributes::starting[index]).c_str());
+					return;
+				}
+			}
+			if (args.find("\"attributes\"") != std::string_view::npos)
+			{
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"attributes","state":{}}})", Attributes::StatusJson()).c_str());
+				return;
+			}
+			// The Carry Weight tab: op=carryweight reads it; op=carryweight:<0|1> flips the control; op=cwstart:<n>
+			// and op=cwperlevel:<n> set the formula; op=cwapply recalculates now. Each applies at once.
+			if (args.find("carryweight:") != std::string_view::npos)
+			{
+				settings::carryweight::control = ReadNumber(args, "carryweight:") != 0.0F;
+				CarryWeight::RequestApply();
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"carryweight","control":{},"queued":true}})", settings::carryweight::control ? "true" : "false").c_str());
+				return;
+			}
+			for (const auto& [key, target] : { std::pair{ "cwstart:", &settings::carryweight::starting }, std::pair{ "cwperlevel:", &settings::carryweight::perLevel } })
+			{
+				if (args.find(key) != std::string_view::npos)
+				{
+					*target = ReadNumber(args, key);
+					CarryWeight::RequestApply();
+					a_write(a_sink, std::format(R"({{"ok":true,"op":"{}","value":{:.1f},"queued":true}})", key, *target).c_str());
+					return;
+				}
+			}
+			if (args.find("\"cwapply\"") != std::string_view::npos)
+			{
+				CarryWeight::RequestApply();
+				a_write(a_sink, R"({"ok":true,"op":"cwapply","queued":true})");
+				return;
+			}
+			if (args.find("\"carryweight\"") != std::string_view::npos)
+			{
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"carryweight","state":{}}})", CarryWeight::StatusJson()).c_str());
 				return;
 			}
 			if (args.find("\"presets\"") != std::string_view::npos)
