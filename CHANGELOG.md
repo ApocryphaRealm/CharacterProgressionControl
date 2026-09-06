@@ -11,7 +11,7 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
-## 1.0.9 - 2026-09-05 - untested
+## 1.0.9 - 2026-09-05 - working
 
 ### Added
 - THE CARRY WEIGHT TAB. Carryweight on Level Up's shape, now a tab here: with Control carry weight on (off by default; bControlCarryWeight in the INI) your permanent carry weight is starting + per level x (level - 1), recalculated when a save loads, when you level up (the level event and the attribute choice itself), when a value changes and on Apply now - nothing polls. The net amount added is kept in the co-save, so turning it off takes exactly that away again. While it is on, the per-choice carry weight is not applied (the formula sets the total), and it stands down while Carryweight on Level Up or Carry Weight Per Level is loaded. The cpc.control tool gained op=carryweight, op=carryweight:<0|1>, op=cwstart:<n>, op=cwperlevel:<n> and op=cwapply.
@@ -20,8 +20,10 @@ Settings are stored in a plain INI file and can also be changed in game.
 ### Changed
 - The attribute level-up patch attaches whenever its site is found, because it is the counter, and Control what a level up grants no longer needs a restart: while it is off the patch hands the game its own numbers - carry weight on the stamina choice only - exactly as vanilla.
 - The Level Up tab keeps the perk table and the master switch; the attribute and carry-weight sliders live on the two new tabs.
+- The two permanent modifiers are checked on load: the game keeps the health/magicka/stamina one across a save but drops the carry-weight one (measured on SE 1.5.97), so the co-save also carries the permanent value as it stood after the last apply, and the first apply after a load either carries on or starts the applied amount from zero - no drift either way, and switching off always takes away exactly what is there.
+- The cpc.control tool gained op=save, which writes the INI.
 
-## 1.0.8 - 2026-09-05 - untested
+## 1.0.8 - 2026-09-05 - working
 
 ### Added
 - ONE CONFIGURATION PER GAME DIFFICULTY. A new toggle on the Presets page, Follow the game's difficulty (off by default; bFollowDifficulty in the INI): while it is on, the difficulty set in the game's own Settings decides which of six presets is in use - Difficulty - Novice, Apprentice, Adept, Expert, Master and Legendary, ordinary preset files in the Presets folder - and changing the difficulty switches them: what you had is saved into the old difficulty's preset and the new one's is loaded, created from the current configuration the first time that difficulty is met. The switch happens when the Journal Menu closes (where the game's Settings live) and when a save loads; nothing polls. The cpc.control tool gained op=difficulty, op=difficulty:<0-5> and op=follow:<0|1>.

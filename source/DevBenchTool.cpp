@@ -80,6 +80,12 @@ namespace DevBenchTool
 				a_write(a_sink, std::format(R"({{"ok":{},"op":"reload"}})", ok ? "true" : "false").c_str());
 				return;
 			}
+			if (args.find("\"save\"") != std::string_view::npos)
+			{
+				const bool ok = settings::Save();
+				a_write(a_sink, std::format(R"({{"ok":{},"op":"save"}})", ok ? "true" : "false").c_str());
+				return;
+			}
 			if (args.find("\"apply\"") != std::string_view::npos)
 			{
 				Levelling::RequestApply();

@@ -50,7 +50,10 @@ namespace Attributes
 		// The count and the starting-value modifiers, mirrored in the co-save. Written on the main
 		// thread only (the hook runs inside the LevelUp Menu; Apply() is queued there).
 		std::atomic<std::uint32_t> g_invested[3]{};
+		float g_gained[3]{};    // what the counted choices granted, as applied by the game
 		float g_applied[3]{};
+		float g_lastPermanent[3]{};   // permanent after the last apply; the first apply after a load checks the modifier survived
+		bool g_checkAfterLoad = false;
 		std::uint16_t g_sinceLevel = 0;
 		bool g_haveHistory = false;
 
@@ -116,6 +119,7 @@ namespace Attributes
 			logger::info("attribute level-up: choice {} -> +{} attribute, +{:.1f} carry weight (vanilla {} / {:.1f}; control {})",
 						 kName[idx], gain->data.i, cw, vanillaGain, vanillaCarry, settings::levelup::overrideRewards ? "on" : "off");
 			const auto r = g_orig(a_unk0, a_unk1);
+			g_gained[idx] += static_cast<float>(gain->data.i);
 			gain->data.i = vanillaGain;
 			carry->data.f = vanillaCarry;
 			// The choice may have moved the permanent carry weight; the formula re-targets it, and the
@@ -238,7 +242,6 @@ namespace Attributes
 		if (!player || !player->Is3DLoaded()) { logger::debug("attributes: no loaded player yet"); return; }
 		auto* owner = player->AsActorValueOwner();
 		if (!owner) { logger::warn("attributes: the player has no actor-value owner; nothing applied"); return; }
-		const auto* race = player->GetRace();
 
 		State s;
 		s.playerLevel = player->GetLevel();
@@ -249,25 +252,33 @@ namespace Attributes
 		for (int i = 0; i < 3; ++i)
 		{
 			auto& r = s.row[i];
-			r.raceStart = race ? (i == 0 ? race->data.startingHealth : i == 1 ? race->data.startingMagicka : race->data.startingStamina) : 100.0F;
 			r.perLevel = perLevel[i];
 			r.invested = g_invested[i].load();
+			r.gained = g_gained[i];
 			r.permanent = owner->GetPermanentActorValue(kAv[i]);
 			r.current = owner->GetActorValue(kAv[i]);
 			// On: (starting - 100) on top of the race's own start. Off: nothing - this mod's share comes off.
+			if (g_checkAfterLoad && std::fabs(g_applied[i]) > 0.01F && std::fabs(r.permanent - (g_lastPermanent[i] - g_applied[i])) < 0.5F && std::fabs(r.permanent - g_lastPermanent[i]) > 0.5F)
+			{
+				logger::info("attributes: the game did not keep this mod's {:+.1f} {} across the load (permanent {:.1f}, was {:.1f}) - starting from zero", g_applied[i], kName[i], r.permanent, g_lastPermanent[i]);
+				g_applied[i] = 0.0F;
+			}
 			const float wanted = s.controlling ? (settings::attributes::starting[i] - 100.0F) : 0.0F;
 			const float delta = wanted - g_applied[i];
 			if (std::fabs(delta) > 0.01F)
 			{
 				Modify(owner, kAv[i], delta);
 				g_applied[i] = wanted;
-				logger::info("attributes: {} permanent {:.1f} -> {:.1f} (race start {:.1f}, this mod {:+.1f}; {})",
-							 kName[i], r.permanent, r.permanent + delta, r.raceStart, wanted, s.controlling ? "starting values on" : "control off - this mod's share taken away");
+				logger::info("attributes: {} permanent {:.1f} -> {:.1f} (this mod {:+.1f}, counted gains {:.1f}; {})",
+							 kName[i], r.permanent, r.permanent + delta, wanted, r.gained, s.controlling ? "starting values on" : "control off - this mod's share taken away");
 				r.permanent = owner->GetPermanentActorValue(kAv[i]);
 				r.current = owner->GetActorValue(kAv[i]);
 			}
 			r.applied = g_applied[i];
+			r.base = r.permanent - r.applied - r.gained;
+			g_lastPermanent[i] = r.permanent;
 		}
+		g_checkAfterLoad = false;
 		std::scoped_lock l(g_stateLock);
 		g_state = s;
 	}
@@ -286,6 +297,7 @@ namespace Attributes
 			g_haveHistory = true;
 			for (auto& n : g_invested) { n = 0; }
 			for (auto& a : g_applied) { a = 0.0F; }
+			for (auto& gn : g_gained) { gn = 0.0F; }
 			logger::info("attributes: no count yet for this character - counting attribute choices from level {} on{}", g_sinceLevel,
 						 g_sinceLevel > 1 ? " (earlier level-ups are unknown and not inferred)" : "");
 		}
@@ -300,20 +312,22 @@ namespace Attributes
 		a_intfc->WriteRecordData(&have, sizeof(have));
 		for (int i = 0; i < 3; ++i) { const std::uint32_t n = g_invested[i].load(); a_intfc->WriteRecordData(&n, sizeof(n)); }
 		a_intfc->WriteRecordData(g_applied, sizeof(g_applied));
+		a_intfc->WriteRecordData(g_gained, sizeof(g_gained));
+		a_intfc->WriteRecordData(g_lastPermanent, sizeof(g_lastPermanent));
 	}
 
 	void ReadRecord(SKSE::SerializationInterface* a_intfc, std::uint32_t a_version, std::uint32_t a_length)
 	{
 		OnRevert();
-		constexpr std::uint32_t kLength = sizeof(std::uint16_t) + sizeof(std::uint8_t) + 3 * sizeof(std::uint32_t) + 3 * sizeof(float);
+		constexpr std::uint32_t kLength = sizeof(std::uint16_t) + sizeof(std::uint8_t) + 3 * sizeof(std::uint32_t) + 3 * sizeof(float) + 3 * sizeof(float) + 3 * sizeof(float);
 		if (!a_intfc || a_version != kRecordVersion || a_length != kLength)
 		{
 			logger::warn("attributes: co-save record version {} length {} not understood; the count starts again", a_version, a_length);
 			return;
 		}
-		std::uint16_t since = 0; std::uint8_t have = 0; std::uint32_t n[3]{}; float applied[3]{};
+		std::uint16_t since = 0; std::uint8_t have = 0; std::uint32_t n[3]{}; float applied[3]{}; float gained[3]{}; float last[3]{};
 		if (!a_intfc->ReadRecordData(&since, sizeof(since)) || !a_intfc->ReadRecordData(&have, sizeof(have)) ||
-			!a_intfc->ReadRecordData(n, sizeof(n)) || !a_intfc->ReadRecordData(applied, sizeof(applied)))
+			!a_intfc->ReadRecordData(n, sizeof(n)) || !a_intfc->ReadRecordData(applied, sizeof(applied)) || !a_intfc->ReadRecordData(gained, sizeof(gained)) || !a_intfc->ReadRecordData(last, sizeof(last)))
 		{
 			logger::warn("attributes: short co-save record; the count starts again");
 			OnRevert();
@@ -321,9 +335,10 @@ namespace Attributes
 		}
 		g_sinceLevel = since;
 		g_haveHistory = have != 0;
-		for (int i = 0; i < 3; ++i) { g_invested[i] = n[i]; g_applied[i] = applied[i]; }
-		logger::debug("attributes: co-save loaded - since level {}, invested {}/{}/{}, applied {:.1f}/{:.1f}/{:.1f}",
-					  g_sinceLevel, n[0], n[1], n[2], applied[0], applied[1], applied[2]);
+		for (int i = 0; i < 3; ++i) { g_invested[i] = n[i]; g_applied[i] = applied[i]; g_gained[i] = gained[i]; g_lastPermanent[i] = last[i]; }
+		g_checkAfterLoad = true;
+		logger::debug("attributes: co-save loaded - since level {}, invested {}/{}/{}, applied {:.1f}/{:.1f}/{:.1f}, gained {:.1f}/{:.1f}/{:.1f}",
+					  g_sinceLevel, n[0], n[1], n[2], applied[0], applied[1], applied[2], gained[0], gained[1], gained[2]);
 	}
 
 	void OnRevert()
@@ -332,6 +347,9 @@ namespace Attributes
 		g_haveHistory = false;
 		for (auto& n : g_invested) { n = 0; }
 		for (auto& a : g_applied) { a = 0.0F; }
+		for (auto& gn : g_gained) { gn = 0.0F; }
+		for (auto& lp : g_lastPermanent) { lp = 0.0F; }
+		g_checkAfterLoad = false;
 		std::scoped_lock l(g_stateLock);
 		g_state = State{};
 	}
@@ -349,8 +367,8 @@ namespace Attributes
 		for (int i = 0; i < 3; ++i)
 		{
 			const auto& r = s.row[i];
-			rows += std::format(R"({}"{}":{{"raceStart":{:.1f},"starting":{:.1f},"applied":{:.1f},"perLevel":{:.1f},"invested":{},"permanent":{:.1f},"current":{:.1f}}})",
-								i ? "," : "", kName[i], r.raceStart, settings::attributes::starting[i], r.applied, r.perLevel, r.invested, r.permanent, r.current);
+			rows += std::format(R"({}"{}":{{"base":{:.1f},"starting":{:.1f},"applied":{:.1f},"perLevel":{:.1f},"invested":{},"gained":{:.1f},"permanent":{:.1f},"current":{:.1f}}})",
+								i ? "," : "", kName[i], r.base, settings::attributes::starting[i], r.applied, r.perLevel, r.invested, r.gained, r.permanent, r.current);
 		}
 		return std::format(R"({{"control":{},"counting":{},"haveHistory":{},"sinceLevel":{},"playerLevel":{},{}}})",
 						   settings::attributes::control ? "true" : "false", Counting() ? "true" : "false", s.haveHistory ? "true" : "false",

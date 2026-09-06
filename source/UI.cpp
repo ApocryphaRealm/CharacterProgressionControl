@@ -471,8 +471,8 @@ namespace UI
 			changed |= NudgeableSlider("Starting health", &attributes::starting[0], 10.0F, 1000.0F, "%.0f", 10.0F);
 			changed |= NudgeableSlider("Starting magicka", &attributes::starting[1], 10.0F, 1000.0F, "%.0f", 10.0F);
 			changed |= NudgeableSlider("Starting stamina", &attributes::starting[2], 10.0F, 1000.0F, "%.0f", 10.0F);
-			HelpMarker("What the attribute starts at, for a race whose vanilla start is 100. A race that starts higher or "
-					   "lower keeps its difference: the value is applied as (this - 100) on top of the race's own start.");
+			HelpMarker("What the attribute starts at, for a character whose vanilla start is 100. A race that starts higher or "
+					   "lower keeps its difference: the value is applied as (this - 100) on top of what the character started with.");
 		}
 
 		ImGuiMCP::SeparatorText("Gain per level up");
@@ -498,14 +498,13 @@ namespace UI
 			for (int i = 0; i < 3; ++i)
 			{
 				const auto& r = s.row[i];
-				ImGuiMCP::Text("%s: race start %.0f %+.0f from this mod + %.0f x %u invested = %.0f   (permanent %.0f, now %.0f)",
-							   names[i], r.raceStart, r.applied, r.perLevel, r.invested,
-							   r.raceStart + r.applied + r.perLevel * static_cast<float>(r.invested), r.permanent, r.current);
+				ImGuiMCP::Text("%s: %.0f base %+.0f from this mod %+.0f over %u investment%s = %.0f permanent   (now %.0f)",
+							   names[i], r.base, r.applied, r.gained, r.invested, r.invested == 1 ? "" : "s", r.permanent, r.current);
 			}
 			if (s.sinceLevel > 1)
 			{
 				ImGuiMCP::TextWrapped("Counted since level %u, when this mod first saw this character. The %u earlier level-ups are unknown "
-									  "and are not guessed at: where the sum and the permanent value differ, that history (or another mod) is the difference.",
+									  "and are not guessed at: they are part of the base, with whatever else the character started with.",
 									  s.sinceLevel, s.sinceLevel - 1);
 			}
 			else { ImGuiMCP::TextDisabled("Counted since level 1 - the whole history is known."); }

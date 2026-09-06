@@ -16,7 +16,7 @@ namespace CarryWeight
 {
 	namespace
 	{
-		constexpr std::uint32_t kRecordVersion = 1;
+		constexpr std::uint32_t kRecordVersion = 2;
 
 		std::atomic<bool> g_installed{ false };
 		std::mutex g_stateLock;
@@ -25,6 +25,12 @@ namespace CarryWeight
 		// The net amount this mod has applied to the player's carry weight, mirrored in the
 		// co-save. Only main-thread Apply() writes it.
 		float g_applied = 0.0F;
+		// The permanent value as it stood after the last apply, and whether the next apply is the first
+		// after a load. The game keeps some permanent modifiers across a save and not others (carry
+		// weight came back without this mod's share on 2026-09-05; health kept its), so the first apply
+		// after a load asks which happened instead of trusting the applied amount blindly.
+		float g_lastPermanent = 0.0F;
+		bool g_checkAfterLoad = false;
 
 		class LevelSink : public RE::BSTEventSink<RE::LevelIncrease::Event>
 		{
@@ -68,6 +74,15 @@ namespace CarryWeight
 		s.current = owner->GetActorValue(RE::ActorValue::kCarryWeight);
 		s.permanent = owner->GetPermanentActorValue(RE::ActorValue::kCarryWeight);
 		s.controlling = Controlling();
+		if (g_checkAfterLoad)
+		{
+			g_checkAfterLoad = false;
+			if (std::fabs(g_applied) > 0.01F && std::fabs(s.permanent - (g_lastPermanent - g_applied)) < 0.5F && std::fabs(s.permanent - g_lastPermanent) > 0.5F)
+			{
+				logger::info("carry weight: the game did not keep this mod's {:.1f} across the load (permanent {:.1f}, was {:.1f}) - starting from zero", g_applied, s.permanent, g_lastPermanent);
+				g_applied = 0.0F;
+			}
+		}
 		if (settings::carryweight::control && !s.controlling)
 		{
 			for (const auto& d : Compat::All())
@@ -109,6 +124,7 @@ namespace CarryWeight
 			logger::debug("carry weight: already {:.1f} at level {} ({})", s.permanent, s.playerLevel, s.controlling ? "controlling" : "not controlling");
 		}
 		s.applied = g_applied;
+		g_lastPermanent = s.permanent;
 
 		std::scoped_lock l(g_stateLock);
 		s.applications = g_state.applications + 1;
@@ -138,20 +154,23 @@ namespace CarryWeight
 	{
 		if (!a_intfc || !a_intfc->OpenRecord(kRecord, kRecordVersion)) { logger::error("carry weight: could not open the co-save record; the applied amount was not written"); return; }
 		a_intfc->WriteRecordData(&g_applied, sizeof(g_applied));
+		a_intfc->WriteRecordData(&g_lastPermanent, sizeof(g_lastPermanent));
 	}
 
 	void ReadRecord(SKSE::SerializationInterface* a_intfc, std::uint32_t a_version, std::uint32_t a_length)
 	{
-		g_applied = 0.0F;
-		if (!a_intfc || a_version != kRecordVersion || a_length != sizeof(float)) { logger::warn("carry weight: co-save record version {} length {} not understood; applied left at 0", a_version, a_length); return; }
-		float v = 0.0F;
-		if (a_intfc->ReadRecordData(&v, sizeof(v)) == sizeof(v)) { g_applied = v; }
-		logger::debug("carry weight: co-save loaded, net applied {:.1f}", g_applied);
+		g_applied = 0.0F; g_lastPermanent = 0.0F; g_checkAfterLoad = false;
+		if (!a_intfc || a_version != kRecordVersion || a_length != 2 * sizeof(float)) { logger::warn("carry weight: co-save record version {} length {} not understood; applied left at 0", a_version, a_length); return; }
+		float v[2]{};
+		if (a_intfc->ReadRecordData(v, sizeof(v)) == sizeof(v)) { g_applied = v[0]; g_lastPermanent = v[1]; g_checkAfterLoad = true; }
+		logger::debug("carry weight: co-save loaded, net applied {:.1f}, permanent then {:.1f}", g_applied, g_lastPermanent);
 	}
 
 	void OnRevert()
 	{
 		g_applied = 0.0F;
+		g_lastPermanent = 0.0F;
+		g_checkAfterLoad = false;
 		std::scoped_lock l(g_stateLock);
 		g_state = State{};
 	}

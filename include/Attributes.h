@@ -17,10 +17,12 @@
 // tab says so rather than inferring them. While "Control what a level up grants" is off, the
 // hook hands the game its own values (carry weight on the stamina choice only, exactly vanilla).
 //
-// Starting values: with the tab's control on, each attribute gets (starting - 100) applied on top
-// of the RACE's own start as this mod's permanent modifier - a race that starts higher or lower
-// keeps its difference - and the net applied is tracked in the co-save, so turning it off takes
-// exactly that away again.
+// Starting values: with the tab's control on, each attribute gets (starting - 100) applied as this
+// mod's permanent modifier on top of whatever the character started with - a race that starts
+// higher or lower keeps its difference - and the net applied is tracked in the co-save, so turning
+// it off takes exactly that away again. The readout's "base" is derived from what this mod knows:
+// permanent minus its own share minus what its counted choices granted. No race field is read - the
+// race record's starting values (50/50/50 in vanilla) are not what the character starts with.
 
 #include <cstdint>
 #include <string>
@@ -52,10 +54,11 @@ namespace Attributes
 
 	struct Row
 	{
-		float raceStart = 0.0F;      // the race's own starting value
+		float base = 0.0F;           // permanent minus this mod's share and its counted gains: what was there before the count
 		float applied = 0.0F;        // this mod's starting-value modifier as applied (co-save)
 		float perLevel = 0.0F;       // what a level up grants when this attribute is chosen
 		std::uint32_t invested = 0;  // choices counted since the count began
+		float gained = 0.0F;         // what those counted choices actually granted (co-save)
 		float permanent = 0.0F;      // base + permanent modifiers
 		float current = 0.0F;        // incl. temporary effects and damage
 	};
