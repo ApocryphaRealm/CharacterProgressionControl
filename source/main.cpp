@@ -8,6 +8,7 @@
 
 #include "DevBenchTool.h"
 #include "Difficulty.h"
+#include "DifficultyValues.h"
 #include "Attributes.h"
 #include "CarryWeight.h"
 #include "Compat.h"
@@ -49,6 +50,7 @@ namespace
 			SkillPoints::Register();
 			MenuStrings::Install();
 			Patches::InstallAll();
+			DifficultyValues::Init();
 			UI::Register();
 			Difficulty::Install();
 			CarryWeight::Install();
@@ -67,6 +69,7 @@ namespace
 			// carry weight) belong to this character; both start from what the co-save said.
 			Attributes::OnGameLoaded();
 			CarryWeight::RequestApply();
+			DifficultyValues::RequestApply();
 			break;
 		default:
 			break;

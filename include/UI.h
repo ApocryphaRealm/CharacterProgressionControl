@@ -33,6 +33,11 @@ namespace UI
 		void __stdcall Render();
 	}
 
+	namespace DifficultyPanel
+	{
+		void __stdcall Render();
+	}
+
 	namespace StaticLevellingPanel
 	{
 		void __stdcall Render();

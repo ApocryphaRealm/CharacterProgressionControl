@@ -3,6 +3,7 @@
 #include "Presets.h"
 #include "Attributes.h"
 #include "CarryWeight.h"
+#include "DifficultyValues.h"
 #include "SkillPoints.h"
 
 #include "Enchanting.h"
@@ -50,6 +51,7 @@ namespace Presets
 			Enchanting::RequestApply();
 			Attributes::RequestApply();
 			CarryWeight::RequestApply();
+			DifficultyValues::RequestApply();
 		}
 	}
 

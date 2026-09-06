@@ -11,6 +11,11 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
+## 1.1.0 - 2026-09-05 - working
+
+### Added
+- THE DIFFICULTY TAB - Custom Difficulty UI's mechanic inside this mod (Custom Difficulty UI stays a separate minimal mod; the tab stands down while it is loaded). Damage: with Control damage multipliers on (off by default; bControlDamage in the INI) each difficulty's pair of vanilla multipliers - damage dealt to you and by you - is written, and the difficulty you play on picks the pair; off restores Skyrim's own values. Regeneration: vanilla has one set of regeneration values for every difficulty; with Control regeneration on (bControlRegeneration) each difficulty has its own set of the seven in-combat rate and after-damage delay settings plus five global ones, the set for the difficulty you play on is written into the game, and it is re-written the moment the difficulty changes in the game's Settings (the Journal Menu closing - nothing polls); the values your game came with are captured on first load and restored when off. The cpc.control tool gained op=difficultyvalues, op=damage:<0|1>, op=regen:<0|1>, op=dmgto<d>:<v>, op=dmgby<d>:<v> and op=regenhp<d>:<v>.
+
 ## 1.0.9 - 2026-09-05 - working
 
 ### Added

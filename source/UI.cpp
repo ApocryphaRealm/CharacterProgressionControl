@@ -8,6 +8,7 @@
 #include "CarryWeight.h"
 #include "Compat.h"
 #include "Difficulty.h"
+#include "DifficultyValues.h"
 #include "Enchanting.h"
 #include "Levelling.h"
 #include "Patches.h"
@@ -21,6 +22,7 @@
 #include "utils/Toggle.h"
 
 #include <algorithm>
+#include <format>
 #include <functional>
 #include <string>
 
@@ -142,6 +144,7 @@ namespace UI
 					Enchanting::Apply();
 					Attributes::Apply();
 					CarryWeight::Apply();
+					DifficultyValues::Apply();
 					statusMessage = ok ? "Settings reloaded from the INI."
 									   : "Could not read the INI. See the log for why.";
 				});
@@ -158,6 +161,7 @@ namespace UI
 					Enchanting::Apply();
 					Attributes::Apply();
 					CarryWeight::Apply();
+					DifficultyValues::Apply();
 					logger::debug("Restored default settings");
 				});
 				statusMessage = "Defaults restored - the values this install had before the mod. Press Save to keep them.";
@@ -195,6 +199,7 @@ namespace UI
 		SKSEMenuFramework::AddSectionItem("Level Up", LevelUpPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Attributes", AttributesPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Carry Weight", CarryWeightPanel::Render);
+		SKSEMenuFramework::AddSectionItem("Difficulty", DifficultyPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Static Levelling", StaticLevellingPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Enchanting", EnchantingPanel::Render);
 		SKSEMenuFramework::AddSectionItem("Presets", PresetsPanel::Render);
@@ -583,6 +588,97 @@ namespace UI
 		ImGuiMCP::Spacing();
 		if (ImGuiMCP::Button("Apply now")) { CarryWeight::RequestApply(); statusMessage = "Applied."; }
 		HelpMarker("Recalculates now. It also runs by itself when a save loads, at each level up, and when you change anything above.");
+
+		RenderButtons();
+	}
+
+	void __stdcall DifficultyPanel::Render()
+	{
+		using namespace settings;
+		constexpr const char* kNames[6] = { "Novice", "Apprentice", "Adept", "Expert", "Master", "Legendary" };
+		constexpr const char* kRegenLabels[7] = { "Health regen rate in combat", "Magicka regen rate in combat", "Stamina regen rate in combat",
+												  "Health regen delay after damage (s)", "Magicka regen delay after damage (s)", "Stamina regen delay after damage (s)",
+												  "Damaged-attribute delay (s)" };
+		constexpr const char* kGlobalLabels[5] = { "Health delay ceiling (s)", "Magicka delay ceiling (s)", "Stamina delay ceiling (s)",
+												   "Out-of-breath stamina delay (s)", "Downed essential regen rate" };
+		static int editing = -1;
+
+		ImGuiMCP::TextWrapped("Skyrim's own numbers per difficulty: the damage multipliers, and regeneration - which vanilla does not "
+							  "vary by difficulty at all; this tab adds that. The difficulty you play on decides which set the game reads.");
+		ImGuiMCP::Spacing();
+		const int active = Difficulty::Current();
+		if (DifficultyValues::StandingDown())
+		{
+			ImGuiMCP::TextWrapped("Standing down: Custom Difficulty UI is loaded and owns these values. Nothing here is applied while it is.");
+		}
+		if (editing < 0) { editing = active >= 0 ? active : 2; }
+		ImGuiMCP::Text("Game difficulty now: %s", active >= 0 ? kNames[active] : "none (no character loaded)");
+
+		ImGuiMCP::PushItemWidth(260.0F);
+		bool changed = false;
+
+		ImGuiMCP::SeparatorText("Damage");
+		bool dmg = damage::control;
+		if (ImGuiMCP::Toggle("Control damage multipliers", &dmg)) { damage::control = dmg; changed = true; }
+		HelpMarker("Off resets every multiplier to Skyrim's own vanilla values - a real reset, not a freeze. On: each "
+				   "difficulty's pair below is written, and the game reads the pair for the difficulty you play on.");
+		if (damage::control)
+		{
+			for (int d = 0; d < 6; ++d)
+			{
+				ImGuiMCP::PushID(d);
+				ImGuiMCP::SeparatorText(d == active ? std::format("{} (playing)", kNames[d]).c_str() : kNames[d]);
+				changed |= NudgeableSlider("Damage to you", &damage::toPlayer[d], 0.0F, 10.0F, "%.2f", 0.05F);
+				changed |= NudgeableSlider("Damage by you", &damage::byPlayer[d], 0.0F, 10.0F, "%.2f", 0.05F);
+				ImGuiMCP::PopID();
+			}
+			HelpMarker("Vanilla: to you 0.5 / 0.75 / 1 / 1.5 / 2 / 3, by you 2 / 1.5 / 1 / 0.75 / 0.5 / 0.25, Novice to Legendary.");
+		}
+
+		ImGuiMCP::SeparatorText("Regeneration");
+		bool rg = regen::control;
+		if (ImGuiMCP::Toggle("Control regeneration", &rg)) { regen::control = rg; changed = true; }
+		HelpMarker("Vanilla has one set of regeneration values for every difficulty. Here each difficulty has its own set, "
+				   "and the set for the difficulty you play on is what the game reads - switched the moment you change "
+				   "difficulty in the game's Settings. Off restores the values your game came with.");
+		if (regen::control)
+		{
+			ImGuiMCP::Combo("Editing", &editing, kNames, 6);
+			HelpMarker("Which difficulty's set the sliders below show. The game reads the set for the difficulty you play on.");
+			ImGuiMCP::SameLine();
+			if (ImGuiMCP::Button("Copy to all difficulties")) { DifficultyValues::CopyRegenToAll(editing); changed = true; }
+			HelpMarker("Every other difficulty's set becomes a copy of this one.");
+			for (int i = 0; i < 7; ++i)
+			{
+				if (!DifficultyValues::RegenResolved(i)) { ImGuiMCP::TextDisabled("%s - not in this game's settings", kRegenLabels[i]); continue; }
+				const bool delay = i >= 3;
+				changed |= NudgeableSlider(kRegenLabels[i], &regen::perDifficulty[i][editing], 0.0F, delay ? 30.0F : 5.0F, "%.2f", delay ? 0.5F : 0.05F);
+				HelpMarker(std::format("{} - your game's own value is {:.2f}.", DifficultyValues::RegenSettingName(i), DifficultyValues::RegenVanilla(i)).c_str());
+			}
+			ImGuiMCP::SeparatorText("Every difficulty");
+			for (int i = 0; i < 5; ++i)
+			{
+				if (!DifficultyValues::GlobalResolved(i)) { ImGuiMCP::TextDisabled("%s - not in this game's settings", kGlobalLabels[i]); continue; }
+				const bool rate = i == 4;
+				changed |= NudgeableSlider(kGlobalLabels[i], &regen::global[i], 0.0F, rate ? 5.0F : 60.0F, "%.2f", rate ? 0.05F : 0.5F);
+				HelpMarker(std::format("{} - one value for every difficulty; your game's own value is {:.2f}.", DifficultyValues::GlobalSettingName(i), DifficultyValues::GlobalVanilla(i)).c_str());
+			}
+		}
+		if (changed) { DifficultyValues::RequestApply(); }
+		ImGuiMCP::PopItemWidth();
+
+		ImGuiMCP::Spacing();
+		ImGuiMCP::SeparatorText("What the game is using right now");
+		if (active >= 0)
+		{
+			ImGuiMCP::Text("Damage at %s: x%.2f to you, x%.2f by you", kNames[active], DifficultyValues::LiveDamage(active, true), DifficultyValues::LiveDamage(active, false));
+		}
+		ImGuiMCP::Text("Regeneration in combat: health x%.2f, magicka x%.2f, stamina x%.2f", DifficultyValues::LiveRegen(0), DifficultyValues::LiveRegen(1), DifficultyValues::LiveRegen(2));
+		ImGuiMCP::Text("Delay after damage: health %.1f s, magicka %.1f s, stamina %.1f s", DifficultyValues::LiveRegen(3), DifficultyValues::LiveRegen(4), DifficultyValues::LiveRegen(5));
+		if (!damage::control && !regen::control) { ImGuiMCP::TextDisabled("Not controlling either - the values above are whatever the game is using."); }
+		ImGuiMCP::Spacing();
+		if (ImGuiMCP::Button("Apply now")) { DifficultyValues::RequestApply(); statusMessage = "Applied."; }
+		HelpMarker("Re-writes the values. It also runs by itself when a save loads, when the game's difficulty changes, and when you change anything above.");
 
 		RenderButtons();
 	}

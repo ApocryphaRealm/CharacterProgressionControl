@@ -2,6 +2,7 @@
 
 #include "Difficulty.h"
 
+#include "DifficultyValues.h"
 #include "Presets.h"
 #include "Settings.h"
 
@@ -32,6 +33,7 @@ namespace Difficulty
 				if (a_event->menuName != RE::JournalMenu::MENU_NAME) { return RE::BSEventNotifyControl::kContinue; }
 				// The event arrives on the main thread; the preset switch touches settings and
 				// re-applies game values, all of which are main-thread work already.
+				DifficultyValues::OnMenuClosed();
 				Sync("journal closed");
 				return RE::BSEventNotifyControl::kContinue;
 			}
@@ -180,6 +182,8 @@ namespace Difficulty
 		auto* player = RE::PlayerCharacter::GetSingleton();
 		if (!player) { return false; }
 		player->GetPlayerRuntimeData().difficulty = a_difficulty;
+		// The Difficulty tab's regeneration set follows the game's difficulty the same way the Settings menu path does.
+		DifficultyValues::OnMenuClosed();
 		// What the game's own Settings menu also does: keep the preference in step so the value
 		// survives, rather than only the live copy.
 		if (auto* prefs = RE::INIPrefSettingCollection::GetSingleton())

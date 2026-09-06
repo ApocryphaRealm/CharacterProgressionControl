@@ -14,6 +14,7 @@ namespace Compat
 		bool altExperience = false;
 		bool customSkills = false;
 		bool carryElsewhere = false;
+		bool customDifficulty = false;
 		bool ran = false;
 
 		// A loaded SKSE plugin is a module in this process. Asking the loader is the truth;
@@ -51,6 +52,9 @@ namespace Compat
 		// Our own carry-weight-per-level mods: both write the player's permanent carry weight from the
 		// level, so this mod's carry-weight cross terms would fight them (plan section 16B).
 		carryElsewhere = ModuleLoaded("CarryweightOnLevelUp.dll") || ModuleLoaded("CarryWeightPerLevel.dll");
+		// Our own Custom Difficulty UI: the same twelve damage multipliers and regeneration settings the
+		// Difficulty tab writes. It stays a separate minimal mod (the owner, 2026-09-05), so the tab yields.
+		customDifficulty = ModuleLoaded("CustomDifficultyUI.dll");
 
 		altExperience = experience;
 
@@ -85,10 +89,15 @@ namespace Compat
 
 		Add("Carryweight on Level Up / Carry Weight Per Level", carryElsewhere,
 			carryElsewhere
-				? "installed, and it owns the carry weight a level grants. This mod's carry-weight cross terms "
-				  "on the Level Up tab stand down while it is loaded (a level up grants no carry weight from "
-				  "here); the attribute gains themselves still apply."
-				: "not installed - the carry weight a level grants is set on the Level Up tab.");
+				? "installed, and it owns the carry weight a level grants. This mod's Carry Weight tab and its "
+				  "per-choice carry weight stand down while it is loaded; the attribute gains themselves still apply."
+				: "not installed - carry weight is this mod's to set, on the Carry Weight tab.");
+
+		Add("Custom Difficulty UI", customDifficulty,
+			customDifficulty
+				? "installed, and it owns the per-difficulty damage multipliers and regeneration values. This mod's "
+				  "Difficulty tab stands down while it is loaded and writes nothing."
+				: "not installed - the damage multipliers and regeneration are this mod's to set, on the Difficulty tab.");
 
 		Add("Leveling Freedom", levelingFreedom,
 			levelingFreedom
@@ -106,6 +115,7 @@ namespace Compat
 
 	const std::vector<Detection>& All() { return detections; }
 	bool CarryWeightOwnedElsewhere() { return carryElsewhere; }
+	bool CustomDifficultyUIPresent() { return customDifficulty; }
 	bool AlternativeExperienceActive() { return altExperience; }
 	bool CustomSkillsFrameworkPresent() { return customSkills; }
 }

@@ -173,6 +173,20 @@ namespace settings
 			get("bcontrolcarryweight:carryweight", carryweight::control, ParseBool);
 			get("fstartingcarryweight:carryweight", carryweight::starting, ParseFloat);
 			get("fcarryweightperlevel:carryweight", carryweight::perLevel, ParseFloat);
+			get("bcontroldamage:damage", damage::control, ParseBool);
+			{
+				constexpr const char* names[6] = { "novice", "apprentice", "adept", "expert", "master", "legendary" };
+				constexpr const char* regenNames[7] = { "combathealthregenratemult", "combatmagickaregenratemult", "combatstaminaregenratemult", "damagedhealthregendelay", "damagedmagickaregendelay", "damagedstaminaregendelay", "damagedavregendelay" };
+				constexpr const char* globalNames[5] = { "healthregendelaymax", "magickaregendelaymax", "staminaregendelaymax", "outofbreathstaminaregendelay", "essentialdowncombathealthregenmult" };
+				for (int d = 0; d < 6; ++d)
+				{
+					get((std::string("fdamagetoplayer") + names[d] + ":damage").c_str(), damage::toPlayer[d], ParseFloat);
+					get((std::string("fdamagebyplayer") + names[d] + ":damage").c_str(), damage::byPlayer[d], ParseFloat);
+					for (int i = 0; i < 7; ++i) { get((std::string("f") + regenNames[i] + names[d] + ":regeneration").c_str(), regen::perDifficulty[i][d], ParseFloat); }
+				}
+				get("bcontrolregeneration:regeneration", regen::control, ParseBool);
+				for (int i = 0; i < 5; ++i) { get((std::string("f") + globalNames[i] + ":regeneration").c_str(), regen::global[i], ParseFloat); }
+			}
 
 			get("bstaticlevelling:staticlevelling", staticlevel::enabled, ParseBool);
 			get("bskillpoints:staticlevelling", staticlevel::pointsEnabled, ParseBool);
@@ -379,6 +393,21 @@ namespace settings
 		ok &= WriteKey(lines, "CarryWeight", "fStartingCarryWeight", FormatFloat(carryweight::starting));
 		ok &= WriteKey(lines, "CarryWeight", "fCarryWeightPerLevel", FormatFloat(carryweight::perLevel));
 
+		ok &= WriteKey(lines, "Damage", "bControlDamage", damage::control ? "1" : "0");
+		{
+			constexpr const char* names[6] = { "Novice", "Apprentice", "Adept", "Expert", "Master", "Legendary" };
+			constexpr const char* regenNames[7] = { "CombatHealthRegenRateMult", "CombatMagickaRegenRateMult", "CombatStaminaRegenRateMult", "DamagedHealthRegenDelay", "DamagedMagickaRegenDelay", "DamagedStaminaRegenDelay", "DamagedAVRegenDelay" };
+			constexpr const char* globalNames[5] = { "HealthRegenDelayMax", "MagickaRegenDelayMax", "StaminaRegenDelayMax", "OutOfBreathStaminaRegenDelay", "EssentialDownCombatHealthRegenMult" };
+			for (int d = 0; d < 6; ++d)
+			{
+				ok &= WriteKey(lines, "Damage", (std::string("fDamageToPlayer") + names[d]).c_str(), FormatFloat(damage::toPlayer[d]));
+				ok &= WriteKey(lines, "Damage", (std::string("fDamageByPlayer") + names[d]).c_str(), FormatFloat(damage::byPlayer[d]));
+			}
+			ok &= WriteKey(lines, "Regeneration", "bControlRegeneration", regen::control ? "1" : "0");
+			for (int i = 0; i < 7; ++i) { for (int d = 0; d < 6; ++d) { ok &= WriteKey(lines, "Regeneration", (std::string("f") + regenNames[i] + names[d]).c_str(), FormatFloat(regen::perDifficulty[i][d])); } }
+			for (int i = 0; i < 5; ++i) { ok &= WriteKey(lines, "Regeneration", (std::string("f") + globalNames[i]).c_str(), FormatFloat(regen::global[i])); }
+		}
+
 		ok &= WriteKey(lines, "StaticLevelling", "bStaticLevelling", staticlevel::enabled ? "1" : "0");
 		ok &= WriteKey(lines, "StaticLevelling", "bSkillPoints", staticlevel::pointsEnabled ? "1" : "0");
 		ok &= WriteKey(lines, "StaticLevelling", "iSkillPointsPerLevel", std::to_string(staticlevel::pointsPerLevel));
@@ -442,6 +471,13 @@ namespace settings
 		carryweight::control = false;
 		carryweight::starting = 300.0F;
 		carryweight::perLevel = 5.0F;
+		damage::control = false;
+		{ constexpr float to[6] = { 0.50F, 0.75F, 1.00F, 1.50F, 2.00F, 3.00F }, by[6] = { 2.00F, 1.50F, 1.00F, 0.75F, 0.50F, 0.25F };
+		  for (int d = 0; d < 6; ++d) { damage::toPlayer[d] = to[d]; damage::byPlayer[d] = by[d]; } }
+		regen::control = false;
+		// Back to the sentinel: the Difficulty tab's module re-seeds every slot from the value this game came with.
+		for (auto& row : regen::perDifficulty) { for (float& v : row) { v = regen::kUnset; } }
+		for (float& v : regen::global) { v = regen::kUnset; }
 		staticlevel::enabled = defaults.staticEnabled;
 		staticlevel::pointsEnabled = defaults.pointsEnabled; staticlevel::pointsPerLevel = defaults.pointsPerLevel;
 		staticlevel::pointsLevelMult = defaults.pointsLevelMult; staticlevel::pointsCap = defaults.pointsCap;

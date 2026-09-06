@@ -8,6 +8,7 @@
 #include "Levelling.h"
 #include "Patches.h"
 #include "Difficulty.h"
+#include "DifficultyValues.h"
 #include "Presets.h"
 #include "SkillList.h"
 #include "Skills.h"
@@ -396,6 +397,36 @@ namespace DevBenchTool
 					R"("moduleOffset":"0x{:X}","textBase":"0x{:X}","textSize":{},"note":"{}"}})",
 					r.found ? "true" : "false", r.matches, r.address,
 					r.found ? (r.address - base) : 0, base, size, EscapeJson(r.note)).c_str());
+				return;
+			}
+			// The Difficulty tab: op=difficultyvalues reads it (controls, the game's difficulty, every configured and
+			// LIVE value); op=damage:<0|1> / op=regen:<0|1> flip the controls; op=dmgto<d>:<v> / op=dmgby<d>:<v> set a
+			// damage multiplier for difficulty d (0 Novice .. 5 Legendary); op=regenhp<d>:<v> sets that difficulty's
+			// combat health regen rate. Each applies at once (queued on the game thread).
+			if (args.find("damage:") != std::string_view::npos)
+			{
+				settings::damage::control = ReadNumber(args, "damage:") != 0.0F;
+				DifficultyValues::RequestApply();
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"damage","control":{},"queued":true}})", settings::damage::control ? "true" : "false").c_str());
+				return;
+			}
+			if (args.find("regen:") != std::string_view::npos)
+			{
+				settings::regen::control = ReadNumber(args, "regen:") != 0.0F;
+				DifficultyValues::RequestApply();
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"regen","control":{},"queued":true}})", settings::regen::control ? "true" : "false").c_str());
+				return;
+			}
+			for (int d = 0; d < 6; ++d)
+			{
+				const std::string to = std::format("dmgto{}:", d), by = std::format("dmgby{}:", d), hp = std::format("regenhp{}:", d);
+				if (args.find(to) != std::string_view::npos) { settings::damage::toPlayer[d] = ReadNumber(args, to); DifficultyValues::RequestApply(); a_write(a_sink, std::format(R"({{"ok":true,"op":"{}","value":{:.3f},"queued":true}})", to, settings::damage::toPlayer[d]).c_str()); return; }
+				if (args.find(by) != std::string_view::npos) { settings::damage::byPlayer[d] = ReadNumber(args, by); DifficultyValues::RequestApply(); a_write(a_sink, std::format(R"({{"ok":true,"op":"{}","value":{:.3f},"queued":true}})", by, settings::damage::byPlayer[d]).c_str()); return; }
+				if (args.find(hp) != std::string_view::npos) { settings::regen::perDifficulty[0][d] = ReadNumber(args, hp); DifficultyValues::RequestApply(); a_write(a_sink, std::format(R"({{"ok":true,"op":"{}","value":{:.3f},"queued":true}})", hp, settings::regen::perDifficulty[0][d]).c_str()); return; }
+			}
+			if (args.find("\"difficultyvalues\"") != std::string_view::npos)
+			{
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"difficultyvalues","state":{}}})", DifficultyValues::StatusJson()).c_str());
 				return;
 			}
 			// op=difficulty reads the game's difficulty, the follow flag and the preset it maps to;

@@ -131,6 +131,30 @@ namespace settings
 		inline bool follow = false;   // bFollowDifficulty:Difficulty
 	}
 
+	// The Difficulty tab (1.1.0) - Custom Difficulty UI's mechanic inside this mod. Damage: the
+	// twelve vanilla multipliers, one pair per difficulty (index 0 Novice .. 5 Legendary). Off =
+	// vanilla restored. Regeneration: vanilla has one value for every difficulty; here each of seven
+	// settings has one value per difficulty and the current difficulty's is written into the game,
+	// plus five global ones. kUnset marks a slot never captured; the module seeds it from the running
+	// game's own value.
+	namespace damage
+	{
+		inline bool control = false;                                                  // bControlDamage:Damage
+		inline float toPlayer[6] = { 0.50F, 0.75F, 1.00F, 1.50F, 2.00F, 3.00F };      // fDamageToPlayer<Difficulty>:Damage
+		inline float byPlayer[6] = { 2.00F, 1.50F, 1.00F, 0.75F, 0.50F, 0.25F };      // fDamageByPlayer<Difficulty>:Damage
+	}
+	namespace regen
+	{
+		inline constexpr float kUnset = -1.0F;
+		inline bool control = false;                                                  // bControlRegeneration:Regeneration
+		inline float perDifficulty[7][6] = {                                          // f<Setting><Difficulty>:Regeneration
+			{ kUnset, kUnset, kUnset, kUnset, kUnset, kUnset }, { kUnset, kUnset, kUnset, kUnset, kUnset, kUnset },
+			{ kUnset, kUnset, kUnset, kUnset, kUnset, kUnset }, { kUnset, kUnset, kUnset, kUnset, kUnset, kUnset },
+			{ kUnset, kUnset, kUnset, kUnset, kUnset, kUnset }, { kUnset, kUnset, kUnset, kUnset, kUnset, kUnset },
+			{ kUnset, kUnset, kUnset, kUnset, kUnset, kUnset } };
+		inline float global[5] = { kUnset, kUnset, kUnset, kUnset, kUnset };          // f<Setting>:Regeneration
+	}
+
 	void Init(const std::string& a_iniFileName);
 	bool Reload();
 	bool Save();
