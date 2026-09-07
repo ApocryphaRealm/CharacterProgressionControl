@@ -46,7 +46,7 @@ namespace Difficulty
 
 	// For the DevBench tool: set the game's difficulty (0..5) as the Settings menu would, then
 	// Sync. Returns false for an index outside the range or no player.
-	bool SetGameDifficulty(int a_difficulty);
+	bool SetGameDifficulty(int a_difficulty, const char* a_reason = "over DevBench");
 
 	// JSON for the DevBench tool.
 	std::string StatusJson();

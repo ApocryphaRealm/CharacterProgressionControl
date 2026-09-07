@@ -189,8 +189,13 @@ namespace settings
 			get("fstartingcarryweight:carryweight", carryweight::starting, ParseFloat);
 			get("fcarryweightperlevel:carryweight", carryweight::perLevel, ParseFloat);
 			get("bcontroldamage:damage", damage::control, ParseBool);
+			get("bsharedpair:damage", damage::sharedPair, ParseBool);
+			get("fshareddamagetoplayer:damage", damage::sharedToPlayer, ParseFloat);
+			get("fshareddamagebyplayer:damage", damage::sharedByPlayer, ParseFloat);
+			get("bdifficultybylevel:difficulty", bylevel::enabled, ParseBool);
 			{
 				constexpr const char* names[6] = { "novice", "apprentice", "adept", "expert", "master", "legendary" };
+				for (int d = 0; d < 6; ++d) { get((std::string("ulevelfor") + names[d] + ":difficulty").c_str(), bylevel::levelFor[d], ParseUInt); }
 				constexpr const char* regenNames[7] = { "combathealthregenratemult", "combatmagickaregenratemult", "combatstaminaregenratemult", "damagedhealthregendelay", "damagedmagickaregendelay", "damagedstaminaregendelay", "damagedavregendelay" };
 				constexpr const char* globalNames[5] = { "healthregendelaymax", "magickaregendelaymax", "staminaregendelaymax", "outofbreathstaminaregendelay", "essentialdowncombathealthregenmult" };
 				for (int d = 0; d < 6; ++d)
@@ -425,8 +430,13 @@ namespace settings
 		ok &= WriteKey(lines, "Experience", "fSkillBookRead", FormatFloat(experience::skillBook));
 
 		ok &= WriteKey(lines, "Damage", "bControlDamage", damage::control ? "1" : "0");
+		ok &= WriteKey(lines, "Damage", "bSharedPair", damage::sharedPair ? "1" : "0");
+		ok &= WriteKey(lines, "Damage", "fSharedDamageToPlayer", FormatFloat(damage::sharedToPlayer));
+		ok &= WriteKey(lines, "Damage", "fSharedDamageByPlayer", FormatFloat(damage::sharedByPlayer));
+		ok &= WriteKey(lines, "Difficulty", "bDifficultyByLevel", bylevel::enabled ? "1" : "0");
 		{
 			constexpr const char* names[6] = { "Novice", "Apprentice", "Adept", "Expert", "Master", "Legendary" };
+			for (int d = 0; d < 6; ++d) { ok &= WriteKey(lines, "Difficulty", (std::string("uLevelFor") + names[d]).c_str(), std::to_string(bylevel::levelFor[d])); }
 			constexpr const char* regenNames[7] = { "CombatHealthRegenRateMult", "CombatMagickaRegenRateMult", "CombatStaminaRegenRateMult", "DamagedHealthRegenDelay", "DamagedMagickaRegenDelay", "DamagedStaminaRegenDelay", "DamagedAVRegenDelay" };
 			constexpr const char* globalNames[5] = { "HealthRegenDelayMax", "MagickaRegenDelayMax", "StaminaRegenDelayMax", "OutOfBreathStaminaRegenDelay", "EssentialDownCombatHealthRegenMult" };
 			for (int d = 0; d < 6; ++d)
@@ -518,6 +528,9 @@ namespace settings
 		experience::book = 10.0F;
 		experience::skillBook = 25.0F;
 		damage::control = false;
+		damage::sharedPair = false; damage::sharedToPlayer = 1.0F; damage::sharedByPlayer = 1.0F;
+		bylevel::enabled = false;
+		{ constexpr std::uint32_t levels[6] = { 1, 10, 20, 30, 40, 50 }; for (int d = 0; d < 6; ++d) { bylevel::levelFor[d] = levels[d]; } }
 		{ constexpr float to[6] = { 0.50F, 0.75F, 1.00F, 1.50F, 2.00F, 3.00F }, by[6] = { 2.00F, 1.50F, 1.00F, 0.75F, 0.50F, 0.25F };
 		  for (int d = 0; d < 6; ++d) { damage::toPlayer[d] = to[d]; damage::byPlayer[d] = by[d]; } }
 		regen::control = false;

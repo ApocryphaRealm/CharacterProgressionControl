@@ -142,6 +142,20 @@ namespace settings
 		inline bool control = false;                                                  // bControlDamage:Damage
 		inline float toPlayer[6] = { 0.50F, 0.75F, 1.00F, 1.50F, 2.00F, 3.00F };      // fDamageToPlayer<Difficulty>:Damage
 		inline float byPlayer[6] = { 2.00F, 1.50F, 1.00F, 0.75F, 0.50F, 0.25F };      // fDamageByPlayer<Difficulty>:Damage
+		// One pair for every difficulty (Yet Another Difficulty Mod's Simple mode): while on, the pair
+		// below is written for all six difficulties instead of the table above.
+		inline bool sharedPair = false;                                               // bSharedPair:Damage
+		inline float sharedToPlayer = 1.0F;                                           // fSharedDamageToPlayer:Damage
+		inline float sharedByPlayer = 1.0F;                                           // fSharedDamageByPlayer:Damage
+	}
+	// Difficulty by level (1.1.2; Yet Another Difficulty Mod's Dynamic mode): the level from which each
+	// difficulty applies, 0 = that row is not used. On a save load and on every level-up the highest
+	// difficulty whose level the player has reached becomes the game's difficulty. Defaults are Blade
+	// and Blunt's milestones: one tier per ten levels.
+	namespace bylevel
+	{
+		inline bool enabled = false;                                                  // bDifficultyByLevel:Difficulty
+		inline std::uint32_t levelFor[6] = { 1, 10, 20, 30, 40, 50 };                 // uLevelFor<Difficulty>:Difficulty
 	}
 	namespace regen
 	{

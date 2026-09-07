@@ -435,15 +435,77 @@ namespace DevBenchTool
 				a_write(a_sink, std::format(R"({{"ok":true,"op":"experience","state":{}}})", ExperienceSources::StatusJson()).c_str());
 				return;
 			}
-			// The Difficulty tab: op=difficultyvalues reads it (controls, the game's difficulty, every configured and
-			// LIVE value); op=damage:<0|1> / op=regen:<0|1> flip the controls; op=dmgto<d>:<v> / op=dmgby<d>:<v> set a
-			// damage multiplier for difficulty d (0 Novice .. 5 Legendary); op=regenhp<d>:<v> sets that difficulty's
-			// combat health regen rate. Each applies at once (queued on the game thread).
+			// The Difficulty tab: op=difficultyvalues reads it (controls, the game's difficulty, every configured, LOADED
+			// and LIVE value, the level table, the overhaul detection); op=damage:<0|1> / op=regen:<0|1> flip the
+			// controls; op=dmgto<d>:<v> / op=dmgby<d>:<v> set a damage multiplier for difficulty d (0 Novice ..
+			// 5 Legendary); op=regenhp<d>:<v> sets that difficulty's combat health regen rate. 1.1.2: op=shared:<0|1>,
+			// op=sharedto:<v> / op=sharedby:<v> (one pair for every difficulty); op=bylevel:<0|1> and
+			// op=levelfor<d>:<n> (the level table); op=checklevel runs the level rule now; preset:"loaded|vanilla|bb|requiem"
+			// fills the table. Each applies at once (queued on the game thread).
 			if (args.find("damage:") != std::string_view::npos)
 			{
 				settings::damage::control = ReadNumber(args, "damage:") != 0.0F;
 				DifficultyValues::RequestApply();
 				a_write(a_sink, std::format(R"({{"ok":true,"op":"damage","control":{},"queued":true}})", settings::damage::control ? "true" : "false").c_str());
+				return;
+			}
+			if (args.find("shared:") != std::string_view::npos)
+			{
+				settings::damage::sharedPair = ReadNumber(args, "shared:") != 0.0F;
+				DifficultyValues::RequestApply();
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"shared","sharedPair":{},"queued":true}})", settings::damage::sharedPair ? "true" : "false").c_str());
+				return;
+			}
+			if (args.find("sharedto:") != std::string_view::npos)
+			{
+				settings::damage::sharedToPlayer = ReadNumber(args, "sharedto:");
+				DifficultyValues::RequestApply();
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"sharedto","value":{:.3f},"queued":true}})", settings::damage::sharedToPlayer).c_str());
+				return;
+			}
+			if (args.find("sharedby:") != std::string_view::npos)
+			{
+				settings::damage::sharedByPlayer = ReadNumber(args, "sharedby:");
+				DifficultyValues::RequestApply();
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"sharedby","value":{:.3f},"queued":true}})", settings::damage::sharedByPlayer).c_str());
+				return;
+			}
+			if (args.find("bylevel:") != std::string_view::npos)
+			{
+				settings::bylevel::enabled = ReadNumber(args, "bylevel:") != 0.0F;
+				const int settled = DifficultyValues::ApplyLevelRule("DevBench bylevel");
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"bylevel","enabled":{},"settled":{}}})", settings::bylevel::enabled ? "true" : "false", settled).c_str());
+				return;
+			}
+			if (args.find("\"checklevel\"") != std::string_view::npos)
+			{
+				const int settled = DifficultyValues::ApplyLevelRule("DevBench checklevel");
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"checklevel","settled":{},"state":{}}})", settled, DifficultyValues::StatusJson()).c_str());
+				return;
+			}
+			for (int d = 0; d < 6; ++d)
+			{
+				const std::string lf = std::format("levelfor{}:", d);
+				if (args.find(lf) != std::string_view::npos)
+				{
+					settings::bylevel::levelFor[d] = static_cast<std::uint32_t>(std::max(0.0F, ReadNumber(args, lf)));
+					a_write(a_sink, std::format(R"({{"ok":true,"op":"{}","value":{}}})", lf, settings::bylevel::levelFor[d]).c_str());
+					return;
+				}
+			}
+			if (const auto at = args.find("\"preset\":\""); at != std::string_view::npos)
+			{
+				const auto start = at + 10;
+				const auto end = args.find('"', start);
+				const std::string which(args.substr(start, end == std::string_view::npos ? 0 : end - start));
+				bool ok = true;
+				if (which == "loaded") { DifficultyValues::UseLoadedValues(); }
+				else if (which == "vanilla") { DifficultyValues::UseVanillaValues(); }
+				else if (which == "bb") { DifficultyValues::UseBladeAndBlunt(); }
+				else if (which == "requiem") { DifficultyValues::UseRequiem(); }
+				else { ok = false; }
+				if (ok) { DifficultyValues::RequestApply(); }
+				a_write(a_sink, std::format(R"({{"ok":{},"op":"preset","preset":"{}","queued":{}}})", ok ? "true" : "false", which, ok ? "true" : "false").c_str());
 				return;
 			}
 			if (args.find("regen:") != std::string_view::npos)

@@ -15,6 +15,8 @@ namespace Compat
 		bool customSkills = false;
 		bool carryElsewhere = false;
 		bool customDifficulty = false;
+		bool bladeAndBlunt = false;
+		bool requiem = false;
 		bool ran = false;
 
 		// A loaded SKSE plugin is a module in this process. Asking the loader is the truth;
@@ -55,6 +57,10 @@ namespace Compat
 		// Our own Custom Difficulty UI: the same twelve damage multipliers and regeneration settings the
 		// Difficulty tab writes. It stays a separate minimal mod (the owner, 2026-09-05), so the tab yields.
 		customDifficulty = ModuleLoaded("CustomDifficultyUI.dll");
+		// The two overhauls the Difficulty tab's built-in patch knows (plan section 21). Both set the
+		// twelve damage multipliers in their ESP; Blade and Blunt's DLL also steps them by level.
+		bladeAndBlunt = PluginLoaded("BladeAndBlunt.esp");
+		requiem = PluginLoaded("Requiem.esp");
 
 		altExperience = experience;
 
@@ -99,6 +105,21 @@ namespace Compat
 				  "Difficulty tab stands down while it is loaded and writes nothing."
 				: "not installed - the damage multipliers and regeneration are this mod's to set, on the Difficulty tab.");
 
+		Add("Blade and Blunt", bladeAndBlunt,
+			bladeAndBlunt
+				? "installed. Its damage multipliers and regeneration values are the values this game loaded with, and the "
+				  "Difficulty tab leaves them alone until a control there is switched on - then this mod writes last and "
+				  "supersedes them (a Blade and Blunt preset is on the tab). Its own level-based difficulty should be off "
+				  "in BladeAndBlunt.ini while this tab controls damage."
+				: "not installed.");
+
+		Add("Requiem", requiem,
+			requiem
+				? "installed. Requiem sets every damage multiplier to 1.0 by design; those are the loaded values the "
+				  "Difficulty tab leaves alone until a control there is switched on - then this mod supersedes them "
+				  "(a Requiem preset is on the tab)."
+				: "not installed.");
+
 		Add("Leveling Freedom", levelingFreedom,
 			levelingFreedom
 				? "installed, and it sets the same two level-cost values as the Levelling tab. "
@@ -116,6 +137,8 @@ namespace Compat
 	const std::vector<Detection>& All() { return detections; }
 	bool CarryWeightOwnedElsewhere() { return carryElsewhere; }
 	bool CustomDifficultyUIPresent() { return customDifficulty; }
+	bool BladeAndBluntPresent() { return bladeAndBlunt; }
+	bool RequiemPresent() { return requiem; }
 	bool AlternativeExperienceActive() { return altExperience; }
 	bool CustomSkillsFrameworkPresent() { return customSkills; }
 }

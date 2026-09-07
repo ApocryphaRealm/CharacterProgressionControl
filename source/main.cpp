@@ -71,7 +71,9 @@ namespace
 			// carry weight) belong to this character; both start from what the co-save said.
 			Attributes::OnGameLoaded();
 			CarryWeight::RequestApply();
-			DifficultyValues::RequestApply();
+			// The level rule first (it may move the game's difficulty), then the values, queued so
+			// they land after every other plugin's own load handler.
+			DifficultyValues::OnGameLoaded();
 			break;
 		default:
 			break;

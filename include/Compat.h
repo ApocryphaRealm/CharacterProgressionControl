@@ -41,4 +41,6 @@ namespace Compat
 	bool CustomSkillsFrameworkPresent();
 	bool CarryWeightOwnedElsewhere();    // one of our own carry-weight-per-level mods is loaded
 	bool CustomDifficultyUIPresent();    // our standalone Custom Difficulty UI is loaded - the Difficulty tab stands down
+	bool BladeAndBluntPresent();         // BladeAndBlunt.esp is loaded - the Difficulty tab's built-in patch applies
+	bool RequiemPresent();               // Requiem.esp is loaded - likewise
 }

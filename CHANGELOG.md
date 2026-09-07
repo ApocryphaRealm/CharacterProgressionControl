@@ -11,6 +11,18 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
+## 1.1.2 - 2026-09-06 - working
+
+### Fixed
+- The Difficulty tab wrote Skyrim's compiled vanilla damage multipliers over whatever the game loaded with whenever its damage control was OFF - on every load. Beside Blade and Blunt or Requiem that silently reverted their tuning. Off now writes nothing: the twelve values are captured at data load, after every plugin's records, and switching a control off hands those loaded values back once. The regeneration path follows the same rule.
+
+### Added
+- One pair for every difficulty (Yet Another Difficulty Mod's Simple mode): a switch and a single pair written for all six difficulties.
+- Difficulty by level (its Dynamic mode): a switch and six level thresholds; on a save load and on every level-up the highest difficulty whose level the player has reached becomes the game's difficulty, through the same path the Settings menu uses. Defaults are Blade and Blunt's milestones, one tier per ten levels.
+- The built-in Blade and Blunt / Requiem patch: both plugins are detected, the page says their values are the loaded values and that this tab writes last while a control is on, and three presets fill the table - the loaded values, Blade and Blunt's pairs, Requiem's (all 1.0) - plus vanilla. Every write goes through the task queue after the other plugins' handlers and is repeated on the level-up event, so this mod supersedes theirs. Blade and Blunt's INI is read and the page asks for bLevelBasedDifficulty = false while it is present.
+- The damage sliders run 0 to 999 in 0.01 steps (Ctrl+click to type); the loaded value is shown beside every pair.
+- cpc.control: shared, sharedto, sharedby, bylevel, levelfor<d>, checklevel and preset ops; difficultyvalues reports the loaded values, the level table and the overhaul detection.
+
 ## 1.1.1 - 2026-09-06 - working
 
 ### Added

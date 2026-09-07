@@ -80,11 +80,14 @@ and `cpc.control op=scan` exposes the same scanner for finding new ones.
   changes and on Apply now. Nothing polls; the net amount added lives in the co-save so turning it
   off takes exactly that away again. Stands down while either standalone carry-weight mod is loaded.
 - **Difficulty tab** - Custom Difficulty UI's mechanic as a tab: the damage multipliers per
-  difficulty (dealt to you and by you), and regeneration per difficulty, which vanilla does not have
-  at all - each difficulty gets its own set of the in-combat rates and after-damage delays and the
-  game reads the set for the difficulty you play on, re-written when you change difficulty. Both
-  off by default; off restores the values your game came with. Stands down while Custom
-  Difficulty UI itself is loaded.
+  difficulty (dealt to you and by you) or one pair for every difficulty, and regeneration per
+  difficulty, which vanilla does not have at all - each difficulty gets its own set of the in-combat
+  rates and after-damage delays and the game reads the set for the difficulty you play on, re-written
+  when you change difficulty. Difficulty by level sets the game's difficulty from your level on load
+  and on every level-up. Off writes nothing: the values your game loaded with stay as they are. Blade
+  and Blunt and Requiem are detected - their numbers are the loaded values, presets fill the table
+  from them, and while a control is on this mod writes last and supersedes them. Both controls off
+  by default; the tab stands down while Custom Difficulty UI itself is loaded.
 - **Presets tab** - a preset is a file in this mod's Presets folder, in the same format as its
   INI. Whichever is selected is what the mod is using - no hidden merge - and **the selection
   belongs to the character** while the files are shared, so two saves can sit on different presets

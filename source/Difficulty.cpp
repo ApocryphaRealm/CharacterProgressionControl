@@ -176,7 +176,7 @@ namespace Difficulty
 		return "No longer following the game's difficulty. The configuration in hand stays as it is.";
 	}
 
-	bool SetGameDifficulty(int a_difficulty)
+	bool SetGameDifficulty(int a_difficulty, const char* a_reason)
 	{
 		if (a_difficulty < 0 || a_difficulty >= kCount) { return false; }
 		auto* player = RE::PlayerCharacter::GetSingleton();
@@ -197,8 +197,8 @@ namespace Difficulty
 				logger::debug("difficulty: iDifficulty:Gameplay is not in the preference collection; only the live value was set");
 			}
 		}
-		logger::info("difficulty set to {} over DevBench", NameOf(a_difficulty));
-		Sync("set over DevBench");
+		logger::info("difficulty set to {} ({})", NameOf(a_difficulty), a_reason);
+		Sync(a_reason);
 		return true;
 	}
 

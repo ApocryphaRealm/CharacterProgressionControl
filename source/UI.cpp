@@ -619,22 +619,93 @@ namespace UI
 		ImGuiMCP::PushItemWidth(260.0F);
 		bool changed = false;
 
+		// The built-in patch (plan section 21): the overhaul's numbers are the loaded values, and this tab
+		// writes last while a control is on.
+		const std::string overhaul = DifficultyValues::OverhaulLoaded();
+		if (!overhaul.empty())
+		{
+			ImGuiMCP::TextWrapped("%s is loaded. Its damage multipliers and regeneration values are the loaded values shown below; "
+								  "nothing here touches them until a control is switched on - then this tab writes last and supersedes them.",
+								  overhaul.c_str());
+			bool bbFound = false;
+			const bool bbScaling = DifficultyValues::BladeAndBluntLevelScaling(bbFound);
+			if (overhaul.find("Blade and Blunt") != std::string::npos)
+			{
+				if (bbScaling) { ImGuiMCP::TextWrapped("BladeAndBlunt.ini has bLevelBasedDifficulty = true: its DLL steps the multipliers at levels 10 to 50 as well. Set it to false while this tab controls damage - two writers on one value is never stable. The Difficulty-by-level rule below does the same job."); }
+				else if (!bbFound) { ImGuiMCP::TextWrapped("BladeAndBlunt.ini was not found, so its bLevelBasedDifficulty could not be read. If it is true, set it to false while this tab controls damage."); }
+			}
+		}
+
 		ImGuiMCP::SeparatorText("Damage");
 		bool dmg = damage::control;
 		if (ImGuiMCP::Toggle("Control damage multipliers", &dmg)) { damage::control = dmg; changed = true; }
-		HelpMarker("Off resets every multiplier to Skyrim's own vanilla values - a real reset, not a freeze. On: each "
-				   "difficulty's pair below is written, and the game reads the pair for the difficulty you play on.");
+		HelpMarker("Off writes nothing: the multipliers your game loaded with (vanilla, or an overhaul's) stay exactly as they are, "
+				   "and switching off hands them back. On: the pairs below are written, and the game reads the pair for the "
+				   "difficulty you play on.");
 		if (damage::control)
 		{
+			bool shared = damage::sharedPair;
+			if (ImGuiMCP::Toggle("One pair for every difficulty", &shared)) { damage::sharedPair = shared; changed = true; }
+			HelpMarker("On: the single pair below is written for all six difficulties, so the game's difficulty setting makes no "
+					   "difference to damage. Off: each difficulty has its own pair.");
+			if (damage::sharedPair)
+			{
+				changed |= NudgeableSlider("Damage to you", &damage::sharedToPlayer, 0.0F, 999.0F, "%.2f", 0.01F);
+				changed |= NudgeableSlider("Damage by you", &damage::sharedByPlayer, 0.0F, 999.0F, "%.2f", 0.01F);
+				HelpMarker("Ctrl+click a slider to type a value.");
+			}
+			else
+			{
+				ImGuiMCP::Text("Fill the table from:");
+				ImGuiMCP::SameLine();
+				if (ImGuiMCP::Button("Loaded values")) { DifficultyValues::UseLoadedValues(); changed = true; statusMessage = "The table holds the values this game loaded with."; }
+				HelpMarker("Whatever your game holds at load - vanilla, or the overhaul you run. The starting point for tuning an overhaul without losing its numbers.");
+				ImGuiMCP::SameLine();
+				if (ImGuiMCP::Button("Vanilla")) { DifficultyValues::UseVanillaValues(); changed = true; statusMessage = "The table holds Skyrim's vanilla values."; }
+				ImGuiMCP::SameLine();
+				if (ImGuiMCP::Button("Blade and Blunt")) { DifficultyValues::UseBladeAndBlunt(); changed = true; statusMessage = "The table holds Blade and Blunt's values."; }
+				HelpMarker("Its published pairs: to you as vanilla, by you 1.5 / 1.25 / 1 / 1 / 0.75 / 0.5.");
+				ImGuiMCP::SameLine();
+				if (ImGuiMCP::Button("Requiem")) { DifficultyValues::UseRequiem(); changed = true; statusMessage = "The table holds Requiem's values."; }
+				HelpMarker("Every multiplier 1.0 - in Requiem the difficulty setting does no damage scaling by design.");
+				for (int d = 0; d < 6; ++d)
+				{
+					ImGuiMCP::PushID(d);
+					ImGuiMCP::SeparatorText(d == active ? std::format("{} (playing)", kNames[d]).c_str() : kNames[d]);
+					changed |= NudgeableSlider("Damage to you", &damage::toPlayer[d], 0.0F, 999.0F, "%.2f", 0.01F);
+					changed |= NudgeableSlider("Damage by you", &damage::byPlayer[d], 0.0F, 999.0F, "%.2f", 0.01F);
+					ImGuiMCP::TextDisabled("    loaded with: x%.2f to you, x%.2f by you", DifficultyValues::LoadedDamage(d, true), DifficultyValues::LoadedDamage(d, false));
+					ImGuiMCP::PopID();
+				}
+				HelpMarker("Vanilla: to you 0.5 / 0.75 / 1 / 1.5 / 2 / 3, by you 2 / 1.5 / 1 / 0.75 / 0.5 / 0.25, Novice to Legendary. Ctrl+click a slider to type a value.");
+			}
+		}
+
+		ImGuiMCP::SeparatorText("Difficulty by level");
+		bool byLevel = bylevel::enabled;
+		if (ImGuiMCP::Toggle("Set the game's difficulty from your level", &byLevel))
+		{
+			bylevel::enabled = byLevel;
+			changed = true;
+			if (byLevel) { DifficultyValues::ApplyLevelRule("switched on"); }
+		}
+		HelpMarker("On a save load and on every level-up, the highest difficulty whose level you have reached becomes the game's "
+				   "difficulty - the same change the Settings menu makes, so everything that follows difficulty follows it. "
+				   "0 = that difficulty is never chosen by this rule. Off: the game's difficulty is yours to set.");
+		if (bylevel::enabled)
+		{
+			auto* player = RE::PlayerCharacter::GetSingleton();
+			const int level = player ? static_cast<int>(player->GetLevel()) : -1;
+			const int target = level >= 0 ? DifficultyValues::LevelRuleTarget(level) : -1;
+			if (level >= 0) { ImGuiMCP::Text("Level %d -> %s", level, target >= 0 ? kNames[target] : "no row applies"); }
 			for (int d = 0; d < 6; ++d)
 			{
-				ImGuiMCP::PushID(d);
-				ImGuiMCP::SeparatorText(d == active ? std::format("{} (playing)", kNames[d]).c_str() : kNames[d]);
-				changed |= NudgeableSlider("Damage to you", &damage::toPlayer[d], 0.0F, 10.0F, "%.2f", 0.05F);
-				changed |= NudgeableSlider("Damage by you", &damage::byPlayer[d], 0.0F, 10.0F, "%.2f", 0.05F);
+				ImGuiMCP::PushID(100 + d);
+				int from = static_cast<int>(bylevel::levelFor[d]);
+				if (ImGuiMCP::InputInt(std::format("{} from level", kNames[d]).c_str(), &from)) { bylevel::levelFor[d] = static_cast<std::uint32_t>(std::clamp(from, 0, 1000)); changed = true; }
 				ImGuiMCP::PopID();
 			}
-			HelpMarker("Vanilla: to you 0.5 / 0.75 / 1 / 1.5 / 2 / 3, by you 2 / 1.5 / 1 / 0.75 / 0.5 / 0.25, Novice to Legendary.");
+			HelpMarker("Defaults are Blade and Blunt's milestones: one difficulty tier per ten levels.");
 		}
 
 		ImGuiMCP::SeparatorText("Regeneration");
@@ -673,11 +744,13 @@ namespace UI
 		ImGuiMCP::SeparatorText("What the game is using right now");
 		if (active >= 0)
 		{
-			ImGuiMCP::Text("Damage at %s: x%.2f to you, x%.2f by you", kNames[active], DifficultyValues::LiveDamage(active, true), DifficultyValues::LiveDamage(active, false));
+			ImGuiMCP::Text("Damage at %s: x%.2f to you, x%.2f by you (loaded with x%.2f / x%.2f)", kNames[active],
+						   DifficultyValues::LiveDamage(active, true), DifficultyValues::LiveDamage(active, false),
+						   DifficultyValues::LoadedDamage(active, true), DifficultyValues::LoadedDamage(active, false));
 		}
 		ImGuiMCP::Text("Regeneration in combat: health x%.2f, magicka x%.2f, stamina x%.2f", DifficultyValues::LiveRegen(0), DifficultyValues::LiveRegen(1), DifficultyValues::LiveRegen(2));
 		ImGuiMCP::Text("Delay after damage: health %.1f s, magicka %.1f s, stamina %.1f s", DifficultyValues::LiveRegen(3), DifficultyValues::LiveRegen(4), DifficultyValues::LiveRegen(5));
-		if (!damage::control && !regen::control) { ImGuiMCP::TextDisabled("Not controlling either - the values above are whatever the game is using."); }
+		if (!damage::control && !regen::control) { ImGuiMCP::TextDisabled("Not controlling either - nothing is written; the values above are whatever the game loaded with."); }
 		ImGuiMCP::Spacing();
 		if (ImGuiMCP::Button("Apply now")) { DifficultyValues::RequestApply(); statusMessage = "Applied."; }
 		HelpMarker("Re-writes the values. It also runs by itself when a save loads, when the game's difficulty changes, and when you change anything above.");
