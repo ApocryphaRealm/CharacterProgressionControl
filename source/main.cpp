@@ -26,6 +26,7 @@
 #include "UI.h"
 
 #include "utils/Logger.h"
+#include "utils/Strings.h"
 
 namespace
 {
@@ -37,6 +38,12 @@ namespace
 			DevBenchTool::Init(false);
 			break;
 		case SKSE::MessagingInterface::kDataLoaded:
+			// Language first (translation rollout plan, section 2.1): the settings pages read
+			// their text from Data/Interface/Translations/CharacterProgressionControl_<language>.txt
+			// for whatever language the Apocrypha Menu Framework reports, before anything is drawn.
+			// MenuStrings::Install() below reads the SAME file for the level-up menu SWF, but in
+			// the GAME's language - that menu is drawn by the game, not by the framework.
+			strings::Configure("CharacterProgressionControl");
 			// Read the game's own values BEFORE anything is written, so "vanilla" means what
 			// this installation actually had.
 			Levelling::CaptureVanilla();

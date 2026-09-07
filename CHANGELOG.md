@@ -11,6 +11,11 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
+## 1.1.3 - 2026-09-07 - working
+
+### Added
+- Every settings page is shown in the game's language: the translation file (Interface\Translations\CharacterProgressionControl_<language>.txt) now exists for Japanese, Korean, Chinese, Russian, German, French, Spanish, Italian, Polish, Czech and English, carrying both the level-up menu's strings (nine languages new) and the settings pages' strings; the pages follow the Apocrypha Menu Framework's Language setting (1.6.5 or newer; English on older versions) while the level-up menu stays in the game's own language. The framework is looked up by its sort-first name first. cpc.control gained op=strings (active language, source and loaded count).
+
 ## 1.1.2 - 2026-09-06 - working
 
 ### Fixed

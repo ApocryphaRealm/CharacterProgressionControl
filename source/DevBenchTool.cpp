@@ -19,6 +19,7 @@
 #include "Settings.h"
 #include "Signature.h"
 #include "utils/Logger.h"
+#include "utils/Strings.h"
 
 #include <cstdlib>
 #include <format>
@@ -73,6 +74,15 @@ namespace DevBenchTool
 		void ControlTool(void*, const char* a_argsJson, void* a_sink, DevBenchAPI::WriteFn a_write)
 		{
 			const std::string_view args = a_argsJson ? a_argsJson : "";
+
+			// op=strings: which language the settings pages are drawing in, where that came from
+			// and how many texts were read - the proof a translation file actually loaded,
+			// readable without a capture and without a character.
+			if (args.find("\"strings\"") != std::string_view::npos)
+			{
+				a_write(a_sink, (R"({"ok":true,"op":"strings","strings":)" + strings::StatusJson() + "}").c_str());
+				return;
+			}
 
 			if (args.find("\"reload\"") != std::string_view::npos)
 			{
@@ -712,6 +722,8 @@ namespace DevBenchTool
 			"skill's level, experience and threshold plus the configured caps; op=enchanting reads the "
 			"charge-cost settings; op=presets lists the presets and which one this character is on, and "
 			"op=preset:<name> selects one; op=patches lists each engine patch group and whether it "
+			"installed; op=strings reports the language the settings pages are drawn in, where "
+			"that language came from and how many translated texts were loaded. "
 			"installed.\","
 			"\"inputSchema\":{\"type\":\"object\",\"properties\":{\"op\":{\"type\":\"string\"}}},"
 			"\"readOnly\":false"
