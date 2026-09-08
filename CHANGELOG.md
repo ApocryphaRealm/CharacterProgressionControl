@@ -14,7 +14,7 @@ Settings are stored in a plain INI file and can also be changed in game.
 ## 1.1.4 - 2026-09-08 - working
 
 ### Fixed
-- Fixed a crash on load introduced in 1.1.3. The level-up menu's labels are added to the game's own translation table, which is a fixed size and never grows. Version 1.1.3 merged the settings page's 310 keys into the same translation file, so the mod pushed 353 entries into that table instead of the 43 the menu actually needs, which could exhaust it on a heavily modded load order and corrupt it - crashing the game about 85 seconds into loading. The settings page's own keys are now left to the settings page, which reads them itself, and the mod checks the table before writing to it and leaves it alone if it does not recognise it. On a load order where another mod has already replaced that table, the level-up menu now shows its raw keys instead of crashing.
+- Fixed a crash on load. The level-up menu's labels are added to the game's own translation table, which is a fixed size and never grows. Every version since 1.0.4 added them without checking whether there was room, so on a heavily modded load order the table could be exhausted and corrupted, crashing the game about 85 seconds into loading. Two things changed: the settings page's own keys are no longer added to that table at all, since the settings page reads them itself, which cuts the entries added from 353 to the 43 the menu actually needs; and the mod now checks the table before writing to it and leaves it alone if it does not recognise it. On a load order where another mod has already replaced that table, the level-up menu shows its raw keys instead of crashing.
 
 ## 1.1.3 - 2026-09-07 - working
 
