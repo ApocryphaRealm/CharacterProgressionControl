@@ -409,7 +409,7 @@ namespace UI
 		if (legendary::control)
 		{
 			const bool resetOn = Patches::IsInstalled("Legendary reset level");
-			const bool thresholdOn = Patches::IsInstalled("Legendary threshold");
+			const bool thresholdOn = Patches::IsInstalled("Legendary threshold") && Patches::IsInstalled("Legendary reset threshold");
 			const bool buttonOn = Patches::IsInstalled("Legendary button");
 			if (!resetOn && !thresholdOn && !buttonOn)
 			{

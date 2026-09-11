@@ -135,6 +135,8 @@ namespace Legendary
 		{
 			const char* group;
 			const char* what;
+			const char* vanilla;        // what stays true while this group is not attached
+			const char* attached;       // what attaching it changes
 			const char* seSig;          // the shape (Kassent's 1.5.x anchor); the comiss sits at seAt
 			std::ptrdiff_t seAt;
 			std::size_t copies;         // how many copies of this check the game carries - every one is patched, or none
@@ -152,14 +154,28 @@ namespace Legendary
 		// "...Alt" site for the same reason. Patching one would let the key and the button disagree, so both
 		// are proven and patched together. The actor-value-owner offset byte (B0 on SE, B8 on AE) is a
 		// wildcard, so the same shape can find the AE copies.
-		Site g_sites[2] = {
+		// A THIRD comparison against 100 sits inside the game's own "make legendary" answer: it fetches the
+		// skill's base value, compares it with 100.0 and jumps past the reset when the skill is below it
+		// (read from the running 1.5.97 game, 2026-09-11: `call [rax+18h]; comiss xmm0,[rip+..]; jb +85h`, the
+		// jb being the instruction Kassent's reset hook replaced). With a threshold below 100 the skill could
+		// be made legendary but kept its level - so it reads the threshold too.
+		Site g_sites[3] = {
 			{ "Legendary threshold", "the checks that decide whether a skill may be made legendary",
+			  "A skill can be made legendary at 100, as in vanilla.",
+			  "a skill can be made legendary from the level set on the Skills tab.",
 			  "8B D0 48 8D 8F ?? 00 00 00 FF 53 18 0F 2F 05 ?? ?? ?? ?? 0F 82", 0x0C, 2,
 			  nullptr, 0, 52520, 0x157, 0 },
 			{ "Legendary button", "the check that decides whether the Skills menu shows the Legendary hint",
+			  "The Skills menu shows the Legendary hint at 100, as in vanilla.",
+			  "the Legendary hint follows the level set on the Skills tab, or stays hidden.",
 			  "48 8B 0D ?? ?? ?? ?? 48 81 C1 B0 00 00 00 48 8B 01 8B D6 FF 50 18 0F 2F 05 ?? ?? ?? ?? 72", 0x16, 1,
 			  "48 8B 0D ?? ?? ?? ?? 48 81 C1 B8 00 00 00 48 8B 01 41 8B D7 FF 50 18 0F 2F 05 ?? ?? ?? ?? 72", 0x17,
 			  52527, 0x167, 1 },
+			{ "Legendary reset threshold", "the check inside the game's own \"make legendary\" answer that skips the reset below 100",
+			  "A skill made legendary below 100 keeps its level, as in vanilla.",
+			  "a skill made legendary from the threshold set on the Skills tab is reset the way that tab says.",
+			  "48 8B 01 8B 56 1C FF 50 18 0F 2F 05 ?? ?? ?? ?? 0F 82 85 00 00 00", 0x09, 1,
+			  nullptr, 0, 52591, 0x1CD, 0 },
 		};
 
 		// `comiss xmm0, [rip+disp32]` whose operand is exactly 100.0. The bytes are checked before the
@@ -208,8 +224,7 @@ namespace Legendary
 
 		bool InstallSite(Site& a_site, std::string& a_reason)
 		{
-			const std::string vanilla = a_site.slot == 0 ? " A skill can be made legendary at 100, as in vanilla."
-														 : " The Skills menu shows the Legendary hint at 100, as in vanilla.";
+			const std::string vanilla = std::string(" ") + a_site.vanilla;
 			std::string how, note;
 			const auto sites = Locate(a_site, settings::legendary::control, how, note);
 			const auto base = REL::Module::get().base();
@@ -271,8 +286,7 @@ namespace Legendary
 			}
 			logger::info("{}: attached at game offset{} {} ({}); the comparison now reads this mod's value ({})", a_site.group,
 						 sites.size() > 1 ? "s" : "", offsets, how, *value);
-			a_reason = located + (a_site.slot == 0 ? ". Attached: a skill can be made legendary from the level set on the Skills tab."
-												   : ". Attached: the Legendary hint follows the level set on the Skills tab, or stays hidden.");
+			a_reason = located + ". Attached: " + a_site.attached;
 			return true;
 		}
 
@@ -319,6 +333,10 @@ namespace Legendary
 			"Legendary button",
 			"Whether the Skills menu shows the Legendary hint, and from which level.",
 			[](std::string& a_reason) { return InstallSite(g_sites[1], a_reason); });
+		Patches::Register(
+			"Legendary reset threshold",
+			"Whether a skill made legendary below 100 is reset (vanilla resets only from 100).",
+			[](std::string& a_reason) { return InstallSite(g_sites[2], a_reason); });
 
 		if (auto* ui = RE::UI::GetSingleton())
 		{
@@ -337,11 +355,11 @@ namespace Legendary
 		auto off = [base](std::uintptr_t a) { return a ? a - base : 0; };
 		return std::format(
 			R"({{"control":{},"threshold":{:.1f},"levelAfter":{:.1f},"keepLevel":{},"hideButton":{},"gameResetSetting":{:.1f},)"
-			R"("resetHooked":{},"thresholdSite":"0x{:X}","thresholdCopies":{},"buttonSite":"0x{:X}","thresholdValue":{:g},"buttonValue":{:g},)"
+			R"("resetHooked":{},"thresholdSite":"0x{:X}","thresholdCopies":{},"resetCheckSite":"0x{:X}","buttonSite":"0x{:X}","thresholdValue":{:g},"buttonValue":{:g},)"
 			R"("runs":{},"lastSkill":{},"lastBefore":{:.1f},"lastWritten":{:.1f},"lastAfter":{:.1f}}})",
 			settings::legendary::control, settings::legendary::threshold, settings::legendary::levelAfter,
 			settings::legendary::keepLevel, settings::legendary::hideButton, s ? s->data.f : -1.0F,
-			g_resetHooked.load(), off(g_sites[0].comiss[0]), g_sites[0].count, off(g_sites[1].comiss[0]),
+			g_resetHooked.load(), off(g_sites[0].comiss[0]), g_sites[0].count, off(g_sites[2].comiss[0]), off(g_sites[1].comiss[0]),
 			g_values ? g_values[0] : -1.0F, g_values ? g_values[1] : -1.0F,
 			g_runs.load(), g_lastSkill.load(), g_lastBefore.load(), g_lastWritten.load(), g_lastAfter.load());
 	}
