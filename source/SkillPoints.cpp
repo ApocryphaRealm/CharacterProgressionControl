@@ -158,6 +158,22 @@ namespace SkillPoints
 			return true;
 		}
 
+		// Static Skill Leveling Rewritten fills this same panel from its own Papyrus. While its plugin is loaded
+		// the panel is ITS, not a leftover of ours, and hiding it would break that mod's point spending for anyone
+		// who runs SSLR for points and this mod for its other tabs. Asked once, at the first level-up menu (the
+		// data handler is long ready by then), and logged.
+		bool SslrLoaded()
+		{
+			static const bool loaded = [] {
+				auto* handler = RE::TESDataHandler::GetSingleton();
+				const bool present = handler && handler->LookupModByName("StaticSkillLeveling.esp") != nullptr;
+				logger::debug("skill points: Static Skill Leveling Rewritten is {} - {}", present ? "loaded" : "not loaded",
+							  present ? "its level-up panel is left alone" : "a leftover skill-point panel is hidden while skill points are off");
+				return present;
+			}();
+			return loaded;
+		}
+
 		// Always registered, whatever the setting: this is the half that acts while skill points are OFF.
 		class HideSink : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
 		{
@@ -166,6 +182,7 @@ namespace SkillPoints
 			{
 				if (!a_event || !a_event->opening || a_event->menuName != RE::LevelUpMenu::MENU_NAME) { return RE::BSEventNotifyControl::kContinue; }
 				if (settings::staticlevel::pointsEnabled) { return RE::BSEventNotifyControl::kContinue; }
+				if (SslrLoaded()) { return RE::BSEventNotifyControl::kContinue; }
 				if (!HidePanel())
 				{
 					if (auto* tasks = SKSE::GetTaskInterface())

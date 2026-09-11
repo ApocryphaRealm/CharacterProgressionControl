@@ -11,6 +11,11 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
+## 1.1.6 - 2026-09-11 - working
+
+### Fixed
+- With Static Skill Leveling Rewritten loaded beside this mod, 1.1.5 hid that mod's own skill-point panel whenever this mod's skill points were off - breaking its point spending for anyone running it for points and this mod for the other tabs. The empty-panel hide now applies only to a leftover copy of the menu with no Static Skill Leveling Rewritten behind it; while StaticSkillLeveling.esp is loaded the panel is left alone. Found while writing the compatibility verdict, before 1.1.5 was released.
+
 ## 1.1.5 - 2026-09-11 - working
 
 ### Added
