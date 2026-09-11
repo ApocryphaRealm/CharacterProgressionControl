@@ -107,6 +107,75 @@ namespace SkillPoints
 			logger::info("skill points: {}", g_menuStatus);
 		}
 
+		// Skill points OFF must look off. The level-up menu this mod ships (Static Skill Leveling
+		// Rewritten's, installed for everyone by the FOMOD) has the skill-point panel placed on its stage
+		// permanently and no "off" mode of its own - FeedMenu() only ever FILLS it. So with skill points
+		// off, the player got an empty skill-point panel beside the attribute buttons (bug report
+		// 2026-09-11). These are the panel's named instances, read from the SWF's own display list
+		// (FFDec -swf2xml); the three attribute buttons and the frame clip stay.
+		constexpr const char* kPanelParts[] = {
+			"onehanded", "twohanded", "marksman", "block", "smithing", "heavyarmor", "lightarmor", "pickpocket", "lockpicking",
+			"sneak", "alchemy", "speechcraft", "alteration", "conjuration", "destruction", "illusion", "restoration", "enchanting",
+			"AvailablePoints", "PointsPerLeveInfo", "FinalizeMenuInfo"
+		};
+
+		// Returns true when the menu's movie was reachable (whatever it held), false when it was not
+		// built yet - the caller retries once on the UI thread (rule 17).
+		bool HidePanel()
+		{
+			auto* ui = RE::UI::GetSingleton();
+			auto menu = ui ? ui->GetMenu(RE::LevelUpMenu::MENU_NAME) : RE::GPtr<RE::IMenu>{};
+			auto* movie = (menu && menu->uiMovie) ? menu->uiMovie.get() : nullptr;
+			if (!movie) { logger::debug("skill points off: the level-up menu's movie is not reachable yet"); return false; }
+			int hidden = 0;
+			std::string missing;
+			for (const char* part : kPanelParts)
+			{
+				RE::GFxValue obj;
+				// ask the movie whether the part exists before touching it (rule 30)
+				if (movie->GetVariable(&obj, (std::string(kMenuPath) + part).c_str()) && obj.IsDisplayObject())
+				{
+					obj.SetMember("_visible", RE::GFxValue(false));
+					++hidden;
+				}
+				else
+				{
+					missing += missing.empty() ? part : std::string(", ") + part;
+				}
+			}
+			if (hidden == 0)
+			{
+				logger::debug("skill points off: the installed level-up menu has no skill-point panel (vanilla or another menu) - nothing to hide");
+			}
+			else
+			{
+				logger::debug("skill points off: hid {} of {} skill-point panel parts{}{}", hidden, std::size(kPanelParts),
+							  missing.empty() ? "" : "; not found: ", missing);
+			}
+			return true;
+		}
+
+		// Always registered, whatever the setting: this is the half that acts while skill points are OFF.
+		class HideSink : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
+		{
+		public:
+			RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override
+			{
+				if (!a_event || !a_event->opening || a_event->menuName != RE::LevelUpMenu::MENU_NAME) { return RE::BSEventNotifyControl::kContinue; }
+				if (settings::staticlevel::pointsEnabled) { return RE::BSEventNotifyControl::kContinue; }
+				if (!HidePanel())
+				{
+					if (auto* tasks = SKSE::GetTaskInterface())
+					{
+						tasks->AddUITask([]() {
+							if (!HidePanel()) { logger::warn("skill points off: the level-up menu's movie was still not reachable; its skill-point panel stays visible this time"); }
+						});
+					}
+				}
+				return RE::BSEventNotifyControl::kContinue;
+			}
+		};
+
 		class MenuSink : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
 		{
 		public:
@@ -175,6 +244,7 @@ namespace SkillPoints
 
 		MenuSink g_menuSink;
 		ModSink g_modSink;
+		HideSink g_hideSink;
 
 		bool Install(std::string& a_reason)
 		{
@@ -318,6 +388,17 @@ namespace SkillPoints
 
 	void Register()
 	{
+		// The hide half is registered unconditionally - Install() below only runs when skill points are
+		// on, which is exactly when the panel should show. Called at kDataLoaded, when the UI exists.
+		if (auto* ui = RE::UI::GetSingleton())
+		{
+			ui->AddEventSink(&g_hideSink);
+			logger::debug("skill points: listening for the level-up menu so the skill-point panel can be hidden while skill points are off");
+		}
+		else
+		{
+			logger::warn("skill points: the UI is not available at data load; the skill-point panel cannot be hidden while skill points are off");
+		}
 		Patches::Register(
 			"Skill points",
 			"Skills advance by points spent in the level-up menu instead of by use.",
