@@ -42,10 +42,14 @@ unspent and kept in the co-save; the menu shows every skill with + and -, the fo
 applied when the attribute is picked, through the game's own skill-improve path so the usual
 "skill increased" notice fires. Ordinary skill experience is not banked while it is on, and a
 point-spent level pays nothing toward the character level. The menu is Static Skill Leveling
-Rewritten's vanilla-look `Interface\levelupmenu.swf`, shipped with its authors' permission (see
-`dist\Interface\levelupmenu-CREDIT.txt`); its other skins fit the same contract. The DLL does what
-that mod's Papyrus did: it feeds the movie the caps, the settings and the player's skills when the
-menu opens and listens for the allocation the movie sends back.
+Rewritten's vanilla-look level-up menu, shipped with its authors' permission (see
+`dist\Interface\CharacterProgressionControl\levelupmenu-CREDIT.txt`); its other skins fit the same
+contract. Since 1.1.5 it is shipped at `Interface\CharacterProgressionControl\levelupmenu.swf`, not over
+the game's own `Interface\levelupmenu.swf`: a vtable hook on the game's Scaleform file opener answers the
+level-up menu's file with it only while skill points are on, so with them off the level-up menu is the
+game's own, or whichever one the load order supplies. The DLL does what that mod's Papyrus did: it feeds
+the movie the caps, the settings and the player's skills when the menu opens and listens for the
+allocation the movie sends back.
 
 Finding that address is worth explaining, because it governs all future hook work here. The
 retail `SkyrimSE.exe` is **Steam-packed**: it carries a `.bind` section, its entry point sits

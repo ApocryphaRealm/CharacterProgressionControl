@@ -11,6 +11,15 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
+## 1.1.5 - 2026-09-11 - untested
+
+### Added
+- Legendary skills (feature request, Nexus 2026-09-10): a Legendary skills section on the Skills tab - the skill level at which a skill can be made legendary (100 is vanilla), the level it drops to (0 = the game's own 15; it never raises a skill), keep the level instead, and hide the Legendary hint (SPACE still works). Off by default; with it off not one byte of the game is written, and turning it on takes a restart. Three patch groups on the Patches tab: the reset level is a vtable hook on the game's own "make legendary" answer that sets fLegendarySkillResetValue for the length of that call, verified by the vtable's RTTI before it is written; the threshold and the hint are the game's two comparisons against 100.0, each located by shape, proven by the constant it loads, and pointed at this mod's value by their 4-byte operand alone - no stub, no register touched. Skyrim Skill Uncapper with its legendary settings on patches the same two comparisons; this mod then refuses them and says so. cpc.control gained op=legendary, legendary:<0|1>, legthreshold, legafter, legkeep and leghide. New texts in all eleven languages.
+
+### Fixed
+- With "Use skill points" off, the level-up menu is the game's own again - or whichever one your load order supplies, such as a UI mod's - instead of the skill-point menu with an empty panel (bug report, Nexus 2026-09-11). Up to 1.1.4 the installer put Static Skill Leveling Rewritten's level-up menu over the game's for everyone; it now ships as Interface\CharacterProgressionControl\levelupmenu.swf and the DLL loads it only while skill points are on, by answering the game's request for the level-up menu's file with it (a vtable hook on the game's own Scaleform file opener, verified by its RTTI before it is written). Manual installs: delete the old Interface\levelupmenu.swf that 1.1.4 or earlier left behind (Mod Organizer users need do nothing). If Static Skill Leveling Rewritten's own menu is installed separately, its empty panel is still hidden while skill points are off. Levelling itself was never affected.
+- The legendary threshold: the game checks it in two places, and both are now proven and patched together (the first test found two matches and, rightly, patched neither).
+
 ## 1.1.4 - 2026-09-08 - working
 
 ### Fixed

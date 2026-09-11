@@ -517,6 +517,110 @@ TRANSLATIONS["CPC_Skl_HelpRates"] = T(
     "Disattivato per impostazione predefinita. Attiva i moltiplicatori di esperienza per abilità qui sotto.",
     "Domyślnie wyłączone. Włącza mnożniki doświadczenia dla poszczególnych umiejętności poniżej.",
     "Ve výchozím stavu vypnuto. Zapíná násobitele zkušeností pro jednotlivé dovednosti níže.")
+# --- Skills tab: legendary skills (1.1.5) ---------------------------------------------------------
+TRANSLATIONS["CPC_Skl_SecLegendary"] = T(
+    "伝説のスキル", "전설 기술", "传奇技能", "Легендарные навыки", "Legendäre Fertigkeiten",
+    "Compétences légendaires", "Habilidades legendarias", "Abilità leggendarie", "Umiejętności legendarne",
+    "Legendární dovednosti")
+TRANSLATIONS["CPC_Skl_ControlLegendary"] = T(
+    "伝説のスキルを制御する", "전설 기술 제어", "控制传奇技能", "Управлять легендарными навыками",
+    "Legendäre Fertigkeiten steuern", "Contrôler les compétences légendaires",
+    "Controlar las habilidades legendarias", "Controlla le abilità leggendarie",
+    "Kontroluj umiejętności legendarne", "Řídit legendární dovednosti")
+TRANSLATIONS["CPC_Skl_HelpLegendary"] = T(
+    "既定はオフです。オフの間、スキルを伝説にする動作はバニラとまったく同じです。オンにした設定は再起動後に有効になり、下の値は次にスキルメニューを開いたときに適用されます。",
+    "기본값은 꺼짐입니다. 꺼져 있는 동안 기술을 전설로 만드는 동작은 바닐라와 완전히 같습니다. 켜면 재시작 후에 적용되며, 아래 값은 다음에 기술 메뉴를 열 때 적용됩니다.",
+    "默认关闭。关闭时，将技能设为传奇的行为与原版完全相同。开启后需重启游戏才生效；下面的数值会在下次打开技能菜单时应用。",
+    "По умолчанию выключено. Пока выключено, навык становится легендарным точно так же, как в оригинальной игре. Включение вступает в силу после перезапуска; значения ниже применяются при следующем открытии меню навыков.",
+    "Standardmäßig aus. Solange es aus ist, funktioniert das Legendär-Machen einer Fertigkeit genau wie im Originalspiel. Das Einschalten wirkt nach einem Neustart; die Werte unten gelten beim nächsten Öffnen des Fertigkeitenmenüs.",
+    "Désactivé par défaut. Tant qu'il est désactivé, rendre une compétence légendaire fonctionne exactement comme dans le jeu de base. L'activation prend effet après un redémarrage ; les valeurs ci-dessous s'appliquent à la prochaine ouverture du menu des compétences.",
+    "Desactivado por defecto. Mientras está desactivado, hacer legendaria una habilidad funciona exactamente como en el juego original. Activarlo surte efecto tras reiniciar; los valores de abajo se aplican la próxima vez que se abra el menú de habilidades.",
+    "Disattivato per impostazione predefinita. Finché è disattivato, rendere leggendaria un'abilità funziona esattamente come nel gioco base. L'attivazione ha effetto dopo un riavvio; i valori qui sotto si applicano alla prossima apertura del menu delle abilità.",
+    "Domyślnie wyłączone. Dopóki jest wyłączone, uczynienie umiejętności legendarną działa dokładnie jak w podstawowej grze. Włączenie działa po ponownym uruchomieniu; wartości poniżej obowiązują przy następnym otwarciu menu umiejętności.",
+    "Ve výchozím stavu vypnuto. Dokud je vypnuto, funguje zlegendárnění dovednosti přesně jako v původní hře. Zapnutí se projeví po restartu; hodnoty níže platí při dalším otevření nabídky dovedností.")
+TRANSLATIONS["CPC_Skl_LegInert"] = T(
+    "まだ有効ではありません: これをオンにしたままゲームを再起動してください。どの部分が適用されたかは「Patches」タブに表示されます。",
+    "아직 적용되지 않았습니다: 이 설정을 켠 상태로 게임을 다시 시작하세요. 어떤 부분이 적용되었는지는 “Patches” 탭에 표시됩니다.",
+    "尚未生效：请在开启此项的情况下重启游戏。哪些部分已挂接会显示在“Patches”标签页中。",
+    "Пока не действует: перезапустите игру с включённым параметром. На вкладке «Patches» указано, какие части подключились.",
+    "Noch nicht aktiv: Starte das Spiel mit eingeschalteter Option neu. Der Reiter „Patches“ zeigt, welche Teile angebunden wurden.",
+    "Pas encore actif : redémarrez le jeu avec cette option activée. L'onglet « Patches » indique quelles parties se sont attachées.",
+    "Aún no está activo: reinicia el juego con esto activado. La pestaña «Patches» indica qué partes se han enganchado.",
+    "Non ancora attivo: riavvia il gioco con questa opzione attiva. La scheda «Patches» indica quali parti si sono agganciate.",
+    "Jeszcze nieaktywne: uruchom grę ponownie z włączoną opcją. Zakładka „Patches” pokazuje, które części się podłączyły.",
+    "Zatím neaktivní: restartujte hru s touto volbou zapnutou. Karta „Patches“ ukazuje, které části se připojily.")
+TRANSLATIONS["CPC_Skl_LegPartial"] = T(
+    "このゲームバージョンでは一部のみ有効です - どれが有効かは「Patches」タブに表示されます。",
+    "이 게임 버전에서는 일부만 적용됩니다 - 어떤 부분인지는 “Patches” 탭에 표시됩니다.",
+    "在此游戏版本上只有部分生效——具体哪些见“Patches”标签页。",
+    "В этой версии игры действует только часть - какая именно, указано на вкладке «Patches».",
+    "Auf dieser Spielversion ist nur ein Teil aktiv - welcher, zeigt der Reiter „Patches“.",
+    "Seule une partie est active sur cette version du jeu - l'onglet « Patches » indique laquelle.",
+    "Solo una parte está activa en esta versión del juego: la pestaña «Patches» indica cuál.",
+    "Su questa versione del gioco è attiva solo una parte - la scheda «Patches» indica quale.",
+    "W tej wersji gry aktywna jest tylko część - zakładka „Patches” pokazuje która.",
+    "V této verzi hry je aktivní jen část - karta „Patches“ ukazuje kterou.")
+TRANSLATIONS["CPC_Skl_LegThreshold"] = T(
+    "伝説にできるレベル", "전설 가능 레벨", "可设为传奇的等级", "Легендарный с уровня", "Legendär ab Stufe",
+    "Légendaire au niveau", "Legendaria al nivel", "Leggendaria al livello", "Legendarna od poziomu",
+    "Legendární od úrovně")
+TRANSLATIONS["CPC_Skl_HelpLegThreshold"] = T(
+    "スキルを伝説にできるスキルレベルです。バニラは 100 です。100 未満にするとスキルメニューに伝説のヒントは表示されませんが、伝説キー (スペース) はそのまま使えます。",
+    "기술을 전설로 만들 수 있는 기술 레벨입니다. 바닐라는 100입니다. 100 미만이면 기술 메뉴에 전설 안내가 표시되지 않지만, 전설 키(스페이스)는 그대로 작동합니다.",
+    "技能可设为传奇所需的技能等级。原版为 100。低于 100 时技能菜单不会显示传奇提示，但传奇按键（空格）仍然有效。",
+    "Уровень навыка, с которого его можно сделать легендарным. В оригинале 100. Ниже 100 меню навыков не показывает подсказку «Легендарный», но клавиша (ПРОБЕЛ) по-прежнему работает.",
+    "Die Fertigkeitsstufe, ab der eine Fertigkeit legendär gemacht werden kann. 100 ist das Original. Unter 100 zeigt das Fertigkeitenmenü den Legendär-Hinweis nicht an, die Legendär-Taste (LEERTASTE) funktioniert aber weiterhin.",
+    "Le niveau à partir duquel une compétence peut devenir légendaire. 100 correspond au jeu de base. En dessous de 100, le menu des compétences n'affiche pas l'indication Légendaire, mais la touche (ESPACE) fonctionne toujours.",
+    "El nivel de habilidad a partir del cual una habilidad puede hacerse legendaria. 100 es el valor original. Por debajo de 100 el menú de habilidades no muestra el aviso de Legendaria, pero la tecla (ESPACIO) sigue funcionando.",
+    "Il livello a cui un'abilità può diventare leggendaria. 100 è il valore base. Sotto 100 il menu delle abilità non mostra il suggerimento Leggendaria, ma il tasto (SPAZIO) funziona comunque.",
+    "Poziom umiejętności, od którego można uczynić ją legendarną. W podstawowej grze 100. Poniżej 100 menu umiejętności nie pokazuje podpowiedzi Legendarna, ale klawisz (SPACJA) nadal działa.",
+    "Úroveň dovednosti, od které ji lze učinit legendární. V původní hře 100. Pod 100 nabídka dovedností nezobrazí nápovědu Legendární, ale klávesa (MEZERNÍK) stále funguje.")
+TRANSLATIONS["CPC_Skl_LegAfter"] = T(
+    "伝説にした後のレベル", "전설 이후 레벨", "设为传奇后的等级", "Уровень после легендарности", "Stufe nach Legendär",
+    "Niveau après légendaire", "Nivel tras legendaria", "Livello dopo leggendaria", "Poziom po legendarności",
+    "Úroveň po zlegendárnění")
+TRANSLATIONS["CPC_Skl_HelpLegAfter"] = T(
+    "スキルを伝説にしたときに下がる先のレベルです。0 ならゲーム本来の値 (15) を使います。伝説にしてもスキルが上がることはありません。",
+    "기술을 전설로 만들 때 떨어지는 레벨입니다. 0이면 게임 본래의 값(15)을 사용합니다. 전설로 만들어도 기술이 올라가지는 않습니다.",
+    "技能设为传奇时降到的等级。0 表示使用游戏自身的数值（15）。设为传奇绝不会提高技能。",
+    "Уровень, до которого падает навык, когда его делают легендарным. 0 - собственное значение игры (15). Легендарность никогда не повышает навык.",
+    "Die Stufe, auf die eine Fertigkeit fällt, wenn sie legendär gemacht wird. 0 nimmt den eigenen Wert des Spiels (15). Legendär-Machen hebt eine Fertigkeit nie an.",
+    "Le niveau auquel une compétence retombe lorsqu'elle devient légendaire. 0 utilise la valeur propre du jeu (15). Rendre une compétence légendaire ne l'augmente jamais.",
+    "El nivel al que baja una habilidad cuando se hace legendaria. 0 usa el valor propio del juego (15). Hacer legendaria una habilidad nunca la sube.",
+    "Il livello a cui scende un'abilità quando diventa leggendaria. 0 usa il valore del gioco stesso (15). Renderla leggendaria non la alza mai.",
+    "Poziom, do którego spada umiejętność, gdy staje się legendarna. 0 oznacza wartość samej gry (15). Uczynienie umiejętności legendarną nigdy jej nie podnosi.",
+    "Úroveň, na kterou dovednost klesne, když se stane legendární. 0 použije vlastní hodnotu hry (15). Zlegendárnění dovednost nikdy nezvýší.")
+TRANSLATIONS["CPC_Skl_LegKeep"] = T(
+    "伝説にしてもレベルを保持する", "전설로 만들어도 레벨 유지", "设为传奇时保留等级", "Сохранять уровень при легендарности",
+    "Stufe beim Legendär-Machen behalten", "Conserver le niveau en devenant légendaire",
+    "Conservar el nivel al hacerla legendaria", "Mantieni il livello quando diventa leggendaria",
+    "Zachowaj poziom po uczynieniu legendarną", "Zachovat úroveň při zlegendárnění")
+TRANSLATIONS["CPC_Skl_HelpLegKeep"] = T(
+    "スキルは下がらずにレベルを保ちます - その場合、上の設定は無視されます。",
+    "기술이 떨어지지 않고 레벨을 유지합니다 - 이때 위의 설정은 무시됩니다.",
+    "技能保持原有等级而不下降——此时上面的设置将被忽略。",
+    "Навык сохраняет уровень вместо падения - настройка выше тогда не учитывается.",
+    "Die Fertigkeit behält ihre Stufe, statt zu fallen - die Einstellung darüber wird dann ignoriert.",
+    "La compétence garde son niveau au lieu de retomber - le réglage ci-dessus est alors ignoré.",
+    "La habilidad conserva su nivel en lugar de bajar; el ajuste de arriba se ignora entonces.",
+    "L'abilità mantiene il suo livello invece di scendere - l'impostazione sopra viene quindi ignorata.",
+    "Umiejętność zachowuje poziom zamiast spadać - ustawienie powyżej jest wtedy pomijane.",
+    "Dovednost si ponechá úroveň místo poklesu - nastavení výše se pak ignoruje.")
+TRANSLATIONS["CPC_Skl_LegHide"] = T(
+    "伝説ボタンを隠す", "전설 버튼 숨기기", "隐藏传奇按钮", "Скрыть кнопку «Легендарный»",
+    "Legendär-Schaltfläche ausblenden", "Masquer le bouton Légendaire", "Ocultar el botón Legendaria",
+    "Nascondi il pulsante Leggendaria", "Ukryj przycisk Legendarna", "Skrýt tlačítko Legendární")
+TRANSLATIONS["CPC_Skl_HelpLegHide"] = T(
+    "スキルメニューの伝説のヒントを隠します。伝説キー (スペース) はそのまま使えます。",
+    "기술 메뉴의 전설 안내를 숨깁니다. 전설 키(스페이스)는 그대로 작동합니다.",
+    "隐藏技能菜单中的传奇提示。传奇按键（空格）仍然有效。",
+    "Скрывает подсказку «Легендарный» в меню навыков. Клавиша (ПРОБЕЛ) по-прежнему работает.",
+    "Blendet den Legendär-Hinweis im Fertigkeitenmenü aus. Die Legendär-Taste (LEERTASTE) funktioniert weiterhin.",
+    "Masque l'indication Légendaire dans le menu des compétences. La touche (ESPACE) fonctionne toujours.",
+    "Oculta el aviso de Legendaria en el menú de habilidades. La tecla (ESPACIO) sigue funcionando.",
+    "Nasconde il suggerimento Leggendaria nel menu delle abilità. Il tasto (SPAZIO) funziona comunque.",
+    "Ukrywa podpowiedź Legendarna w menu umiejętności. Klawisz (SPACJA) nadal działa.",
+    "Skryje nápovědu Legendární v nabídce dovedností. Klávesa (MEZERNÍK) stále funguje.")
 TRANSLATIONS["CPC_Skl_ToLevelUnavailable"] = T(
     "スキル上昇 -> レベル: 利用できません", "기술 상승 -> 레벨: 사용할 수 없음", "技能提升 -> 等级：不可用",
     "Рост навыка -> уровень: недоступно", "Fertigkeitsanstieg -> Stufe: nicht verfügbar",

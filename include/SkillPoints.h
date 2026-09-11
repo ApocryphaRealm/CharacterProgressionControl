@@ -9,7 +9,9 @@
 // applied when the attribute choice is confirmed.
 //
 // The menu is Static Skill Leveling Rewritten's levelupmenu.swf (its permissions allow it; this
-// package ships its vanilla-look variant, and its other skins fit the same contract). The DLL
+// package ships its vanilla-look variant at Interface\CharacterProgressionControl\, and the DLL has
+// the game load it in place of the level-up menu only while skill points are on - since 1.1.5; with
+// them off the load order's own level-up menu shows). Its other skins fit the same contract. The DLL
 // does everything the Papyrus side used to: it feeds the movie the caps, the settings and the
 // player's skills when the menu opens, listens for the allocation the movie sends back, applies
 // each increase through the game's own skill-improve path (so the level-up fires as usual), and

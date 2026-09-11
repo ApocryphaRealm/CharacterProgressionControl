@@ -6,6 +6,7 @@
 #include "Compat.h"
 #include "Enchanting.h"
 #include "ExperienceSources.h"
+#include "Legendary.h"
 #include "Levelling.h"
 #include "Patches.h"
 #include "Difficulty.h"
@@ -617,6 +618,41 @@ namespace DevBenchTool
 				a_write(a_sink, std::format(R"({{"ok":true,"op":"carryweight","state":{}}})", CarryWeight::StatusJson()).c_str());
 				return;
 			}
+			// Legendary skills (1.1.5): op=legendary reads it (settings, the verified sites, the live reset
+			// setting, the values the two compares read, the last Run); op=legendary:<0|1>, legthreshold:<n>,
+			// legafter:<n>, legkeep:<0|1> and leghide:<0|1> set it. The compares take a change at once.
+			if (args.find("legendary:") != std::string_view::npos)
+			{
+				settings::legendary::control = ReadNumber(args, "legendary:") != 0.0F;
+				Legendary::Refresh();
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"legendary","control":{}}})", settings::legendary::control ? "true" : "false").c_str());
+				return;
+			}
+			for (const auto& [key, target] : { std::pair{ "legthreshold:", &settings::legendary::threshold }, std::pair{ "legafter:", &settings::legendary::levelAfter } })
+			{
+				if (args.find(key) != std::string_view::npos)
+				{
+					*target = ReadNumber(args, key);
+					Legendary::Refresh();
+					a_write(a_sink, std::format(R"({{"ok":true,"op":"{}","value":{:.1f}}})", key, *target).c_str());
+					return;
+				}
+			}
+			for (const auto& [key, target] : { std::pair{ "legkeep:", &settings::legendary::keepLevel }, std::pair{ "leghide:", &settings::legendary::hideButton } })
+			{
+				if (args.find(key) != std::string_view::npos)
+				{
+					*target = ReadNumber(args, key) != 0.0F;
+					Legendary::Refresh();
+					a_write(a_sink, std::format(R"({{"ok":true,"op":"{}","value":{}}})", key, *target ? "true" : "false").c_str());
+					return;
+				}
+			}
+			if (args.find("\"legendary\"") != std::string_view::npos)
+			{
+				a_write(a_sink, std::format(R"({{"ok":true,"op":"legendary","state":{}}})", Legendary::StatusJson()).c_str());
+				return;
+			}
 			if (args.find("\"presets\"") != std::string_view::npos)
 			{
 				Presets::Refresh();
@@ -723,7 +759,9 @@ namespace DevBenchTool
 			"charge-cost settings; op=presets lists the presets and which one this character is on, and "
 			"op=preset:<name> selects one; op=patches lists each engine patch group and whether it "
 			"installed; op=strings reports the language the settings pages are drawn in, where "
-			"that language came from and how many translated texts were loaded. "
+			"that language came from and how many translated texts were loaded. op=legendary reads the "
+			"legendary-skill settings, the verified patch sites and the last legendary made; "
+			"op=legendary:0|1, legthreshold:<n>, legafter:<n>, legkeep:0|1 and leghide:0|1 set them. "
 			"installed.\","
 			"\"inputSchema\":{\"type\":\"object\",\"properties\":{\"op\":{\"type\":\"string\"}}},"
 			"\"readOnly\":false"

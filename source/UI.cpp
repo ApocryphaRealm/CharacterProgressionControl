@@ -397,6 +397,48 @@ namespace UI
 			}
 		}
 
+		// Legendary skills (1.1.5): when a skill may be made legendary, what it drops to, and the hint.
+		ImGuiMCP::Spacing();
+		ImGuiMCP::SeparatorText(strings::TR("CPC_Skl_SecLegendary", "Legendary skills"));
+
+		bool leg = legendary::control;
+		if (ImGuiMCP::Toggle(strings::TR("CPC_Skl_ControlLegendary", "Control legendary skills"), &leg)) { legendary::control = leg; }
+		HelpMarker(strings::TR("CPC_Skl_HelpLegendary", "Off by default. While it is off, making a skill legendary works exactly as in "
+				   "vanilla. Turning it on takes effect after a restart; the values below apply the next time the Skills menu opens."));
+
+		if (legendary::control)
+		{
+			const bool resetOn = Patches::IsInstalled("Legendary reset level");
+			const bool thresholdOn = Patches::IsInstalled("Legendary threshold");
+			const bool buttonOn = Patches::IsInstalled("Legendary button");
+			if (!resetOn && !thresholdOn && !buttonOn)
+			{
+				ImGuiMCP::TextWrapped("%s", strings::TR("CPC_Skl_LegInert", "Not active yet: restart the game with this switched on. "
+									  "The Patches tab says which parts attached."));
+			}
+			else if (!resetOn || !thresholdOn || !buttonOn)
+			{
+				ImGuiMCP::TextWrapped("%s", strings::TR("CPC_Skl_LegPartial", "Only part of this is active on this game version - "
+									  "the Patches tab says which."));
+			}
+
+			NudgeableSlider(strings::TR("CPC_Skl_LegThreshold", "Legendary at level"), &legendary::threshold, 15.0F, 1000.0F, "%.0f", 5.0F);
+			HelpMarker(strings::TR("CPC_Skl_HelpLegThreshold", "The skill level at which a skill can be made legendary. 100 is vanilla. "
+					   "Below 100 the Skills menu does not show the Legendary hint, but the legendary key (SPACE) still works."));
+
+			NudgeableSlider(strings::TR("CPC_Skl_LegAfter", "Level after legendary"), &legendary::levelAfter, 0.0F, 1000.0F, "%.0f", 5.0F);
+			HelpMarker(strings::TR("CPC_Skl_HelpLegAfter", "The level a skill drops to when it is made legendary. 0 uses the game's own "
+					   "value (15). Making a skill legendary never raises it."));
+
+			bool keep = legendary::keepLevel;
+			if (ImGuiMCP::Toggle(strings::TR("CPC_Skl_LegKeep", "Keep the level when made legendary"), &keep)) { legendary::keepLevel = keep; }
+			HelpMarker(strings::TR("CPC_Skl_HelpLegKeep", "The skill keeps its level instead of dropping - the setting above is then ignored."));
+
+			bool hide = legendary::hideButton;
+			if (ImGuiMCP::Toggle(strings::TR("CPC_Skl_LegHide", "Hide the Legendary button"), &hide)) { legendary::hideButton = hide; }
+			HelpMarker(strings::TR("CPC_Skl_HelpLegHide", "Hides the Legendary hint in the Skills menu. The legendary key (SPACE) still works."));
+		}
+
 		ImGuiMCP::Spacing();
 		ImGuiMCP::SeparatorText(strings::TR("CPC_Skl_SecNow", "Your skills right now"));
 

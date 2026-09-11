@@ -14,6 +14,7 @@
 #include "Compat.h"
 #include "Enchanting.h"
 #include "ExperienceSources.h"
+#include "Legendary.h"
 #include "LevelUp.h"
 #include "Levelling.h"
 #include "Patches.h"
@@ -52,6 +53,7 @@ namespace
 			// outcome is logged together and a failure is a reported fact, not a crash.
 			Compat::Detect();
 			Skills::Register();
+			Legendary::Register();
 			SkillExperience::Register();
 			LevelUp::Register();
 			Attributes::Register();

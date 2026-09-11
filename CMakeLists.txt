@@ -2,7 +2,7 @@
 
 project(
 	CharacterProgressionControl
-	VERSION 1.1.4
+	VERSION 1.1.5
 	LANGUAGES CXX ASM_MASM
 )
 

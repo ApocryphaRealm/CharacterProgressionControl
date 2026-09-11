@@ -140,6 +140,12 @@ namespace settings
 				get((Lower(SkillKey("fFormulaCap", i)) + ":skills").c_str(), skills::formulaCap[i], ParseFloat);
 			}
 
+			get("bcontrollegendary:legendary", legendary::control, ParseBool);
+			get("flegendarythreshold:legendary", legendary::threshold, ParseFloat);
+			get("flevelafterlegendary:legendary", legendary::levelAfter, ParseFloat);
+			get("bkeeplevelonlegendary:legendary", legendary::keepLevel, ParseBool);
+			get("bhidelegendarybutton:legendary", legendary::hideButton, ParseBool);
+
 			get("boverrideskillexp:skillexperience", skillexp::overrideRates, ParseBool);
 			get("fskilltolevelmult:skillexperience", skillexp::toLevelMult, ParseFloat);
 			for (int i = 0; i < skilllist::kCount; ++i)
@@ -477,6 +483,12 @@ namespace settings
 			ok &= WriteKey(lines, "Skills", SkillKey("fFormulaCap", i).c_str(), FormatFloat(skills::formulaCap[i]));
 		}
 
+		ok &= WriteKey(lines, "Legendary", "bControlLegendary", legendary::control ? "1" : "0");
+		ok &= WriteKey(lines, "Legendary", "fLegendaryThreshold", FormatFloat(legendary::threshold));
+		ok &= WriteKey(lines, "Legendary", "fLevelAfterLegendary", FormatFloat(legendary::levelAfter));
+		ok &= WriteKey(lines, "Legendary", "bKeepLevelOnLegendary", legendary::keepLevel ? "1" : "0");
+		ok &= WriteKey(lines, "Legendary", "bHideLegendaryButton", legendary::hideButton ? "1" : "0");
+
 		std::ofstream out(a_path, std::ios::trunc);
 		if (!out) { logger::error("Save: could not open {} for writing", a_path); return false; }
 		for (const auto& line : lines) { out << line << '\n'; }
@@ -497,6 +509,12 @@ namespace settings
 			skills::cap[i] = defaults.cap[i];
 			skills::formulaCap[i] = defaults.formulaCap[i];
 		}
+		// Vanilla, and identical to the shipped INI (rule 16).
+		legendary::control = false;
+		legendary::threshold = 100.0F;
+		legendary::levelAfter = 0.0F;
+		legendary::keepLevel = false;
+		legendary::hideButton = false;
 		skillexp::overrideRates = defaults.overrideRates;
 		skillexp::toLevelMult = defaults.toLevelMult;
 		levelup::overrideRewards = defaults.overrideRewards;

@@ -42,6 +42,11 @@ namespace Signature
 	// place to be patched.
 	Result Find(const std::string& a_pattern, std::ptrdiff_t a_offset = 0);
 
+	// Every place a signature matches, up to a_max, each plus a_offset. For a site the game carries in
+	// more than one copy (the legendary eligibility check has two): the CALLER states how many copies it
+	// expects and proves each one itself, so an unexpected count is still refused - by the caller.
+	std::vector<std::uintptr_t> FindAll(const std::string& a_pattern, std::ptrdiff_t a_offset = 0, std::size_t a_max = 8);
+
 	// The executable section actually searched, for the log.
 	bool ModuleRange(std::uintptr_t& a_base, std::size_t& a_size);
 }

@@ -124,4 +124,29 @@ namespace Signature
 		logger::info("signature verified at 0x{:X} (module + 0x{:X})", result.address, result.address - base);
 		return result;
 	}
+
+	std::vector<std::uintptr_t> FindAll(const std::string& a_pattern, std::ptrdiff_t a_offset, std::size_t a_max)
+	{
+		std::vector<std::uintptr_t> hits;
+		bool parsed = false;
+		const auto pattern = Parse(a_pattern, parsed);
+		if (!parsed || pattern.empty()) { logger::error("signature \"{}\" is malformed", a_pattern); return hits; }
+		std::uintptr_t base = 0;
+		std::size_t size = 0;
+		if (!ModuleRange(base, size) || size < pattern.size()) { return hits; }
+		const auto* bytes = reinterpret_cast<const std::uint8_t*>(base);
+		const std::size_t last = size - pattern.size();
+		for (std::size_t i = 0; i <= last && hits.size() < a_max; ++i)
+		{
+			bool hit = true;
+			for (std::size_t j = 0; j < pattern.size(); ++j)
+			{
+				const int p = pattern[j];
+				if (p != kWildcard && bytes[i + j] != static_cast<std::uint8_t>(p)) { hit = false; break; }
+			}
+			if (hit) { hits.push_back(static_cast<std::uintptr_t>(static_cast<std::ptrdiff_t>(base + i) + a_offset)); }
+		}
+		logger::debug("signature matched {} time(s): {}", hits.size(), a_pattern);
+		return hits;
+	}
 }

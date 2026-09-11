@@ -44,6 +44,17 @@ namespace settings
 		inline float formulaCap[skilllist::kCount]{};      // fFormulaCap<Skill>:Skills
 	}
 
+	// Legendary skills (1.1.5; feature request, Nexus 2026-09-10): when a skill may be made
+	// legendary, the level it drops to, and the menu's hint. Off = vanilla, not one byte written.
+	namespace legendary
+	{
+		inline bool control = false;         // bControlLegendary:Legendary
+		inline float threshold = 100.0F;     // fLegendaryThreshold:Legendary - vanilla 100
+		inline float levelAfter = 0.0F;      // fLevelAfterLegendary:Legendary - 0 = the game's own (fLegendarySkillResetValue)
+		inline bool keepLevel = false;       // bKeepLevelOnLegendary:Legendary
+		inline bool hideButton = false;      // bHideLegendaryButton:Legendary
+	}
+
 	// Stage 3 - what a use of a skill pays, and what a skill increase pays toward a level.
 	// The values are live and saved now; the hooks that consult them are not written yet, which
 	// the Patches page states plainly rather than implying otherwise.
@@ -101,8 +112,8 @@ namespace settings
 		inline float xpPerUse[skilllist::kCount]{};     // fPerUse<Skill>:StaticLevelling
 
 		// The skill-point half: skills advance only by points spent in the level-up menu (Static
-		// Skill Leveling Rewritten's idea, reproduced here; the menu is its levelupmenu.swf or one of
-		// ours). Points per level = per-level + multiplier x level, banked when unspent. Cost tiers by
+		// Skill Leveling Rewritten's idea, reproduced here; the menu is its levelupmenu.swf, shipped at
+		// Interface\CharacterProgressionControl\ and loaded only while this is on - since 1.1.5). Points per level = per-level + multiplier x level, banked when unspent. Cost tiers by
 		// the skill's current level: below 25, 25-49, 50-74, 75 and up.
 		inline bool pointsEnabled = false;             // bSkillPoints:StaticLevelling
 		inline int pointsPerLevel = 15;                 // iSkillPointsPerLevel:StaticLevelling

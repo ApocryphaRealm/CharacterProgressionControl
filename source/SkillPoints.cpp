@@ -11,9 +11,12 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <cmath>
+#include <cstring>
 #include <format>
 #include <sstream>
+#include <string_view>
 
 namespace SkillPoints
 {
@@ -87,7 +90,7 @@ namespace SkillPoints
 			for (int i = 0; i < skilllist::kCount; ++i) { caps[i] = RE::GFxValue(static_cast<double>(settings::skills::cap[i])); }
 			if (!movie->Invoke((std::string(kMenuPath) + "setSkillCaps").c_str(), &result, caps, skilllist::kCount))
 			{
-				g_menuStatus = "the level-up menu is not the skill-point one (no setSkillCaps) - install this mod's Interface\\levelupmenu.swf, or one of Static Skill Leveling Rewritten's skins";
+				g_menuStatus = "the level-up menu is not the skill-point one (no setSkillCaps) - this mod's Interface\\CharacterProgressionControl\\levelupmenu.swf did not load; the Patches tab says why";
 				logger::warn("skill points: {}", g_menuStatus);
 				return;
 			}
@@ -107,12 +110,12 @@ namespace SkillPoints
 			logger::info("skill points: {}", g_menuStatus);
 		}
 
-		// Skill points OFF must look off. The level-up menu this mod ships (Static Skill Leveling
-		// Rewritten's, installed for everyone by the FOMOD) has the skill-point panel placed on its stage
-		// permanently and no "off" mode of its own - FeedMenu() only ever FILLS it. So with skill points
-		// off, the player got an empty skill-point panel beside the attribute buttons (bug report
-		// 2026-09-11). These are the panel's named instances, read from the SWF's own display list
-		// (FFDec -swf2xml); the three attribute buttons and the frame clip stay.
+		// Skill points OFF must look off. Up to 1.1.4 the FOMOD installed Static Skill Leveling Rewritten's
+		// menu over the game's own for everyone, and its skill-point panel has no "off" mode - so with skill
+		// points off players saw an empty panel (bug report 2026-09-11). Since 1.1.5 this mod no longer
+		// replaces the load order's level-up menu at all (the file-opener hook below); this hide is the
+		// fallback for a player who installed SSLR's own menu separately. The panel's named instances, read
+		// from the SWF's own display list (FFDec -swf2xml); the three attribute buttons and the frame stay.
 		constexpr const char* kPanelParts[] = {
 			"onehanded", "twohanded", "marksman", "block", "smithing", "heavyarmor", "lightarmor", "pickpocket", "lockpicking",
 			"sneak", "alchemy", "speechcraft", "alteration", "conjuration", "destruction", "illusion", "restoration", "enchanting",
@@ -246,12 +249,96 @@ namespace SkillPoints
 		ModSink g_modSink;
 		HideSink g_hideSink;
 
+		// ---- Which level-up menu file loads (1.1.5; the owner, 2026-09-11) --------------------------
+		//
+		// With skill points OFF the game shows whatever level-up menu the load order supplies - vanilla, or
+		// a UI mod's (Untarnished UI, Dear Diary...) - because this mod no longer ships
+		// Interface\levelupmenu.swf. Its skill-point menu (Static Skill Leveling Rewritten's) sits at
+		// Interface\CharacterProgressionControl\levelupmenu.swf, and only while skill points are ON is the
+		// game's request for the level-up menu's file answered with it: a vtable hook on Skyrim's own
+		// Scaleform file opener, which every movie load goes through. No instruction is rewritten.
+		//
+		// GFxFileOpenerBase (Scaleform GFx 3) is not declared by CommonLibSSE-NG: 00 destructor,
+		// 01 OpenFile(url, flags, mode), 02 GetFileModifyTime(url), 03 OpenFileEx(url, log, flags, mode).
+		// Both opening slots are hooked, and the first URLs each sees are logged so the game itself
+		// confirms the layout (rule 30).
+		constexpr const char* kOwnMenuUrl = "Interface/CharacterProgressionControl/levelupmenu.swf";
+		using OpenFile_t = void*(void*, const char*, std::int32_t, std::int32_t);
+		using OpenFileEx_t = void*(void*, const char*, void*, std::int32_t, std::int32_t);
+		REL::Relocation<OpenFile_t> g_origOpenFile;
+		REL::Relocation<OpenFileEx_t> g_origOpenFileEx;
+		std::atomic<int> g_urlsLogged{ 0 };
+		std::atomic<int> g_redirects{ 0 };
+
+		// The level-up menu's own file, however the caller spells it (LOGIC-LIBRARY entry 21): either
+		// separator, repeats collapsed, any case, anything before "interface/".
+		bool IsLevelUpMenuUrl(const char* a_url)
+		{
+			if (!a_url) { return false; }
+			std::string s;
+			char prev = 0;
+			for (const char* p = a_url; *p; ++p)
+			{
+				const char c = *p == '\\' ? '/' : static_cast<char>(std::tolower(static_cast<unsigned char>(*p)));
+				if (c == '/' && prev == '/') { continue; }
+				s += c;
+				prev = c;
+			}
+			constexpr std::string_view kWant = "interface/levelupmenu.swf";
+			if (s.size() < kWant.size() || s.compare(s.size() - kWant.size(), kWant.size(), kWant) != 0) { return false; }
+			return s.size() == kWant.size() || s[s.size() - kWant.size() - 1] == '/';
+		}
+
+		// Every movie load passes through here: the first few are logged, then only a redirect logs.
+		const char* MenuUrl(const char* a_url, const char* a_slot)
+		{
+			if (const int n = g_urlsLogged.fetch_add(1); n < 8) { logger::debug("file opener {}: \"{}\"", a_slot, a_url ? a_url : "(null)"); }
+			if (!settings::staticlevel::pointsEnabled || !IsLevelUpMenuUrl(a_url)) { return a_url; }
+			g_redirects.fetch_add(1);
+			logger::info("skill points: the level-up menu's file \"{}\" is answered with \"{}\" ({})", a_url, kOwnMenuUrl, a_slot);
+			return kOwnMenuUrl;
+		}
+
+		void* OpenFile_Hook(void* a_this, const char* a_url, std::int32_t a_flags, std::int32_t a_mode)
+		{
+			return g_origOpenFile(a_this, MenuUrl(a_url, "OpenFile"), a_flags, a_mode);
+		}
+
+		void* OpenFileEx_Hook(void* a_this, const char* a_url, void* a_log, std::int32_t a_flags, std::int32_t a_mode)
+		{
+			return g_origOpenFileEx(a_this, MenuUrl(a_url, "OpenFileEx"), a_log, a_flags, a_mode);
+		}
+
+		bool HookMenuFile(std::string& a_note)
+		{
+			const auto base = REL::Module::get().base();
+			REL::Relocation<std::uintptr_t> vtbl{ RE::VTABLE_BSScaleformFileOpener[0] };
+			// Ask the object (rule 30): the vtable's complete-object locator must name this class. CommonLibSSE-NG
+			// carries no RTTI id for it, so the type descriptor's own name string is read.
+			const auto col = *reinterpret_cast<const std::uintptr_t*>(vtbl.address() - sizeof(std::uintptr_t));
+			const char* name = col ? reinterpret_cast<const char*>(base + *reinterpret_cast<const std::uint32_t*>(col + 0x0C) + 0x10) : nullptr;
+			if (!name || !std::strstr(name, "BSScaleformFileOpener@"))
+			{
+				a_note = std::format("The skill-point level-up menu cannot be selected on this build: the vtable at game offset 0x{:X} is not "
+									 "BSScaleformFileOpener's; nothing was written, so the level-up menu is whichever one the load order supplies.",
+									 vtbl.address() - base);
+				logger::warn("skill points: {}", a_note);
+				return false;
+			}
+			g_origOpenFile = vtbl.write_vfunc(1, OpenFile_Hook);       // 01 = OpenFile
+			g_origOpenFileEx = vtbl.write_vfunc(3, OpenFileEx_Hook);   // 03 = OpenFileEx
+			logger::info("skill points: hooked the Scaleform file opener (vtable at game offset 0x{:X}, {}) - the level-up menu loads {}",
+						 vtbl.address() - base, name, kOwnMenuUrl);
+			a_note = "The level-up menu is this mod's skill-point menu (Interface\\CharacterProgressionControl\\levelupmenu.swf).";
+			return true;
+		}
+
 		bool Install(std::string& a_reason)
 		{
 			if (!settings::staticlevel::pointsEnabled)
 			{
-				a_reason = "ready but off: Use skill points is off. Turn it on and restart, and install the level-up menu file, "
-						   "for skills to advance by points spent at level up.";
+				a_reason = "ready but off: Use skill points is off, so the level-up menu is whichever one your load order supplies "
+						   "(vanilla or a UI mod's). Turn it on and restart for skills to advance by points spent at level up.";
 				return false;
 			}
 			if (auto* ui = RE::UI::GetSingleton()) { ui->AddEventSink(&g_menuSink); }
@@ -264,6 +351,9 @@ namespace SkillPoints
 									 "present), so skills also still advance by use. ") +
 					   "Whether the installed level-up menu is the skill-point one shows here after the first level up.";
 			if (!suppressed) { logger::warn("Skill points: the skill-improve site is not present in this build, so ordinary skill experience still banks alongside points"); }
+			std::string fileNote;
+			HookMenuFile(fileNote);
+			a_reason += " " + fileNote;
 			return true;
 		}
 	}
