@@ -109,14 +109,10 @@ namespace Skills
 				"verified at game offset 0x{:X} (movss {} loading the 100.0 constant, matched once by shape)",
 				site - base, regName);
 
-			// Gated on the setting, so with "Control skill caps" off not a byte of the game is
-			// written - the patch is opt-in, and turning it on takes a restart (this runs once).
-			if (!settings::skills::overrideCaps)
-			{
-				a_reason = located + ". Ready but not attached: Control skill caps is off. Turn it on and "
-									 "restart to attach it. Skills cap at 100 as in vanilla.";
-				return false;
-			}
+			// 1.1.8: attached whether or not the toggle is on. The patches install at data load, but the character's
+			// preset (and so every toggle) is only applied when a save loads, so a toggle-gated install could never
+			// attach - "turn it on and restart" was advice that could not work (Raosing, Nexus, 2026-09-17). The hook
+			// itself reads the toggle live, so attaching with it off changes nothing until it is turned on.
 
 			// Attach: a 5-byte call through the trampoline. The stub returns to site+5, where the
 			// 4 NOPs carry execution on to the instruction after the original 9-byte load.
@@ -161,12 +157,10 @@ namespace Skills
 
 		bool InstallFormulaCapPatch(std::string& a_reason)
 		{
-			if (!settings::skills::overrideCaps)
-			{
-				a_reason = "ready but not attached: Control skill caps is off. Turn it on and restart to "
-						   "attach it. Formulas read the true skill value, as in vanilla.";
-				return false;
-			}
+			// 1.1.8: attached whether or not the toggle is on. The patches install at data load, but the character's
+			// preset (and so every toggle) is only applied when a save loads, so a toggle-gated install could never
+			// attach - "turn it on and restart" was advice that could not work (Raosing, Nexus, 2026-09-17). The hook
+			// itself reads the toggle live, so attaching with it off changes nothing until it is turned on.
 			auto* player = RE::PlayerCharacter::GetSingleton();
 			auto* avo = player ? player->AsActorValueOwner() : nullptr;
 			if (!avo)

@@ -114,11 +114,10 @@ namespace Legendary
 			}
 			const std::string located = std::format("verified: LegendarySkillResetConfirmCallback's vtable at game offset 0x{:X}; the game's "
 													"own reset level is {:.0f}", vtbl.address() - base, gameReset);
-			if (!settings::legendary::control)
-			{
-				a_reason = located + ". Ready but not attached: Control legendary skills is off. Turn it on and restart to attach it.";
-				return false;
-			}
+			// 1.1.8: attached whether or not the toggle is on. The patches install at data load, but the character's
+			// preset (and so every toggle) is only applied when a save loads, so a toggle-gated install could never
+			// attach - "turn it on and restart" was advice that could not work (Raosing, Nexus, 2026-09-17). The hook
+			// itself reads the toggle live, so attaching with it off changes nothing until it is turned on.
 			g_origRun = vtbl.write_vfunc(1, Run_Hook);   // 01 = Run
 			g_resetHooked = true;
 			logger::info("Legendary reset level: hooked LegendarySkillResetConfirmCallback::Run (vtable at game offset 0x{:X})",
@@ -226,7 +225,7 @@ namespace Legendary
 		{
 			const std::string vanilla = std::string(" ") + a_site.vanilla;
 			std::string how, note;
-			const auto sites = Locate(a_site, settings::legendary::control, how, note);
+			const auto sites = Locate(a_site, true, how, note);   // 1.1.8: always allowed - see the note in InstallReset
 			const auto base = REL::Module::get().base();
 			if (sites.empty())
 			{
@@ -253,11 +252,8 @@ namespace Legendary
 			for (const auto at : sites) { if (a_site.count < std::size(a_site.comiss)) { a_site.comiss[a_site.count++] = at; } }
 			const std::string located = std::format("verified at game offset{} {} ({}; each a comparison against the 100.0 constant) - {}",
 													sites.size() > 1 ? "s" : "", offsets, how, a_site.what);
-			if (!settings::legendary::control)
-			{
-				a_reason = located + ". Ready but not attached: Control legendary skills is off. Turn it on and restart to attach it." + vanilla;
-				return false;
-			}
+			// 1.1.8: attached whether or not Control legendary skills is on; the values it reads are recomputed from
+			// the toggle (vanilla 100 while off), so nothing changes until it is turned on.
 			if (!g_values)
 			{
 				// Trampoline memory sits within 2 GB of the game, which a rip-relative operand needs. Aligned

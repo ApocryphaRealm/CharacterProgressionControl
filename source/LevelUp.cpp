@@ -85,11 +85,10 @@ namespace LevelUp
 				return false;
 			}
 			const std::string located = std::format("verified at game offset 0x{:X} (the perk-pool sequence; perk count at +0x{:X})", site - base, perkOffset);
-			if (!settings::levelup::overrideRewards)
-			{
-				a_reason = located + ". Ready but not attached: Control what a level up grants is off. Turn it on and restart to attach it. A level up grants exactly what vanilla grants.";
-				return false;
-			}
+			// 1.1.8: attached whether or not the toggle is on. The patches install at data load, but the character's
+			// preset (and so every toggle) is only applied when a save loads, so a toggle-gated install could never
+			// attach - "turn it on and restart" was advice that could not work (Raosing, Nexus, 2026-09-17). The hook
+			// itself reads the toggle live, so attaching with it off changes nothing until it is turned on.
 			// The sequence's own register effects are reproduced by the stub: rdx = the player pointer it
 			// loads (rip-relative in its first instruction), ecx/eax = the new count.
 			{
@@ -101,7 +100,7 @@ namespace LevelUp
 			REL::safe_fill(site + 5, 0x90, kSequenceLength - 5);
 			logger::info("Perk points: attached at game offset 0x{:X} (resume 0x{:X}); each level up now grants the table's whole "
 						 "number of perks", site - base, CPC_PerkPoolReturn - base);
-			a_reason = located + ". Attached: each level up grants the number of perks the table gives for the level reached.";
+			a_reason = located + ". Attached: while Control what a level up grants is on, each level up grants the number of perks the table gives for the level reached; off, exactly what vanilla grants.";
 			return true;
 		}
 	}

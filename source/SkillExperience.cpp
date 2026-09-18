@@ -159,13 +159,10 @@ namespace SkillExperience
 		{
 			if (!LocateImprove(a_reason)) { a_reason += ". Experience is earned exactly as in vanilla."; return false; }
 			const auto base = REL::Module::get().base();
-			if (!settings::skillexp::overrideRates)
-			{
-				a_reason = std::format("verified at game offset 0x{:X} (the skill-improve function). Ready but not applied: "
-									   "Control skill experience rates is off. Turn it on and restart to apply it.",
-									   g_improveEntry - base);
-				return false;
-			}
+			// 1.1.8: attached whether or not the toggle is on. The patches install at data load, but the character's
+			// preset (and so every toggle) is only applied when a save loads, so a toggle-gated install could never
+			// attach - "turn it on and restart" was advice that could not work (Raosing, Nexus, 2026-09-17). The hook
+			// itself reads the toggle live, so attaching with it off changes nothing until it is turned on.
 			if (!AttachImprove(a_reason)) { return false; }
 			logger::info("Skill experience rates: applied at the skill-improve entry, game offset 0x{:X}; each use now pays "
 						 "fMult<Skill> times vanilla", g_improveEntry - base);
@@ -178,19 +175,10 @@ namespace SkillExperience
 		{
 			if (!LocateImprove(a_reason)) { a_reason += ". Skill experience scales exactly as in vanilla."; return false; }
 			const auto base = REL::Module::get().base();
-			if (!settings::staticlevel::enabled)
-			{
-				// Skill points ride the same hook (ordinary experience must not bank while they are on).
-				if (settings::staticlevel::pointsEnabled)
-				{
-					if (!AttachImprove(a_reason)) { return false; }
-					logger::info("Static levelling: the skill-improve hook is attached for skill points (ordinary skill experience is not banked)");
-				}
-				a_reason = std::format("verified at game offset 0x{:X} (the skill-improve function). Ready but not applied: "
-									   "Use static skill levelling is off. Turn it on and restart to apply it.{}",
-									   g_improveEntry - base, settings::staticlevel::pointsEnabled ? " (Skill points are on, so ordinary skill experience is not banked.)" : "");
-				return false;
-			}
+			// 1.1.8: attached whether or not the toggle is on. The patches install at data load, but the character's
+			// preset (and so every toggle) is only applied when a save loads, so a toggle-gated install could never
+			// attach - "turn it on and restart" was advice that could not work (Raosing, Nexus, 2026-09-17). The hook
+			// itself reads the toggle live, so attaching with it off changes nothing until it is turned on.
 			if (!AttachImprove(a_reason)) { return false; }
 			logger::info("Static levelling: applied at the skill-improve entry, game offset 0x{:X}; each use now pays "
 						 "fPerUse<Skill> percent of a skill level, whatever the game computed", g_improveEntry - base);
@@ -250,14 +238,11 @@ namespace SkillExperience
 									   "skill-improve function, found {}; nothing was written", fnEntry - base, calls);
 				return false;
 			}
+			// 1.1.8: attached whether or not the toggle is on. The patches install at data load, but the character's
+			// preset (and so every toggle) is only applied when a save loads, so a toggle-gated install could never
+			// attach - "turn it on and restart" was advice that could not work (Raosing, Nexus, 2026-09-17). The hook
+			// itself reads the toggle live, so attaching with it off changes nothing until it is turned on.
 			const bool replaceMode = settings::experience::enabled && !settings::experience::skillsPay;
-			if (!settings::skillexp::overrideRates && !settings::staticlevel::pointsEnabled && !replaceMode)
-			{
-				a_reason = std::format("verified: the level-experience call at game offset 0x{:X} (function at 0x{:X}). Ready but not "
-									   "attached: Control skill experience rates is off. Turn it on and restart to attach it.",
-									   callSite - base, fnEntry - base);
-				return false;
-			}
 			// Skill points ride this hook too: a point-bought skill level must pay nothing toward the character
 			// level, and the hook is where that is decided (it passes vanilla through when rates are off).
 			CPC_LevelExpOriginal = fnEntry;

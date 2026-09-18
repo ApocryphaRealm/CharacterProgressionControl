@@ -352,12 +352,10 @@ namespace SkillPoints
 
 		bool Install(std::string& a_reason)
 		{
-			if (!settings::staticlevel::pointsEnabled)
-			{
-				a_reason = "ready but off: Use skill points is off, so the level-up menu is whichever one your load order supplies "
-						   "(vanilla or a UI mod's). Turn it on and restart for skills to advance by points spent at level up.";
-				return false;
-			}
+			// 1.1.8: attached whether or not the toggle is on. The patches install at data load, but the character's
+			// preset (and so every toggle) is only applied when a save loads, so a toggle-gated install could never
+			// attach - "turn it on and restart" was advice that could not work (Raosing, Nexus, 2026-09-17). The hook
+			// itself reads the toggle live, so attaching with it off changes nothing until it is turned on.
 			if (auto* ui = RE::UI::GetSingleton()) { ui->AddEventSink(&g_menuSink); }
 			if (auto* src = SKSE::GetModCallbackEventSource()) { src->AddEventSink(&g_modSink); }
 			logger::info("Skill points: listening for the level-up menu and its allocation event; ordinary skill experience is not banked while this is on");
