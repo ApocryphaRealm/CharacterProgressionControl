@@ -16,6 +16,9 @@ Settings are stored in a plain INI file and can also be changed in game.
 ### Fixed
 - **Every "Control ..." engine patch can now actually be switched on** (Raosing, Nexus, 2026-09-17: the perk-points table did nothing and the Patches tab said the patch was not active however the toggle was set). The patches install at data load, but a character's preset - and every toggle in it - is only applied when the save loads, so an installer that waited for its toggle could never attach and the "turn it on and restart" advice could not work. Perk points, skill caps, formula caps, legendary reset level and threshold, skill points, skill experience rates, static levelling and the level-income call now attach whenever their signature verifies, exactly as the attribute patch always did; each hook reads its toggle live, so nothing changes until the toggle is on, and no restart is needed.
 
+### Added
+- The Address Library check every mod of ours carries: before any address is resolved the log names the game version detected, the Address Library file it needs, where it looked and whether the file is there; when it is missing a message says exactly that and the plugin loads inert.
+
 ## 1.1.6 - 2026-09-11 - working
 
 ### Fixed
