@@ -97,16 +97,18 @@ namespace
 
 SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 {
-	SKSE::Init(a_skse);
 	SKSE::log::init("CharacterProgressionControl");
 
 	// 1.1.8: before anything resolves an address, say which Address Library file this game needs and whether it
 	// is there; when it is missing the plugin loads inert with a message that names the file (the guard every
-	// mod of ours carries since Wheeler 1.2.9).
+	// mod of ours carries since Wheeler 1.2.9). 1.1.9: BEFORE SKSE::Init - CommonLibSSE-NG's Init opens the
+	// Address Library itself, so a guard after it never ran when the file was missing (gate rule
+	// address-library-guard-runs-before-skse-init).
 	if (!AddressLibraryGuard::Guard("Character Progression Control"))
 	{
 		return true;
 	}
+	SKSE::Init(a_skse);
 
 	// Trampoline space for the engine patches installed at kDataLoaded: each far branch or call
 	// takes 14 bytes and the skill-improve entry hook also parks a 19-byte prologue thunk here.

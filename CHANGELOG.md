@@ -11,6 +11,15 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
+## 1.1.9 - 2026-09-20 - untested
+
+### Fixed
+- Skills with a use offset (Lockpicking, Pickpocket, Alchemy, Sneak) still levelling through use with skill points on: the improve is skipped outright while points are on instead of being fed zero, which the game's offset was added to.
+- Skill experience still banking through use with skill points on when another plugin (Actor Value Generator, the Skyrim Skill Uncapper) already hooks the skill-improve function at its entry: the shape is now matched behind their branch, this mod's hook runs in front of theirs and calls it, and the log names the plugin.
+
+### Changed
+- Skill points are on by default in a fresh install; an existing INI keeps its value.
+
 ## 1.1.8 - 2026-09-18 - untested
 
 ### Fixed
