@@ -1,7 +1,12 @@
 # Character Progression Control
 
-Version 1.0.7
+Version 1.1.9
 
+What changed in 1.1.9: with skill points on, skill experience no longer banks through use when
+another plugin (Actor Value Generator, the Skyrim Skill Uncapper) already hooks the skill-improve
+function at its entry - this mod's shape is now found behind their branch, and its hook runs in front
+of theirs and calls it; and the improve is skipped outright while points are on, so a skill's use
+offset (Lockpicking's 25, Pickpocket's, Alchemy's, Sneak's) cannot leak in. Skill points are on by default.
 What changed in 1.0.7: a respec now also rewrites each reset skill's cached level and next-level
 threshold, so the first level after it costs what that level costs and not what the old, higher
 level cost.
@@ -35,7 +40,9 @@ experience rates, skill-to-level income, static levelling and perk-table sites a
 and those groups stay off and say so on the Patches tab (skill points still work, but ordinary skill
 experience cannot be suppressed on that build and the group says that too).
 
-**Skill points (1.0.4).** With *Use skill points* on, skills advance only by points spent in the
+**Skill points (1.0.4; on by default since 1.1.9).** *Use skill points* ships ON: the rewritten
+level-up screen is the point of the mod, so a fresh install gets it without touching the INI. With it on,
+skills advance only by points spent in the
 level-up menu: each level grants `points per level + multiplier x level` points, banked when
 unspent and kept in the co-save; the menu shows every skill with + and -, the four cost tiers
 (below 25, 25-49, 50-74, 75 and up) and a cap on increases per skill per level up; the choice is

@@ -15,6 +15,8 @@
 #include <cstring>
 #include <format>
 
+#include <Windows.h>
+
 extern "C"
 {
 	// SkillCapStub.asm: takes the place of the game's `call` to its level-experience function -
@@ -37,6 +39,53 @@ namespace SkillExperience
 		// The three whole instructions a 5-byte branch at the entry overwrites - re-executed verbatim
 		// by the "original" thunk (they are position-independent), then a jump to entry+5.
 		constexpr std::uint8_t kPrologue5[5] = { 0x4C, 0x8B, 0xDC, 0x55, 0x56 };
+		// The same shape without its first five bytes, anchored back to the entry: what is left of the prologue
+		// once ANOTHER plugin has written its own 5-byte branch there. Actor Value Generator does (read out of the
+		// running game on 2026-09-20: 0x6E61D0 began `E9 ..` into ActorValueGenerator.dll), and the Skyrim Skill
+		// Uncapper hooks the same entry. The full shape then matches nowhere, and up to 1.1.8 this mod concluded
+		// "not present in this build" and left skill experience to vanilla - with skill points on, that is the
+		// Nexus report of 2026-09-20 (xLenax): skills still levelled through use.
+		constexpr const char* kImproveTailSig =
+			"41 56 48 81 EC 60 01 00 00 8D 42 FA 41 0F 29 7B C8 49 8B E9 0F 28 FA 8B F2 4C 8B F1 83 F8 11";
+		std::uintptr_t g_foreignHook = 0;   // where the branch already sitting at the entry goes, when another plugin hooked first
+		std::string g_foreignOwner;         // that plugin's file name, for the log and the Patches tab
+
+		// The module that owns an address, following up to two `jmp [rip+0]` thunks first (an SKSE trampoline sits
+		// outside every module; the hook it forwards to does not).
+		std::string OwnerOf(std::uintptr_t a_target)
+		{
+			auto p = a_target;
+			for (int hop = 0; hop < 2; ++hop)
+			{
+				const auto* b = reinterpret_cast<const std::uint8_t*>(p);
+				if (b[0] == 0xFF && b[1] == 0x25)
+				{
+					const auto rel = *reinterpret_cast<const std::int32_t*>(p + 2);
+					p = *reinterpret_cast<const std::uintptr_t*>(p + 6 + rel);
+				}
+				else { break; }
+			}
+			HMODULE mod = nullptr;
+			if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, reinterpret_cast<LPCWSTR>(p), &mod) && mod)
+			{
+				wchar_t buf[MAX_PATH]{};
+				if (GetModuleFileNameW(mod, buf, MAX_PATH))
+				{
+					std::wstring w(buf);
+					const auto slash = w.find_last_of(L"\\/");
+					w = slash == std::wstring::npos ? w : w.substr(slash + 1);
+					std::string out;
+					for (wchar_t c : w) { out += static_cast<char>(c < 128 ? c : '?'); }
+					return out;
+				}
+			}
+			return std::format("code outside every loaded module (0x{:X})", p);
+		}
+
+		std::string ChainNote()
+		{
+			return g_foreignHook ? std::format(" {} hooks the same entry; this mod runs first and hands every call it does not stop on to it.", g_foreignOwner) : std::string();
+		}
 		// The level-experience function - "what a skill increase pays toward a level". On 1.5.97 it is a
 		// real leaf function (measured 2026-09-05 from a byte dump): `sub rsp,18h` and then this shape,
 		// ending in `add rsp,18h; ret`. The shape starts 4 bytes AFTER the entry - an earlier version
@@ -66,7 +115,14 @@ namespace SkillExperience
 				}
 				else if (settings::staticlevel::pointsEnabled)
 				{
-					a_exp = 0.0F;   // skills advance only by points spent at level up
+					// Skills advance only by points spent at level up. The improve is SKIPPED, not fed 0: the game
+					// multiplies what arrives by the skill's use multiplier and then ADDS its use offset (the AVIF's
+					// AVSK block - Lockpicking 25, Pickpocket 8.1, Alchemy 3, Sneak 1.5), so 0 in still banked the
+					// offset and those skills kept levelling through use.
+					static std::atomic<int> skipped{ 0 };
+					const int k = skipped.fetch_add(1);
+					if (k < 8) { logger::debug("skill points on: skill {} use ({:.2f}) not banked", a_skill, incoming); }
+					return;
 				}
 				else if (settings::staticlevel::enabled && a_skills && a_skills->data)
 				{
@@ -117,11 +173,34 @@ namespace SkillExperience
 		bool LocateImprove(std::string& a_reason)
 		{
 			if (g_improveEntry) { return true; }
-			const auto found = Signature::Find(kImproveSig, 0);
+			const auto base = REL::Module::get().base();
+			auto found = Signature::Find(kImproveSig, 0);
+			if (!found.found && found.matches == 0)
+			{
+				// Nowhere at all: another plugin may already hold the entry. The shape minus the five bytes a
+				// branch overwrites still has to match exactly once, and what sits at the entry has to BE a
+				// branch - any other bytes there are refused, as before.
+				const auto tail = Signature::Find(kImproveTailSig, -5);
+				if (tail.found)
+				{
+					const auto* b = reinterpret_cast<const std::uint8_t*>(tail.address);
+					if (b[0] != 0xE9)
+					{
+						a_reason = std::format("refused: game offset 0x{:X} starts with {:02X} {:02X} {:02X} {:02X} {:02X}, neither the prologue nor "
+											   "another plugin's branch; nothing was written", tail.address - base, b[0], b[1], b[2], b[3], b[4]);
+						return false;
+					}
+					const auto rel = *reinterpret_cast<const std::int32_t*>(tail.address + 1);
+					g_foreignHook = tail.address + 5 + rel;
+					g_foreignOwner = OwnerOf(g_foreignHook);
+					logger::info("skill-improve entry at game offset 0x{:X} is already hooked by {} (branch to 0x{:X}); this mod's hook will sit in front of it and call it",
+								 tail.address - base, g_foreignOwner, g_foreignHook);
+					found = tail;
+				}
+			}
 			if (!found.found) { a_reason = found.note; return false; }
 			const auto entry = found.address;
-			const auto base = REL::Module::get().base();
-			if (std::memcmp(reinterpret_cast<const void*>(entry), kPrologue5, sizeof(kPrologue5)) != 0)
+			if (!g_foreignHook && std::memcmp(reinterpret_cast<const void*>(entry), kPrologue5, sizeof(kPrologue5)) != 0)
 			{
 				a_reason = std::format("refused: game offset 0x{:X} does not start with the expected prologue; nothing was written", entry - base);
 				return false;
@@ -141,17 +220,29 @@ namespace SkillExperience
 		{
 			if (g_origImprove.address()) { return true; }
 			const auto base = REL::Module::get().base();
-			// The "original": the 5 overwritten prologue bytes, then `jmp [rip+0]` to entry+5.
 			auto& trampoline = SKSE::GetTrampoline();
 			auto* thunk = static_cast<std::uint8_t*>(trampoline.allocate(5 + 6 + 8));
 			if (!thunk) { a_reason = "refused: no trampoline space for the prologue thunk; nothing was written"; return false; }
-			std::memcpy(thunk, kPrologue5, 5);
-			thunk[5] = 0xFF; thunk[6] = 0x25; std::memset(thunk + 7, 0, 4);
-			const std::uintptr_t resume = g_improveEntry + 5;
-			std::memcpy(thunk + 11, &resume, 8);
+			if (g_foreignHook)
+			{
+				// Another plugin's branch is at the entry. Its own thunk re-executes the prologue, so the "original"
+				// for this hook is that plugin's hook: `jmp [rip+0]` straight to it. The branch this mod writes over
+				// theirs is what the game runs first, and theirs still runs on every call this mod passes through.
+				thunk[0] = 0xFF; thunk[1] = 0x25; std::memset(thunk + 2, 0, 4);
+				std::memcpy(thunk + 6, &g_foreignHook, 8);
+			}
+			else
+			{
+				// The "original": the 5 overwritten prologue bytes, then `jmp [rip+0]` to entry+5.
+				std::memcpy(thunk, kPrologue5, 5);
+				thunk[5] = 0xFF; thunk[6] = 0x25; std::memset(thunk + 7, 0, 4);
+				const std::uintptr_t resume = g_improveEntry + 5;
+				std::memcpy(thunk + 11, &resume, 8);
+			}
 			g_origImprove = REL::Relocation<Improve_t>(reinterpret_cast<std::uintptr_t>(thunk));
 			trampoline.write_branch<5>(g_improveEntry, Improve_Hook);
-			logger::info("skill-improve entry hook attached at game offset 0x{:X}", g_improveEntry - base);
+			if (g_foreignHook) { logger::info("skill-improve entry hook attached at game offset 0x{:X}, in front of {}'s hook, which it calls", g_improveEntry - base, g_foreignOwner); }
+			else { logger::info("skill-improve entry hook attached at game offset 0x{:X}", g_improveEntry - base); }
 			return true;
 		}
 
@@ -167,7 +258,7 @@ namespace SkillExperience
 			logger::info("Skill experience rates: applied at the skill-improve entry, game offset 0x{:X}; each use now pays "
 						 "fMult<Skill> times vanilla", g_improveEntry - base);
 			a_reason = std::format("attached at game offset 0x{:X}: each use of a skill pays vanilla times that skill's "
-								   "Experience rate.", g_improveEntry - base);
+								   "Experience rate.{}", g_improveEntry - base, ChainNote());
 			return true;
 		}
 
@@ -184,7 +275,7 @@ namespace SkillExperience
 						 "fPerUse<Skill> percent of a skill level, whatever the game computed", g_improveEntry - base);
 			a_reason = std::format("attached at game offset 0x{:X}: each use of a skill pays that skill's Experience per use "
 								   "as a share of a level, at every level; the vanilla scaling and perk modifiers on skill use "
-								   "are not applied.", g_improveEntry - base);
+								   "are not applied.{}", g_improveEntry - base, ChainNote());
 			return true;
 		}
 

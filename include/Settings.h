@@ -115,7 +115,7 @@ namespace settings
 		// Skill Leveling Rewritten's idea, reproduced here; the menu is its levelupmenu.swf, shipped at
 		// Interface\CharacterProgressionControl\ and loaded only while this is on - since 1.1.5). Points per level = per-level + multiplier x level, banked when unspent. Cost tiers by
 		// the skill's current level: below 25, 25-49, 50-74, 75 and up.
-		inline bool pointsEnabled = false;             // bSkillPoints:StaticLevelling
+		inline bool pointsEnabled = true;              // bSkillPoints:StaticLevelling - ON by default (the owner, 2026-09-18: "Sslr should be on by default")
 		inline int pointsPerLevel = 15;                 // iSkillPointsPerLevel:StaticLevelling
 		inline float pointsLevelMult = 2.0F;            // fSkillPointsLevelMult:StaticLevelling
 		inline int pointsCap = 0;                       // iSkillPointsCap:StaticLevelling (0 = no cap)
