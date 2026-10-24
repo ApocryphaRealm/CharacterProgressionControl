@@ -758,7 +758,7 @@ namespace UI
 		ImGuiMCP::SeparatorText(strings::TR("CPC_CW_SecPerChoice", "Per choice at level up"));
 		if (carryweight::control)
 		{
-			ImGuiMCP::TextDisabled("%s", strings::TR("CPC_CW_OffWhileFormula", "Off while the formula controls carry weight: it sets the total, so a per-choice gain would be undone at the next recalculation."));
+			ImGuiMCP::TextDisabled("%s", strings::TR("CPC_CW_OffWhileFormula", "Off while the Carry Weight tab controls carry weight: its per-level gain takes the place of these. On top of your race they would count twice; with \"Use our base values\" they would be undone at the next recalculation."));
 		}
 		else
 		{

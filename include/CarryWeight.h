@@ -12,8 +12,9 @@
 // co-save, so turning the tab off takes exactly that amount away again and asserts nothing.
 //
 // One owner at a time: while this is on, the Level Up cross terms (carry weight per attribute
-// choice) are zeroed, because the formula sets the TOTAL and would undo them at the next
-// recalculation. And while one of our standalone carry-weight mods is loaded (Compat), this
+// choice) are zeroed, because the tab's per-level gain takes their place: added on top of the
+// race they would count twice, and under "use our base values" (which sets the total) the next
+// recalculation would undo them. And while one of our standalone carry-weight mods is loaded (Compat), this
 // stands down and says so.
 
 #include <cstdint>

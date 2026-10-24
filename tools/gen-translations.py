@@ -1184,16 +1184,16 @@ TRANSLATIONS["CPC_CW_SecPerChoice"] = T(
     "Je Wahl beim Stufenaufstieg", "Par choix au passage de niveau", "Por elección al subir de nivel",
     "Per scelta al passaggio di livello", "Za wybór przy awansie", "Za volbu při postupu")
 TRANSLATIONS["CPC_CW_OffWhileFormula"] = T(
-    "計算式が所持重量を制御している間は無効です: 計算式が合計を決めるため、選択ごとの加算は次の再計算で打ち消されます。",
-    "계산식이 소지 중량을 제어하는 동안에는 꺼집니다: 계산식이 총합을 정하므로, 선택별 증가분은 다음 재계산에서 사라집니다.",
-    "当公式控制负重时无效：公式会设定总量，因此按选择的增量会在下一次重算时被抹去。",
-    "Отключено, пока формула управляет переносимым весом: она задаёт итог, поэтому прибавка за выбор была бы стёрта при следующем пересчёте.",
-    "Aus, solange die Formel die Tragkraft steuert: sie setzt die Gesamtsumme, ein Zuwachs je Wahl würde beim nächsten Neuberechnen wieder verschwinden.",
-    "Inactif tant que la formule contrôle la charge : elle fixe le total, donc un gain par choix serait annulé au prochain recalcul.",
-    "Apagado mientras la fórmula controla la carga: fija el total, así que una ganancia por elección se deshaaría en el siguiente recálculo.",
-    "Disattivo finché la formula controlla il carico: imposta il totale, quindi un guadagno per scelta verrebbe annullato al ricalcolo successivo.",
-    "Wyłączone, gdy udźwigiem steruje wzór: ustala on sumę, więc przyrost za wybór zostałby cofnięty przy następnym przeliczeniu.",
-    "Vypnuto, dokud nosnost řídí vzorec: ten určuje celek, takže přírůstek za volbu by se při dalším přepočtu ztratil.")
+    "所持重量タブが所持重量を制御している間は無効です: タブのレベルごとの加算がこれらの代わりになります。種族の値に上乗せする場合は二重に数えられ、「種族の値ではなくこのMODの基本値を使う」がオンなら次の再計算で打ち消されます。",
+    "소지 무게 탭이 소지 무게를 제어하는 동안에는 꺼집니다: 탭의 레벨당 증가분이 이 값들을 대신합니다. 종족 값 위에 더하는 방식에서는 두 번 계산되고, “종족 값 대신 이 모드의 기본값 사용”이 켜져 있으면 다음 재계산에서 사라집니다.",
+    "当负重标签页控制负重时无效：该标签页的每级增量取代了这些数值。在种族数值之上叠加时它们会被重复计算；开启“使用本模组的基础值代替种族的数值”时，它们会在下一次重算时被抹去。",
+    "Отключено, пока вкладка переносимого веса управляет им: её прибавка за уровень заменяет эти значения. Поверх расового значения они учитывались бы дважды, а с «Использовать наши базовые значения вместо расовых» были бы стёрты при следующем пересчёте.",
+    "Aus, solange der Tragkraft-Reiter die Tragkraft steuert: sein Zuwachs pro Stufe tritt an die Stelle dieser Werte. Auf die Rasse aufgesetzt würden sie doppelt zählen; mit „Unsere Grundwerte statt der Rassenwerte verwenden“ würden sie beim nächsten Neuberechnen wieder verschwinden.",
+    "Inactif tant que l'onglet de la charge contrôle la charge : son gain par niveau remplace ces valeurs. Ajoutées à celle de votre race, elles compteraient deux fois ; avec « Utiliser nos valeurs de base au lieu de celles de la race », elles seraient annulées au prochain recalcul.",
+    "Apagado mientras la pestaña de carga controla la carga: su ganancia por nivel ocupa el lugar de estos valores. Sumados a los de tu raza contarían dos veces; con «Usar nuestros valores base en lugar de los de la raza» se desharían en el siguiente recálculo.",
+    "Disattivo finché la scheda del peso trasportabile lo controlla: il suo guadagno per livello prende il posto di questi valori. Sommati a quelli della razza conterebbero due volte; con «Usa i nostri valori base invece di quelli della razza» verrebbero annullati al ricalcolo successivo.",
+    "Wyłączone, gdy zakładka udźwigu nim steruje: jej przyrost na poziom zastępuje te wartości. Dodane do wartości rasy liczyłyby się podwójnie; z „Używaj naszych wartości bazowych zamiast rasowych” zostałyby cofnięte przy następnym przeliczeniu.",
+    "Vypnuto, dokud nosnost řídí karta nosnosti: její přírůstek za úroveň nahrazuje tyto hodnoty. Navíc k hodnotě rasy by se počítaly dvakrát; s „Použít naše základní hodnoty místo hodnot rasy“ by se při dalším přepočtu ztratily.")
 TRANSLATIONS["CPC_CW_PerHealth"] = T(
     "...体力を選んだとき", "...체력을 선택했을 때", "...选择生命时", "...когда выбрано здоровье",
     "... wenn Gesundheit gewählt wird", "... quand la santé est choisie", "...cuando se elige salud",
