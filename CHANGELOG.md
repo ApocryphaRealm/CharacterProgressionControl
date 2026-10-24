@@ -48,6 +48,11 @@ Settings are stored in a plain INI file and can also be changed in game.
 - The starting-attributes apply waits for a placed player, as carry weight's does.
 
 ### Fixed
+- **The Carry Weight tab's "Per choice at level up" note gave an old reason** (combined run 2026-10-24, 3e1c): "it sets
+  the total" was true of 1.1.9, but the tab now adds its share on top of the race. The cross terms are still off while
+  the tab is in control, because its per-level gain takes their place: on top of the race they would count twice, and
+  under "Use our base values" the next recalculation would undo them. The note, the INI comment and all eleven
+  languages say so.
 - **A feature that could not attach was said only in the log.** On the owner's game (Njordlinger, 2026-10-23) three
   legendary patch groups - Legendary threshold, Legendary button and Legendary reset threshold - were refused (their
   shapes matched 0 times), so legendary skills worked as in vanilla below 100 while "Control legendary skills" was on,
