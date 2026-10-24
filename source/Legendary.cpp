@@ -209,6 +209,15 @@ namespace Legendary
 			return (b[0] == 0x90 && b[1] == 0x90 && b[2] == 0x90) || (b[0] == 0xFF && b[1] == 0xD0 && b[2] == 0x90);
 		}
 
+		// A shape with the three bytes before its `0F 2F 05` (the comparison) made wildcards - where CSF's call sits.
+		std::string CustomSkillsShape(const char* a_sig)
+		{
+			std::string sig = a_sig;
+			const auto at = sig.find("0F 2F 05");
+			if (at == std::string::npos || at < 9) { return {}; }
+			sig.replace(at - 9, 8, "?? ?? ??");
+			return sig;
+		}
 
 		// The file name of the module that owns an address, or "" when none does.
 		std::string OwnerOf(std::uintptr_t a_address)
@@ -285,6 +294,29 @@ namespace Legendary
 			if (hits.size() == a_site.copies) { a_how = std::format("matched {} time(s) by shape, as expected", hits.size()); return hits; }
 			a_note = std::format("its shape matched {} time(s) where {} {} expected", hits.size(), a_site.copies,
 								 a_site.copies == 1 ? "is" : "are");
+			// Custom Skills Framework's bytes in place of the game's call: only when the game's own shape matched NOTHING and CSF
+			// is loaded, only every hit holding CSF's call, and only the exact copy count. InstallSite then proves each one is
+			// `comiss xmm0, [rip+100.0]` before anything is written, as for the game's own shape.
+			if (hits.empty() && CustomSkillsLoaded())
+			{
+				for (const char* sig : { a_site.seSig, a_site.aeSig })
+				{
+					const std::string shape = sig ? CustomSkillsShape(sig) : std::string();
+					if (shape.empty()) { continue; }
+					auto csf = Signature::FindAll(shape, sig == a_site.seSig ? a_site.seAt : a_site.aeAt, 4);
+					if (csf.empty()) { continue; }
+					g_customSkillsSeen = true;
+					const bool allCsf = std::all_of(csf.begin(), csf.end(), [](std::uintptr_t a_at) { return IsCustomSkillsCall(a_at); });
+					if (allCsf && csf.size() == a_site.copies)
+					{
+						a_how = std::format("matched {} time(s) alongside Custom Skills Framework - its call in place of the game's "
+											"skill-value call, the comparison the game's own", csf.size());
+						return csf;
+					}
+					a_note += std::format("; with Custom Skills Framework's call allowed for it, {} time(s){}", csf.size(),
+										  allCsf ? "" : ", not all holding its call");
+				}
+			}
 			if (a_site.aeSig)
 			{
 				const auto ae = Signature::FindAll(a_site.aeSig, a_site.aeAt, 4);
@@ -373,7 +405,8 @@ namespace Legendary
 			}
 			logger::info("{}: attached at game offset{} {} ({}); the comparison now reads this mod's value ({})", a_site.group,
 						 sites.size() > 1 ? "s" : "", offsets, how, *value);
-			a_reason = located + ". Attached: " + a_site.attached;
+			const bool alongside = how.find("Custom Skills Framework") != std::string::npos;
+			a_reason = located + (alongside ? ". Attached alongside Custom Skills Framework: " : ". Attached: ") + a_site.attached;
 			return true;
 		}
 

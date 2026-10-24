@@ -34,6 +34,16 @@ Settings are stored in a plain INI file and can also be changed in game.
   moving it would apply it twice on existing saves.
 
 ### Added
+- **The legendary settings work alongside Custom Skills Framework** (test a053, 2026-10-24). With Custom Skills
+  Framework loaded, all three legendary checks refused: CSF replaces the game's call that fetches the skill's value,
+  just before each comparison, with its own (`call rax; nop` or three NOPs), so CPC's shapes - which include the game's
+  call - matched nothing. The comparison itself, the only instruction CPC writes (its 4-byte operand), is untouched:
+  CSF decides WHICH value is compared, CPC the threshold it is compared with. So when the game's own shape matches
+  nothing and CustomSkills.dll is loaded, the same shape with those three bytes left open is tried, and taken only
+  when every hit holds CSF's call, the count is exactly the copies the game carries (2 / 1 / 1), and each is proven
+  `comiss xmm0, [rip+100.0]` before anything is written - else nothing is written, as before. The Patches tab then says
+  "Attached alongside Custom Skills Framework". When it still cannot attach, the refusal and the HUD notice name
+  Custom Skills Framework (11 languages) instead of "no jump into another DLL there".
 - **Two switches, shared by the Attributes and Carry Weight tabs** ([Race] in the INI; 11 languages):
   - "Use our base values instead of the race's" (the owner: "a toggle that decides whether they want our mod to
     overwrite their race mod"), off by default. On: the starting attributes replace the race's own start (setting -
