@@ -268,7 +268,13 @@ namespace Attributes
 			}
 			// 1.1.10 (include/RaceShare.h): (setting - 100) on top of the race's start, or with "use our base values" the
 			// race's own start replaced by the setting; nothing while starting values are off.
-			const float raceStart = race ? (i == 0 ? race->data.startingHealth : i == 1 ? race->data.startingMagicka : race->data.startingStamina) : 100.0F;
+			// The character's own start: the race record's value plus the character's NPC-record offset (a vanilla race
+			// records 50 and the player starts at 100 - the gap is the NPC offset, to be confirmed in game by the 1.1.10 test).
+			float raceStart = race ? (i == 0 ? race->data.startingHealth : i == 1 ? race->data.startingMagicka : race->data.startingStamina) : 100.0F;
+			if (const auto* npc = player->GetActorBase())
+			{
+				raceStart += static_cast<float>(i == 0 ? npc->actorData.healthOffset : i == 1 ? npc->actorData.magickaOffset : npc->actorData.staminaOffset);
+			}
 			r.raceStart = raceStart;
 			const float wanted = raceshare::AttributeShare(s.controlling, settings::race::startingValues, settings::race::ownBase,
 														   settings::attributes::starting[i], raceStart);
