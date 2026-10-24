@@ -17,7 +17,9 @@ namespace CarryWeight
 {
 	namespace
 	{
-		constexpr std::uint32_t kRecordVersion = 2;
+		// 3 (1.1.10): the share is a permanent modifier. A 2 record's share went into the base, which the load has already
+		// rebuilt from the race, so nothing of it is left: it is read as 0.
+		constexpr std::uint32_t kRecordVersion = 3;
 
 		std::atomic<bool> g_installed{ false };
 		std::mutex g_stateLock;
@@ -48,12 +50,18 @@ namespace CarryWeight
 			}
 		};
 
+		// This mod's share goes into the PERMANENT MODIFIER, not the base (1.1.10). Vtable slot 05 - SE's
+		// ActorValueOwner::ModActorValue, which CommonLibSSE-NG 7.x names ModBaseActorValue - changes the base, and the game
+		// rebuilds the player's base carry weight from the race on every load (2026-09-05: the share came back missing;
+		// Carryweight on Level Up 1.0.7: base 400 saved, 300 after the load), and the base is the race mod's number. Slot 06
+		// with kPermanent - SE's RestoreActorValue, 7.x's ModActorValue(modifier, ...) - moves the permanent modifier.
+		// To be proven in game on each line (the 1.1.10 test request).
 		void Modify(RE::ActorValueOwner* a_owner, float a_delta)
 		{
 #if RUNTIME_LINE == 17
-			a_owner->ModBaseActorValue(RE::ActorValue::kCarryWeight, a_delta);
+			a_owner->ModActorValue(RE::ACTOR_VALUE_MODIFIERS::kPermanent, RE::ActorValue::kCarryWeight, a_delta);
 #else
-			a_owner->ModActorValue(RE::ActorValue::kCarryWeight, a_delta);
+			a_owner->RestoreActorValue(RE::ACTOR_VALUE_MODIFIERS::kPermanent, RE::ActorValue::kCarryWeight, a_delta);
 #endif
 		}
 	}
@@ -170,6 +178,12 @@ namespace CarryWeight
 	void ReadRecord(SKSE::SerializationInterface* a_intfc, std::uint32_t a_version, std::uint32_t a_length)
 	{
 		g_applied = 0.0F; g_lastPermanent = 0.0F; g_checkAfterLoad = false;
+		if (a_version == 2)
+		{
+			logger::info("carry weight: the save is from 1.1.9 or older, which put this mod's share into the base carry weight - the game rebuilt that "
+						 "from the race at this load, so the share starts from 0 and is applied once as a permanent modifier");
+			return;
+		}
 		if (!a_intfc || a_version != kRecordVersion || a_length != 2 * sizeof(float)) { logger::warn("carry weight: co-save record version {} length {} not understood; applied left at 0", a_version, a_length); return; }
 		float v[2]{};
 		if (a_intfc->ReadRecordData(v, sizeof(v)) == sizeof(v)) { g_applied = v[0]; g_lastPermanent = v[1]; g_checkAfterLoad = true; }

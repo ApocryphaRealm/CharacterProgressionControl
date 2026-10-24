@@ -25,6 +25,13 @@ Settings are stored in a plain INI file and can also be changed in game.
   arithmetic; tools\race_share_check.bat checks it (20 checks: a 1.1.9 INI's 320 -> offset 20; a 250-base race at level
   5 -> 290, and still 290 after a save and load; another source's +50 surviving a level-up; every switch combination
   turned on and off mid-save, coming back exactly).
+- **Carry weight's share is a permanent modifier, not a change to the base.** Vtable slot 05 (SE's ModActorValue,
+  which CommonLibSSE-NG 7.x names ModBaseActorValue) moves the BASE - the race's number, which the game rebuilds from
+  the race at every load (this mod's 2026-09-05 note: the share came back missing after a load). Slot 06 with
+  kPermanent is used on both build lines (SE's RestoreActorValue, the 1.7 line's ModActorValue(modifier, ...)) - to be
+  proven in game. A save from 1.1.9 starts the share from 0 (its share was in the base, which that load rebuilt);
+  co-save record 3. The starting attributes keep their call: a health/magicka/stamina base IS kept across a save, and
+  moving it would apply it twice on existing saves.
 
 ### Added
 - **Two switches, shared by the Attributes and Carry Weight tabs** ([Race] in the INI; 11 languages):
