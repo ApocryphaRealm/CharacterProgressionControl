@@ -22,13 +22,23 @@ namespace Patches
 		std::string touches;      // a plain statement of what it changes, for the Patches tab
 		bool installed = false;
 		std::string status;       // why, when it did not install
+		// 1.2.0: the installer REFUSED it (its reason starts "refused") - the game's code did not look as expected, so the
+		// feature behind it is off however it is set. Distinct from a group that is simply not wanted.
+		bool refused = false;
 	};
 
 	// Installer returns true when the patch is in place; on false it sets a_reason to a plain
 	// sentence the player can read.
 	using Installer = std::function<bool(std::string& a_reason)>;
+	// Whether the player has the feature behind a group switched on (1.2.0). Empty means always - the group is part of
+	// what the mod does whatever is set.
+	using Wanted = std::function<bool()>;
 
-	void Register(std::string a_name, std::string a_touches, Installer a_installer);
+	void Register(std::string a_name, std::string a_touches, Installer a_installer, Wanted a_wanted = {});
+
+	// The groups that were refused while the player has their feature on - what the in-game notice names (1.2.0: three
+	// legendary groups were refused on the owner's game and the only sign was a log line).
+	std::vector<std::string> RefusedAndWanted();
 
 	// Runs every registered installer once and logs the outcome of each. Call at kDataLoaded.
 	void InstallAll();

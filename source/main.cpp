@@ -84,6 +84,8 @@ namespace
 			// The level rule first (it may move the game's difficulty), then the values, queued so
 			// they land after every other plugin's own load handler.
 			DifficultyValues::OnGameLoaded();
+			// A feature the player switched on that could not attach is said on screen, once a session (1.2.0).
+			UI::NoticeRefusedPatches();
 			break;
 		default:
 			break;

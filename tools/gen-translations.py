@@ -549,6 +549,17 @@ TRANSLATIONS["CPC_Skl_LegInert"] = T(
     "Non ancora attivo: riavvia il gioco con questa opzione attiva. La scheda «Patches» indica quali parti si sono agganciate.",
     "Jeszcze nieaktywne: uruchom grę ponownie z włączoną opcją. Zakładka „Patches” pokazuje, które części się podłączyły.",
     "Zatím neaktivní: restartujte hru s touto volbou zapnutou. Karta „Patches“ ukazuje, které části se připojily.")
+TRANSLATIONS["CPC_Notice_Refused"] = T(
+    "Character Progression Control: 有効にした機能の一部がこのゲームに適用できず、オフになっています - どれかは「Patches」タブに表示されます。",
+    "Character Progression Control: 켜 둔 기능 일부가 이 게임에 적용되지 못해 꺼져 있습니다 - 어떤 것인지는 “Patches” 탭에 표시됩니다.",
+    "Character Progression Control：你开启的部分功能无法在此游戏上生效，已关闭——具体哪些见“Patches”标签页。",
+    "Character Progression Control: часть включённого не удалось подключить в этой игре, она выключена - какая, указано на вкладке «Patches».",
+    "Character Progression Control: Ein Teil dessen, was du eingeschaltet hast, ließ sich in diesem Spiel nicht einbinden und ist aus - welcher, zeigt der Reiter „Patches“.",
+    "Character Progression Control : une partie de ce que vous avez activé n'a pas pu s'appliquer à ce jeu et est désactivée - l'onglet « Patches » indique laquelle.",
+    "Character Progression Control: parte de lo que activaste no se pudo aplicar a este juego y está desactivada; la pestaña «Patches» indica cuál.",
+    "Character Progression Control: una parte di ciò che hai attivato non si è potuta agganciare a questo gioco ed è spenta - la scheda «Patches» indica quale.",
+    "Character Progression Control: część tego, co włączono, nie mogła się podłączyć w tej grze i jest wyłączona - zakładka „Patches” pokazuje która.",
+    "Character Progression Control: část toho, co jste zapnuli, se v této hře nepodařilo připojit a je vypnutá - karta „Patches“ ukazuje kterou.")
 TRANSLATIONS["CPC_Skl_LegPartial"] = T(
     "このゲームバージョンでは一部のみ有効です - どれが有効かは「Patches」タブに表示されます。",
     "이 게임 버전에서는 일부만 적용됩니다 - 어떤 부분인지는 “Patches” 탭에 표시됩니다.",

@@ -11,7 +11,21 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
-## 1.1.9 - 2026-09-20 - untested
+## 1.1.10 - 2026-10-24 - untested
+
+### Fixed
+- **A feature that could not attach was said only in the log.** On the owner's game (Njordlinger, 2026-10-23) three
+  legendary patch groups - Legendary threshold, Legendary button and Legendary reset threshold - were refused (their
+  shapes matched 0 times), so legendary skills worked as in vanilla below 100 while "Control legendary skills" was on,
+  and the only sign was a warning in CharacterProgressionControl.log. Now, at the first game load or new game of a
+  session, a notice says on screen that part of what was switched on could not attach and that the Patches tab says
+  which. Only groups the player has switched on count (the legendary groups follow "Control legendary skills"; every
+  other group counts always). Eleven languages.
+- **A refused legendary site now says what is there instead.** The installed DLL was the 1.1.9 that had matched all
+  four sites (1.1.5's log, 2026-09-11, same signatures), so something rewrote those bytes at run time. On 1.5.97 the
+  refusal now lists the bytes at each site's known offset (0x8BF838, 0x8C0EF1, 0x8C2CFC, 0x8CAE86) and any jump or
+  call there that leads into another DLL, by that DLL's file name - the next run names the plugin that hooked the
+  check. Nothing is written there; it only reads.
 
 ### Fixed
 - Skills with a use offset (Lockpicking, Pickpocket, Alchemy, Sneak) still levelling through use with skill points on: the improve is skipped outright while points are on instead of being fed zero, which the game's offset was added to.

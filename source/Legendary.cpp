@@ -187,6 +187,72 @@ namespace Legendary
 			return *reinterpret_cast<const float*>(a_at + 7 + static_cast<std::intptr_t>(disp)) == kVanilla;
 		}
 
+		// Where each site's `comiss` sat in the 1.5.97 exe when its shape last matched (in game, 2026-09-11, 1.1.5's log).
+		// Used only to SAY what is there now when the shape no longer matches (1.2.0: on 2026-10-23 all three legendary
+		// shapes matched 0 times with the same 1.1.9 DLL that had matched them, so something rewrote those bytes at run
+		// time). Never written to, never used to patch.
+		constexpr std::ptrdiff_t kSeKnown[3][2] = { { 0x8BF838, 0x8C0EF1 }, { 0x8C2CFC, 0 }, { 0x8CAE86, 0 } };
+
+		// The file name of the module that owns an address, or "" when none does.
+		std::string OwnerOf(std::uintptr_t a_address)
+		{
+			HMODULE module = nullptr;
+			if (!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+					reinterpret_cast<LPCSTR>(a_address), &module) || !module)
+			{
+				return {};
+			}
+			char path[MAX_PATH]{};
+			GetModuleFileNameA(module, path, MAX_PATH);
+			const std::string full = path;
+			const auto slash = full.find_last_of("\\/");
+			return slash == std::string::npos ? full : full.substr(slash + 1);
+		}
+
+		// On 1.5.97 only: the bytes at a site's known offsets now, and any jump or call there that leads OUT of the game's
+		// own code - the mark another plugin's hook leaves - named by the DLL it leads into.
+		std::string DescribeKnownSites(const Site& a_site)
+		{
+			if (REL::Module::get().version() != REL::Version(1, 5, 97, 0)) { return {}; }
+			const auto index = static_cast<std::size_t>(&a_site - g_sites);
+			if (index >= std::size(kSeKnown)) { return {}; }
+			const auto base = REL::Module::get().base();
+			const auto gameModule = reinterpret_cast<std::uintptr_t>(GetModuleHandleA(nullptr));
+			std::string out;
+			for (const auto rva : kSeKnown[index])
+			{
+				if (rva == 0) { continue; }
+				const auto at = base + static_cast<std::uintptr_t>(rva);
+				const auto* b = reinterpret_cast<const std::uint8_t*>(at);
+				std::string bytes;
+				for (int i = -3; i < 7; ++i) { bytes += std::format("{}{:02X}", bytes.empty() ? "" : " ", b[i]); }
+				std::string foreign;
+				// a 5-byte jmp/call rel32 or a 6-byte jmp [rip+disp32] anywhere from 24 bytes before the comparison to just
+				// after it - where a hook placed over this check would start
+				for (int i = -24; i <= 6 && foreign.empty(); ++i)
+				{
+					std::uintptr_t target = 0;
+					if (b[i] == 0xE9 || b[i] == 0xE8)
+					{
+						target = at + i + 5 + static_cast<std::intptr_t>(*reinterpret_cast<const std::int32_t*>(b + i + 1));
+					}
+					else if (b[i] == 0xFF && b[i + 1] == 0x25)
+					{
+						const auto slot = at + i + 6 + static_cast<std::intptr_t>(*reinterpret_cast<const std::int32_t*>(b + i + 2));
+						if (OwnerOf(slot).empty()) { continue; }
+						target = *reinterpret_cast<const std::uintptr_t*>(slot);
+					}
+					if (target == 0) { continue; }
+					const std::string owner = OwnerOf(target);
+					if (owner.empty() || reinterpret_cast<std::uintptr_t>(GetModuleHandleA(owner.c_str())) == gameModule) { continue; }
+					foreign = std::format("; a {} at game offset 0x{:X} leads into {}", b[i] == 0xE8 ? "call" : "jump", rva + i, owner);
+				}
+				out += std::format("{}at game offset 0x{:X} (where it matched on 2026-09-11) the game now holds {}{}", out.empty() ? "" : "; ",
+								   rva, bytes, foreign.empty() ? " - no jump into another DLL there" : foreign);
+			}
+			return out;
+		}
+
 		// By shape first. The AE Address Library route is taken only when the player has opted in: an id
 		// the database does not hold ends the game, and nobody should meet that with the feature off.
 		std::vector<std::uintptr_t> Locate(const Site& a_site, bool a_allowId, std::string& a_how, std::string& a_note)
@@ -230,6 +296,7 @@ namespace Legendary
 			if (sites.empty())
 			{
 				const bool uncapper = GetModuleHandleA("SkyrimUncapper.dll") != nullptr;
+				if (const auto seen = DescribeKnownSites(a_site); !seen.empty()) { note += " (" + seen + ")"; }
 				a_reason = "refused: " + note + (uncapper ? ". Skyrim Skill Uncapper is loaded, and with its legendary settings on it patches this same place - "
 															"use one mod's legendary settings, not both."
 														  : "; nothing was written.") + vanilla;
@@ -315,24 +382,30 @@ namespace Legendary
 		g_values[1] = button;
 	}
 
+	namespace
+	{
+		// The in-game notice names a refused legendary group only while "Control legendary skills" is on (1.2.0).
+		bool LegendaryWanted() { return settings::legendary::control; }
+	}
+
 	void Register()
 	{
 		Patches::Register(
 			"Legendary reset level",
 			"The level a skill drops to when it is made legendary, or whether it keeps its level.",
-			InstallReset);
+			InstallReset, LegendaryWanted);
 		Patches::Register(
 			"Legendary threshold",
 			"The skill level at which a skill can be made legendary.",
-			[](std::string& a_reason) { return InstallSite(g_sites[0], a_reason); });
+			[](std::string& a_reason) { return InstallSite(g_sites[0], a_reason); }, LegendaryWanted);
 		Patches::Register(
 			"Legendary button",
 			"Whether the Skills menu shows the Legendary hint, and from which level.",
-			[](std::string& a_reason) { return InstallSite(g_sites[1], a_reason); });
+			[](std::string& a_reason) { return InstallSite(g_sites[1], a_reason); }, LegendaryWanted);
 		Patches::Register(
 			"Legendary reset threshold",
 			"Whether a skill made legendary below 100 is reset (vanilla resets only from 100).",
-			[](std::string& a_reason) { return InstallSite(g_sites[2], a_reason); });
+			[](std::string& a_reason) { return InstallSite(g_sites[2], a_reason); }, LegendaryWanted);
 
 		if (auto* ui = RE::UI::GetSingleton())
 		{

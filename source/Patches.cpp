@@ -12,6 +12,7 @@ namespace Patches
 		{
 			Group group;
 			Installer installer;
+			Wanted wanted;
 		};
 
 		std::vector<Entry> entries;
@@ -26,13 +27,14 @@ namespace Patches
 		}
 	}
 
-	void Register(std::string a_name, std::string a_touches, Installer a_installer)
+	void Register(std::string a_name, std::string a_touches, Installer a_installer, Wanted a_wanted)
 	{
 		Entry e;
 		e.group.name = std::move(a_name);
 		e.group.touches = std::move(a_touches);
 		e.group.status = "not installed yet";
 		e.installer = std::move(a_installer);
+		e.wanted = std::move(a_wanted);
 		entries.push_back(std::move(e));
 		Publish();
 	}
@@ -63,6 +65,7 @@ namespace Patches
 
 			e.group.installed = ok;
 			e.group.status = ok ? "installed" : (reason.empty() ? "not installed" : reason);
+			e.group.refused = !ok && e.group.status.rfind("refused", 0) == 0;
 
 			if (ok)
 			{
@@ -81,6 +84,16 @@ namespace Patches
 	}
 
 	const std::vector<Group>& All() { return published; }
+
+	std::vector<std::string> RefusedAndWanted()
+	{
+		std::vector<std::string> out;
+		for (const auto& e : entries)
+		{
+			if (e.group.refused && (!e.wanted || e.wanted())) { out.push_back(e.group.name); }
+		}
+		return out;
+	}
 
 	bool IsInstalled(const std::string& a_name)
 	{

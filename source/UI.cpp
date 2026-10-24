@@ -236,6 +236,25 @@ namespace UI
 		}
 	}
 
+	void NoticeRefusedPatches()
+	{
+		static bool shown = false;
+		if (shown) { return; }
+		shown = true;
+		const auto refused = Patches::RefusedAndWanted();
+		if (refused.empty()) { return; }
+		std::string names;
+		for (const auto& n : refused) { names += (names.empty() ? "" : ", ") + n; }
+		logger::warn("notice shown: {} patch group(s) refused while switched on: {}", refused.size(), names);
+		const char* text = strings::TR("CPC_Notice_Refused", "Character Progression Control: part of what you switched on could not "
+									   "attach on this game and is off - the Patches tab says which.");
+#if RUNTIME_LINE == 17
+		RE::SendHUDMessage::ShowHUDMessage(text, nullptr, true);   // CommonLibSSE-NG 7.x has no RE::DebugNotification
+#else
+		RE::DebugNotification(text);
+#endif
+	}
+
 	void Register()
 	{
 		if (!SKSEMenuFramework::IsInstalled())

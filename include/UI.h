@@ -8,6 +8,10 @@ namespace UI
 {
 	void Register();
 
+	// 1.2.0: once per session, at the first game load or new game, an on-screen notice when a patch group the player has
+	// switched on was REFUSED - so a feature that is silently off is not only a line in the log. Main thread.
+	void NoticeRefusedPatches();
+
 	namespace LevellingPanel
 	{
 		void __stdcall Render();
