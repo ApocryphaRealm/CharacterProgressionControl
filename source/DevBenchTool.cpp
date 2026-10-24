@@ -337,7 +337,7 @@ namespace DevBenchTool
 				// The ActorValue is what the cap check actually reads (the site calls GetBaseActorValue);
 				// PlayerSkills' own `level` field lags it (measured 2026-09-05), so report both.
 				auto* player = RE::PlayerCharacter::GetSingleton();
-				auto* avo = player ? player->AsActorValueOwner() : nullptr;
+				auto* avo = player && player->GetParentCell() ? player->AsActorValueOwner() : nullptr;   // placed: not at the main menu
 				std::string rows;
 				for (int i = 0; i < skilllist::kCount; ++i)
 				{

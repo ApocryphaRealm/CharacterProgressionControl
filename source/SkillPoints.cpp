@@ -47,7 +47,7 @@ namespace SkillPoints
 		bool IncreaseOnce(int a_index)
 		{
 			auto* player = RE::PlayerCharacter::GetSingleton();
-			if (!player) { return false; }
+			if (!player || !player->GetParentCell()) { return false; }   // placed: not at the main menu
 			const auto av = static_cast<RE::ActorValue>(6 + a_index);
 			auto* avo = player->AsActorValueOwner();
 			const float before = avo ? avo->GetBaseActorValue(av) : 0.0F;

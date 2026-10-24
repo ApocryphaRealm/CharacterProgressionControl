@@ -65,7 +65,9 @@ namespace CarryWeight
 	void Apply()
 	{
 		auto* player = RE::PlayerCharacter::GetSingleton();
-		if (!player || !player->Is3DLoaded()) { logger::debug("carry weight: no loaded player yet"); return; }
+		// placed as well as loaded: at the main menu the singleton exists with no character (gate rule
+		// or-player-actor-values-need-a-placed-player)
+		if (!player || !player->Is3DLoaded() || !player->GetParentCell()) { logger::debug("carry weight: no loaded player yet"); return; }
 		auto* owner = player->AsActorValueOwner();
 		if (!owner) { logger::warn("carry weight: the player has no actor-value owner; nothing applied"); return; }
 

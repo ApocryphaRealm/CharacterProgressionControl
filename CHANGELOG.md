@@ -26,6 +26,9 @@ Settings are stored in a plain INI file and can also be changed in game.
   refusal now lists the bytes at each site's known offset (0x8BF838, 0x8C0EF1, 0x8C2CFC, 0x8CAE86) and any jump or
   call there that leads into another DLL, by that DLL's file name - the next run names the plugin that hooked the
   check. Nothing is written there; it only reads.
+- The player's actor values are read only once the player is placed in a cell (carry weight, the skill-point
+  increase, the DevBench skills report) - at the main menu the player object exists with no character, which hung
+  another mod of ours (gate rule or-player-actor-values-need-a-placed-player, which this package was the first to meet).
 
 ### Fixed
 - Skills with a use offset (Lockpicking, Pickpocket, Alchemy, Sneak) still levelling through use with skill points on: the improve is skipped outright while points are on instead of being fed zero, which the game's offset was added to.
