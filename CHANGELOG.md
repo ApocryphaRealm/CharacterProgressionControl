@@ -13,6 +13,33 @@ Settings are stored in a plain INI file and can also be changed in game.
 
 ## 1.1.10 - 2026-10-24 - untested
 
+### Changed
+- **Carry weight is added on top of your race's, so race mods keep their numbers** (the owner, 2026-10-24: "should read
+  what the race's base carry weight and stats or skills are, and then apply over the top of it so that it's compatible
+  with race mods"; a Nexus question about Imperious). The Carry Weight tab set the TOTAL permanent carry weight to
+  starting + per level x (level - 1), so an Altmer's 250 or an Argonian's 325 under Imperious became 300 at level 1, and
+  Human Spirit's change was undone at the next recalculation. Now the mod holds only its own share, as its permanent
+  modifier, tracked in the co-save: offset + per level x (level - 1) on top of the race's carry weight and whatever
+  other mods add. An INI from 1.1.9 has only fStartingCarryWeight; it is read as the offset (that - 300) and logged
+  once. The tab shows the race's carry weight and your base carry weight, read-only. Include\RaceShare.h holds the
+  arithmetic; tools\race_share_check.bat checks it (20 checks: a 1.1.9 INI's 320 -> offset 20; a 250-base race at level
+  5 -> 290, and still 290 after a save and load; another source's +50 surviving a level-up; every switch combination
+  turned on and off mid-save, coming back exactly).
+
+### Added
+- **Two switches, shared by the Attributes and Carry Weight tabs** ([Race] in the INI; 11 languages):
+  - "Use our base values instead of the race's" (the owner: "a toggle that decides whether they want our mod to
+    overwrite their race mod"), off by default. On: the starting attributes replace the race's own start (setting -
+    race start, instead of setting - 100), and carry weight's total is starting + per level x (level - 1) whatever the
+    race and other mods set - the 1.1.9 behaviour, still as this mod's tracked share, so turning it off gives the
+    race's values back exactly.
+  - "Set starting values" (the owner: "a toggle that turns off the initial values controls so that just the values
+    per level for attributes and carry weight are affected"), ON by default so existing settings behave as before.
+    Off: no starting value is touched - the starting attributes add nothing and carry weight adds only per level x
+    (level - 1) - in either mode, and the starting sliders are hidden.
+  - The Attributes tab shows the race's starting health, magicka and stamina, read-only.
+- The starting-attributes apply waits for a placed player, as carry weight's does.
+
 ### Fixed
 - **A feature that could not attach was said only in the log.** On the owner's game (Njordlinger, 2026-10-23) three
   legendary patch groups - Legendary threshold, Legendary button and Legendary reset threshold - were refused (their

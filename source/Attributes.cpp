@@ -5,6 +5,7 @@
 #include "CarryWeight.h"
 #include "Compat.h"
 #include "Patches.h"
+#include "RaceShare.h"
 #include "Settings.h"
 #include "Signature.h"
 
@@ -239,9 +240,11 @@ namespace Attributes
 	void Apply()
 	{
 		auto* player = RE::PlayerCharacter::GetSingleton();
-		if (!player || !player->Is3DLoaded()) { logger::debug("attributes: no loaded player yet"); return; }
+		// placed as well as loaded (gate rule or-player-actor-values-need-a-placed-player)
+		if (!player || !player->Is3DLoaded() || !player->GetParentCell()) { logger::debug("attributes: no loaded player yet"); return; }
 		auto* owner = player->AsActorValueOwner();
 		if (!owner) { logger::warn("attributes: the player has no actor-value owner; nothing applied"); return; }
+		const auto* race = player->GetRace();
 
 		State s;
 		s.playerLevel = player->GetLevel();
@@ -263,14 +266,21 @@ namespace Attributes
 				logger::info("attributes: the game did not keep this mod's {:+.1f} {} across the load (permanent {:.1f}, was {:.1f}) - starting from zero", g_applied[i], kName[i], r.permanent, g_lastPermanent[i]);
 				g_applied[i] = 0.0F;
 			}
-			const float wanted = s.controlling ? (settings::attributes::starting[i] - 100.0F) : 0.0F;
+			// 1.1.10 (include/RaceShare.h): (setting - 100) on top of the race's start, or with "use our base values" the
+			// race's own start replaced by the setting; nothing while starting values are off.
+			const float raceStart = race ? (i == 0 ? race->data.startingHealth : i == 1 ? race->data.startingMagicka : race->data.startingStamina) : 100.0F;
+			r.raceStart = raceStart;
+			const float wanted = raceshare::AttributeShare(s.controlling, settings::race::startingValues, settings::race::ownBase,
+														   settings::attributes::starting[i], raceStart);
 			const float delta = wanted - g_applied[i];
 			if (std::fabs(delta) > 0.01F)
 			{
 				Modify(owner, kAv[i], delta);
 				g_applied[i] = wanted;
 				logger::info("attributes: {} permanent {:.1f} -> {:.1f} (this mod {:+.1f}, counted gains {:.1f}; {})",
-							 kName[i], r.permanent, r.permanent + delta, wanted, r.gained, s.controlling ? "starting values on" : "control off - this mod's share taken away");
+							 kName[i], r.permanent, r.permanent + delta, wanted, r.gained, !s.controlling ? "control off - this mod's share taken away"
+							 : !settings::race::startingValues ? "starting values off - the race's start left alone"
+							 : settings::race::ownBase ? "our base values - the race's start replaced" : "on top of the race's start");
 				r.permanent = owner->GetPermanentActorValue(kAv[i]);
 				r.current = owner->GetActorValue(kAv[i]);
 			}

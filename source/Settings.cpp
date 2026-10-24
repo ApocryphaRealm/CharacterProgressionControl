@@ -2,6 +2,8 @@
 
 #include "Settings.h"
 
+#include "RaceShare.h"
+
 #include "utils/INISettingCollection.h"
 #include "utils/Logger.h"
 #include "utils/Setting.h"
@@ -192,8 +194,23 @@ namespace settings
 			get("bcountfollowerkills:experience", experience::followerKills, ParseBool);
 			get("fbookread:experience", experience::book, ParseFloat);
 			get("fskillbookread:experience", experience::skillBook, ParseFloat);
-			get("fstartingcarryweight:carryweight", carryweight::starting, ParseFloat);
+			{
+				// 1.1.10: carry weight is added on top of the race's. A 1.1.9 INI has only the absolute starting weight; its
+				// offset is that minus the 300 every such value was set against (an Altmer's 250 then gets +offset, not 300).
+				bool sawStarting = false, sawOffset = false;
+				get("fstartingcarryweight:carryweight", carryweight::starting, ParseFloat, &sawStarting);
+				get("fcarryweightoffset:carryweight", carryweight::offset, ParseFloat, &sawOffset);
+				if (sawStarting && !sawOffset)
+				{
+					carryweight::offset = raceshare::OffsetFromStarting(carryweight::starting);
+					logger::info("[CarryWeight] fStartingCarryWeight {:.1f} from an older version read as fCarryWeightOffset {:+.1f} on top of the race's carry weight "
+								 "(it is written that way at the next save; \"Use our base values instead of the race's\" keeps the old absolute behaviour)",
+								 carryweight::starting, carryweight::offset);
+				}
+			}
 			get("fcarryweightperlevel:carryweight", carryweight::perLevel, ParseFloat);
+			get("buseownbasevalues:race", race::ownBase, ParseBool);
+			get("bapplystartingvalues:race", race::startingValues, ParseBool);
 			get("bcontroldamage:damage", damage::control, ParseBool);
 			get("bsharedpair:damage", damage::sharedPair, ParseBool);
 			get("fshareddamagetoplayer:damage", damage::sharedToPlayer, ParseFloat);
@@ -416,8 +433,11 @@ namespace settings
 		ok &= WriteKey(lines, "Attributes", "fStartingStamina", FormatFloat(attributes::starting[2]));
 
 		ok &= WriteKey(lines, "CarryWeight", "bControlCarryWeight", carryweight::control ? "1" : "0");
+		ok &= WriteKey(lines, "CarryWeight", "fCarryWeightOffset", FormatFloat(carryweight::offset));
 		ok &= WriteKey(lines, "CarryWeight", "fStartingCarryWeight", FormatFloat(carryweight::starting));
 		ok &= WriteKey(lines, "CarryWeight", "fCarryWeightPerLevel", FormatFloat(carryweight::perLevel));
+		ok &= WriteKey(lines, "Race", "bUseOwnBaseValues", race::ownBase ? "1" : "0");
+		ok &= WriteKey(lines, "Race", "bApplyStartingValues", race::startingValues ? "1" : "0");
 
 		ok &= WriteKey(lines, "Experience", "bAlternativeExperience", experience::enabled ? "1" : "0");
 		ok &= WriteKey(lines, "Experience", "bSkillsStillPayTowardLevel", experience::skillsPay ? "1" : "0");
@@ -528,8 +548,11 @@ namespace settings
 		attributes::control = false;
 		for (float& v : attributes::starting) { v = 100.0F; }
 		carryweight::control = false;
+		carryweight::offset = 0.0F;
 		carryweight::starting = 300.0F;
 		carryweight::perLevel = 5.0F;
+		race::ownBase = false;
+		race::startingValues = true;
 		experience::enabled = false;
 		experience::skillsPay = true;
 		experience::questMain = 300.0F;

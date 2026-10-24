@@ -549,6 +549,149 @@ TRANSLATIONS["CPC_Skl_LegInert"] = T(
     "Non ancora attivo: riavvia il gioco con questa opzione attiva. La scheda «Patches» indica quali parti si sono agganciate.",
     "Jeszcze nieaktywne: uruchom grę ponownie z włączoną opcją. Zakładka „Patches” pokazuje, które części się podłączyły.",
     "Zatím neaktivní: restartujte hru s touto volbou zapnutou. Karta „Patches“ ukazuje, které části se připojily.")
+TRANSLATIONS["CPC_Race_StartingValues"] = T(
+    '開始時の値を設定',
+    '시작 값 설정',
+    '设置初始值',
+    'Задавать начальные значения',
+    'Startwerte festlegen',
+    'Définir les valeurs de départ',
+    'Establecer los valores iniciales',
+    'Imposta i valori iniziali',
+    'Ustawiaj wartości początkowe',
+    'Nastavit počáteční hodnoty')
+TRANSLATIONS["CPC_Race_HelpStartingValues"] = T(
+    '既定ではオン。オフ: 開始時の値には一切触れません - 開始時の体力・マジカ・スタミナと所持重量は種族や他のMODが設定したままになり、レベルごとの値だけが適用されます。「Attributes」と「Carry Weight」タブ共通のスイッチです。',
+    '기본값은 켜짐. 끄면: 시작 값을 전혀 건드리지 않습니다 - 시작 체력, 매지카, 스태미나와 소지 무게는 종족과 다른 모드가 정한 그대로이고, 레벨당 값만 적용됩니다. “Attributes”와 “Carry Weight” 탭 공용 스위치입니다.',
+    '默认开启。关闭：不改动任何初始值——初始生命、魔力、耐力和负重保持种族及其他模组的设定，只应用每级数值。“Attributes”和“Carry Weight”标签页共用这个开关。',
+    'По умолчанию включено. Выключено: начальные значения не трогаются - начальные здоровье, магия, запас сил и переносимый вес остаются такими, как их задали раса и другие моды, применяются только значения за уровень. Один переключатель для вкладок «Attributes» и «Carry Weight».',
+    'Standardmäßig an. Aus: Kein Startwert wird angefasst - Start-Gesundheit, -Magicka, -Ausdauer und -Tragkraft bleiben, wie Rasse und andere Mods sie setzen, und nur die Werte pro Stufe gelten. Ein Schalter für die Reiter „Attributes“ und „Carry Weight“.',
+    "Activé par défaut. Désactivé : aucune valeur de départ n'est touchée - la santé, la magie, la vigueur et la charge de départ restent telles que votre race et les autres mods les fixent, et seules les valeurs par niveau s'appliquent. Un seul interrupteur pour les onglets « Attributes » et « Carry Weight ».",
+    'Activado por defecto. Desactivado: no se toca ningún valor inicial; la salud, la magia, el aguante y la capacidad de carga iniciales quedan como los fijan tu raza y otros mods, y solo se aplican los valores por nivel. Un solo interruptor para las pestañas «Attributes» y «Carry Weight».',
+    'Attivo per impostazione predefinita. Spento: nessun valore iniziale viene toccato - salute, magicka, vigore e peso trasportabile iniziali restano come li impostano la razza e le altre mod, e si applicano solo i valori per livello. Un solo interruttore per le schede «Attributes» e «Carry Weight».',
+    'Domyślnie włączone. Wyłączone: żadna wartość początkowa nie jest zmieniana - początkowe zdrowie, magia, wytrzymałość i udźwig zostają takie, jak ustawiła je rasa i inne mody, a działają tylko wartości na poziom. Jeden przełącznik dla zakładek „Attributes” i „Carry Weight”.',
+    'Ve výchozím stavu zapnuto. Vypnuto: žádná počáteční hodnota se nemění - počáteční zdraví, magie, výdrž a nosnost zůstávají tak, jak je nastavila rasa a jiné mody, a platí jen hodnoty za úroveň. Jeden přepínač pro karty „Attributes“ a „Carry Weight“.')
+TRANSLATIONS["CPC_Race_OwnBase"] = T(
+    '種族の値ではなくこのMODの基本値を使う',
+    '종족 값 대신 이 모드의 기본값 사용',
+    '使用本模组的基础值代替种族的数值',
+    'Использовать наши базовые значения вместо расовых',
+    'Unsere Grundwerte statt der Rassenwerte verwenden',
+    'Utiliser nos valeurs de base au lieu de celles de la race',
+    'Usar nuestros valores base en lugar de los de la raza',
+    'Usa i nostri valori base invece di quelli della razza',
+    'Używaj naszych wartości bazowych zamiast rasowych',
+    'Použít naše základní hodnoty místo hodnot rasy')
+TRANSLATIONS["CPC_Race_HelpOwnBase"] = T(
+    '既定ではオフ: このMODの開始時の値は、種族(および種族MOD)が設定した値の上に加算されます。オン: このMODの値が種族の値に置き換わります - 開始時の能力値がそのまま開始値になり、所持重量は式の合計値になります。オフに戻すと種族の値が正確に戻ります。「Attributes」と「Carry Weight」タブ共通のスイッチです。',
+    '기본값은 꺼짐: 이 모드의 시작 값은 종족(및 종족 모드)이 정한 값 위에 더해집니다. 켜면: 이 모드의 값이 종족의 값을 대신합니다 - 시작 능력치가 곧 시작값이 되고, 소지 무게는 공식의 합계가 됩니다. 다시 끄면 종족의 값이 정확히 돌아옵니다. “Attributes”와 “Carry Weight” 탭 공용 스위치입니다.',
+    '默认关闭：本模组的初始值叠加在种族（以及种族模组）设定的数值之上。开启：本模组的数值取代种族的数值——初始属性即为起点，负重设为公式的总值。再次关闭即可精确恢复种族的数值。“Attributes”和“Carry Weight”标签页共用这个开关。',
+    'По умолчанию выключено: начальные значения этого мода добавляются поверх того, что задаёт раса (и расовый мод). Включено: значения этого мода заменяют расовые - начальные атрибуты становятся стартом, а переносимый вес задаётся итогом формулы. Если снова выключить, расовые значения вернутся точно. Один переключатель для вкладок «Attributes» и «Carry Weight».',
+    'Standardmäßig aus: Die Startwerte dieser Mod kommen zu dem hinzu, was deine Rasse (und eine Rassen-Mod) setzt. An: Die Werte dieser Mod ersetzen die der Rasse - die Startattribute werden zum Start, und die Tragkraft wird auf die Summe der Formel gesetzt. Wieder ausgeschaltet, sind die Werte der Rasse genau zurück. Ein Schalter für die Reiter „Attributes“ und „Carry Weight“.',
+    "Désactivé par défaut : les valeurs de départ de ce mod s'ajoutent à ce que fixe votre race (et tout mod de race). Activé : les valeurs de ce mod remplacent celles de la race - les attributs de départ deviennent le départ, et la charge est fixée au total de la formule. Le désactiver rend exactement les valeurs de la race. Un seul interrupteur pour les onglets « Attributes » et « Carry Weight ».",
+    'Desactivado por defecto: los valores iniciales de este mod se suman a lo que fija tu raza (y cualquier mod de razas). Activado: los valores de este mod sustituyen a los de la raza; los atributos iniciales pasan a ser el inicio y la capacidad de carga se fija en el total de la fórmula. Al desactivarlo vuelven exactamente los valores de la raza. Un solo interruptor para las pestañas «Attributes» y «Carry Weight».',
+    'Spento per impostazione predefinita: i valori iniziali di questa mod si aggiungono a quelli impostati dalla razza (e da una mod delle razze). Acceso: i valori di questa mod sostituiscono quelli della razza - gli attributi iniziali diventano il punto di partenza e il peso trasportabile viene impostato al totale della formula. Spegnendolo tornano esattamente i valori della razza. Un solo interruttore per le schede «Attributes» e «Carry Weight».',
+    'Domyślnie wyłączone: wartości początkowe tego moda dodają się do tego, co ustawia rasa (i mod ras). Włączone: wartości tego moda zastępują rasowe - atrybuty początkowe stają się startem, a udźwig jest ustawiany na sumę ze wzoru. Po ponownym wyłączeniu wartości rasy wracają dokładnie. Jeden przełącznik dla zakładek „Attributes” i „Carry Weight”.',
+    'Ve výchozím stavu vypnuto: počáteční hodnoty tohoto modu se přičítají k tomu, co nastavuje rasa (a mod ras). Zapnuto: hodnoty tohoto modu nahrazují hodnoty rasy - počáteční atributy se stanou startem a nosnost se nastaví na součet ze vzorce. Po vypnutí se hodnoty rasy vrátí přesně. Jeden přepínač pro karty „Attributes“ a „Carry Weight“.')
+TRANSLATIONS["CPC_Race_StartingOff"] = T(
+    '開始時の値はオフです: 種族の開始時の値はそのままで、レベルごとの値だけが適用されます。',
+    '시작 값이 꺼져 있습니다: 종족의 시작 값은 그대로 두고 레벨당 값만 적용됩니다.',
+    '初始值已关闭：种族的初始值保持不变，只应用每级数值。',
+    'Начальные значения выключены: расовые начальные значения не трогаются, применяются только значения за уровень.',
+    'Startwerte sind aus: Die Startwerte der Rasse bleiben unberührt, nur die Werte pro Stufe gelten.',
+    "Les valeurs de départ sont désactivées : celles de la race restent intactes et seules les valeurs par niveau s'appliquent.",
+    'Los valores iniciales están desactivados: los de la raza no se tocan y solo se aplican los valores por nivel.',
+    'I valori iniziali sono spenti: quelli della razza restano invariati e si applicano solo i valori per livello.',
+    'Wartości początkowe są wyłączone: rasowe wartości początkowe zostają bez zmian, działają tylko wartości na poziom.',
+    'Počáteční hodnoty jsou vypnuté: počáteční hodnoty rasy zůstávají beze změny a platí jen hodnoty za úroveň.')
+TRANSLATIONS["CPC_Attr_HelpStartingOwn"] = T(
+    '種族の開始値にかかわらず、この能力値の開始値です: 種族自身の開始値はこの値に置き換わります。',
+    '종족의 시작값과 관계없는 이 능력치의 시작값입니다: 종족 고유의 시작값이 이 값으로 바뀝니다.',
+    '无论种族初始值为何，此属性都从这个数值开始：种族自身的初始值被这个数值取代。',
+    'Начальное значение атрибута, с чего бы ни начинала раса: собственный расовый старт заменяется этим значением.',
+    'Womit das Attribut beginnt, egal womit deine Rasse beginnt: Der eigene Start der Rasse wird durch diesen Wert ersetzt.',
+    "La valeur de départ de l'attribut, quel que soit le départ de votre race : le départ propre à la race est remplacé par cette valeur.",
+    'El valor con el que empieza el atributo, empiece como empiece tu raza: el inicio propio de la raza se sustituye por este valor.',
+    "Il valore da cui parte l'attributo, qualunque sia la partenza della tua razza: la partenza propria della razza è sostituita da questo valore.",
+    'Od czego zaczyna się atrybut, niezależnie od startu rasy: własny start rasy zostaje zastąpiony tą wartością.',
+    'Od čeho atribut začíná, ať rasa začíná od čehokoli: vlastní start rasy se nahradí touto hodnotou.')
+TRANSLATIONS["CPC_Attr_RaceStarts"] = T(
+    '種族の開始値: 体力 %.0f、マジカ %.0f、スタミナ %.0f',
+    '종족 시작값: 체력 %.0f, 매지카 %.0f, 스태미나 %.0f',
+    '种族初始值：生命 %.0f，魔力 %.0f，耐力 %.0f',
+    'Раса начинает с: здоровье %.0f, магия %.0f, запас сил %.0f',
+    'Deine Rasse beginnt mit: Gesundheit %.0f, Magicka %.0f, Ausdauer %.0f',
+    'Votre race commence à : santé %.0f, magie %.0f, vigueur %.0f',
+    'Tu raza empieza con: salud %.0f, magia %.0f, aguante %.0f',
+    'La tua razza parte da: salute %.0f, magicka %.0f, vigore %.0f',
+    'Twoja rasa zaczyna od: zdrowie %.0f, magia %.0f, wytrzymałość %.0f',
+    'Vaše rasa začíná na: zdraví %.0f, magie %.0f, výdrž %.0f')
+TRANSLATIONS["CPC_CW_IntroRace"] = T(
+    'レベルとともに増える所持重量: このMODは、種族の所持重量と他のMODが加える分の上に「オフセット + レベルごとの値 x (レベル - 1)」を自身の永続修正値として加えます(エンチャントや呪文には触れません)。セーブの読み込み時、レベルアップ時、ここで値を変えたとき、「Apply now」を押したときに再計算され、裏で動き続けるものはありません。',
+    '레벨과 함께 늘어나는 소지 무게: 이 모드는 종족의 소지 무게와 다른 모드가 더하는 값 위에 “오프셋 + 레벨당 x (레벨 - 1)”을 자체 영구 수정치로 더합니다(마법부여와 주문은 건드리지 않음). 세이브를 불러올 때, 레벨업할 때, 여기서 값을 바꿀 때, “Apply now”를 누를 때 다시 계산되며 백그라운드에서 돌아가는 것은 없습니다.',
+    '随等级增长的负重：本模组在种族负重和其他模组增加的数值之上，以自己的永久修正值加上“偏移量 + 每级数值 x（等级 - 1）”（附魔和法术不受影响）。读取存档、升级、在此更改数值以及按下“Apply now”时会重新计算——后台不运行任何东西。',
+    'Переносимый вес, растущий с уровнем: мод добавляет смещение + за уровень x (уровень - 1) поверх расового веса и того, что добавляют другие моды, как собственный постоянный модификатор (зачарования и заклинания не трогаются). Пересчитывается при загрузке сохранения, при повышении уровня, при изменении значения здесь и при нажатии «Apply now» - в фоне ничего не работает.',
+    'Tragkraft, die mit deiner Stufe wächst: Diese Mod legt einen Versatz + pro Stufe x (Stufe - 1) auf die Tragkraft deiner Rasse und alles, was andere Mods hinzufügen, als eigenen dauerhaften Modifikator (Verzauberungen und Zauber bleiben unberührt). Neu berechnet wird beim Laden eines Spielstands, beim Stufenaufstieg, wenn du hier einen Wert änderst und wenn du „Apply now“ drückst - im Hintergrund läuft nichts.',
+    "Une charge qui grandit avec votre niveau : ce mod ajoute un décalage + par niveau x (niveau - 1) à la charge de votre race et à ce qu'ajoutent les autres mods, comme son propre modificateur permanent (enchantements et sorts ne sont pas touchés). Recalculée au chargement d'une sauvegarde, à chaque niveau, quand vous changez une valeur ici et quand vous appuyez sur « Apply now » - rien ne tourne en arrière-plan.",
+    'Capacidad de carga que crece con tu nivel: este mod suma un desplazamiento + por nivel x (nivel - 1) sobre la capacidad de tu raza y lo que añadan otros mods, como su propio modificador permanente (encantamientos y hechizos no se tocan). Se recalcula al cargar una partida, al subir de nivel, al cambiar un valor aquí y al pulsar «Apply now»; nada funciona en segundo plano.',
+    'Peso trasportabile che cresce con il livello: questa mod aggiunge uno scostamento + per livello x (livello - 1) sopra il peso della tua razza e a ciò che aggiungono le altre mod, come proprio modificatore permanente (incantamenti e incantesimi restano intatti). Viene ricalcolato al caricamento di un salvataggio, a ogni livello, quando cambi un valore qui e quando premi «Apply now» - nulla gira in sottofondo.',
+    'Udźwig rosnący z poziomem: mod dodaje przesunięcie + na poziom x (poziom - 1) na wierzch udźwigu rasy i tego, co dodają inne mody, jako własny trwały modyfikator (zaklęcia i zaklęte przedmioty pozostają bez zmian). Przeliczany przy wczytaniu zapisu, przy awansie, przy zmianie wartości tutaj i po naciśnięciu „Apply now” - nic nie działa w tle.',
+    'Nosnost, která roste s úrovní: mod přidává posun + za úroveň x (úroveň - 1) navrch nosnosti rasy a toho, co přidávají jiné mody, jako vlastní trvalý modifikátor (očarování a kouzla zůstávají beze změny). Přepočítá se při načtení uložené hry, při postupu na úroveň, při změně hodnoty zde a po stisknutí „Apply now“ - na pozadí nic neběží.')
+TRANSLATIONS["CPC_CW_Offset"] = T(
+    '種族の開始時の所持重量からのオフセット',
+    '종족 시작 소지 무게에서의 오프셋',
+    '相对种族初始负重的偏移量',
+    'Смещение от расового начального веса',
+    'Versatz zur Start-Tragkraft deiner Rasse',
+    'Décalage par rapport à la charge de départ de votre race',
+    'Desplazamiento respecto a la carga inicial de tu raza',
+    'Scostamento dal peso iniziale della tua razza',
+    'Przesunięcie względem początkowego udźwigu rasy',
+    'Posun od počáteční nosnosti rasy')
+TRANSLATIONS["CPC_CW_HelpOffset"] = T(
+    'レベル1時点で種族の所持重量に加算されます。0なら種族自身の値のままです。Imperiousのアルトマーは250から始まるので、+20で270になります。',
+    '레벨 1에서 종족의 소지 무게에 더해집니다. 0이면 종족 고유의 값 그대로입니다. Imperious의 알트머는 250에서 시작하므로 +20이면 270이 됩니다.',
+    '在1级时加到种族负重之上；0 保持种族自身的数值。Imperious 中的高精灵从 250 开始，+20 即为 270。',
+    'Добавляется к расовому весу на 1 уровне; 0 оставляет собственное расовое значение. Альтмер с Imperious начинает с 250, так что +20 даёт 270.',
+    'Wird auf Stufe 1 zur Tragkraft deiner Rasse addiert; 0 behält den eigenen Wert der Rasse. Ein Altmer mit Imperious beginnt bei 250, +20 ergibt also 270.',
+    'Ajouté à la charge de votre race au niveau 1 ; 0 garde la valeur propre à la race. Un Altmer sous Imperious commence à 250, donc +20 donne 270.',
+    'Se suma a la carga de tu raza en el nivel 1; 0 mantiene el valor propio de la raza. Un altmer con Imperious empieza en 250, así que +20 da 270.',
+    'Aggiunto al peso della tua razza al livello 1; 0 mantiene il valore proprio della razza. Un Altmer con Imperious parte da 250, quindi +20 dà 270.',
+    'Dodawane do udźwigu rasy na 1. poziomie; 0 zachowuje własną wartość rasy. Altmer z Imperious zaczyna od 250, więc +20 daje 270.',
+    'Přičte se k nosnosti rasy na 1. úrovni; 0 ponechá vlastní hodnotu rasy. Altmer s Imperious začíná na 250, takže +20 dává 270.')
+TRANSLATIONS["CPC_CW_RaceLine"] = T(
+    '種族の開始値 %.0f、現在の基本所持重量 %.0f',
+    '종족 시작값 %.0f, 현재 기본 소지 무게 %.0f',
+    '种族初始值 %.0f；当前基础负重 %.0f',
+    'Раса начинает с %.0f; базовый переносимый вес сейчас %.0f',
+    'Deine Rasse beginnt bei %.0f; deine Grund-Tragkraft jetzt %.0f',
+    'Votre race commence à %.0f ; votre charge de base actuelle %.0f',
+    'Tu raza empieza en %.0f; tu carga base ahora %.0f',
+    'La tua razza parte da %.0f; il tuo peso base ora %.0f',
+    'Twoja rasa zaczyna od %.0f; twój bazowy udźwig teraz %.0f',
+    'Vaše rasa začíná na %.0f; vaše základní nosnost nyní %.0f')
+TRANSLATIONS["CPC_CW_FormulaLineGrowth"] = T(
+    'レベル %u: 種族と他のMOD + %.1f x %u = %.0f',
+    '레벨 %u: 종족과 다른 모드 + %.1f x %u = %.0f',
+    '等级 %u：种族与其他模组 + %.1f x %u = %.0f',
+    'Уровень %u: раса и другие моды + %.1f x %u = %.0f',
+    'Stufe %u: Rasse und andere Mods + %.1f x %u = %.0f',
+    'Niveau %u : race et autres mods + %.1f x %u = %.0f',
+    'Nivel %u: raza y otros mods + %.1f x %u = %.0f',
+    'Livello %u: razza e altre mod + %.1f x %u = %.0f',
+    'Poziom %u: rasa i inne mody + %.1f x %u = %.0f',
+    'Úroveň %u: rasa a jiné mody + %.1f x %u = %.0f')
+TRANSLATIONS["CPC_CW_FormulaLineAdd"] = T(
+    'レベル %u: 種族と他のMOD %+.0f + %.1f x %u = %.0f',
+    '레벨 %u: 종족과 다른 모드 %+.0f + %.1f x %u = %.0f',
+    '等级 %u：种族与其他模组 %+.0f + %.1f x %u = %.0f',
+    'Уровень %u: раса и другие моды %+.0f + %.1f x %u = %.0f',
+    'Stufe %u: Rasse und andere Mods %+.0f + %.1f x %u = %.0f',
+    'Niveau %u : race et autres mods %+.0f + %.1f x %u = %.0f',
+    'Nivel %u: raza y otros mods %+.0f + %.1f x %u = %.0f',
+    'Livello %u: razza e altre mod %+.0f + %.1f x %u = %.0f',
+    'Poziom %u: rasa i inne mody %+.0f + %.1f x %u = %.0f',
+    'Úroveň %u: rasa a jiné mody %+.0f + %.1f x %u = %.0f')
 TRANSLATIONS["CPC_Notice_Refused"] = T(
     "Character Progression Control: 有効にした機能の一部がこのゲームに適用できず、オフになっています - どれかは「Patches」タブに表示されます。",
     "Character Progression Control: 켜 둔 기능 일부가 이 게임에 적용되지 못해 꺼져 있습니다 - 어떤 것인지는 “Patches” 탭에 표시됩니다.",
@@ -980,17 +1123,6 @@ TRANSLATIONS["CPC_Attr_HelpApply"] = T(
     "Znovu použije počáteční hodnoty a obnoví výpis. Spustí se také samo při načtení pozice, při každém postupu a když nahoře něco změníš - nic neběží na pozadí.")
 
 # --- Carry Weight --------------------------------------------------------------------------------
-TRANSLATIONS["CPC_CW_Intro"] = T(
-    "所持重量をレベルの式として扱います: 初期値 + レベルごと x (レベル - 1) を、恒久的な所持重量に適用します (付呪や魔法の効果には触れません)。セーブ読み込み時、レベルアップ時、ここで値を変えたとき、そして「今すぐ適用」を押したときに再計算されます - 常駐処理はありません。",
-    "소지 중량을 레벨의 식으로 다룹니다: 시작값 + 레벨당 x (레벨 - 1)을 영구 소지 중량에 적용합니다(마법부여와 주문 효과는 건드리지 않습니다). 세이브를 불러올 때, 레벨업할 때, 여기서 값을 바꿀 때, 그리고 \"지금 적용\"을 누를 때 다시 계산됩니다 - 백그라운드 처리는 없습니다.",
-    "把负重当作等级的公式：初始值 + 每级值 x (等级 - 1)，应用到你的永久负重上（附魔与法术效果不受影响）。在读取存档、升级、你在此更改数值以及按下“立即应用”时重新计算 - 没有后台轮询。",
-    "Переносимый вес как формула от уровня: начальное + за уровень x (уровень - 1), применяется к постоянному переносимому весу (зачарования и заклинания не трогаются). Пересчитывается при загрузке сохранения, при повышении уровня, при изменении значения здесь и при нажатии \"Применить сейчас\" - ничего не работает в фоне.",
-    "Tragkraft als Formel deiner Stufe: Start + pro Stufe x (Stufe - 1), angewendet auf deine dauerhafte Tragkraft (Verzauberungen und Zauber bleiben unberührt). Neu berechnet beim Laden eines Spielstands, bei einem Stufenaufstieg, wenn du hier einen Wert änderst und wenn du \"Jetzt anwenden\" drückst - nichts läuft im Hintergrund.",
-    "La charge comme une formule de votre niveau : départ + par niveau x (niveau - 1), appliquée à votre charge permanente (les enchantements et les sorts ne sont pas touchés). Recalculée au chargement d'une sauvegarde, à un passage de niveau, quand vous changez une valeur ici et quand vous appuyez sur « Appliquer maintenant » - rien ne tourne en arrière-plan.",
-    "La carga como una fórmula de tu nivel: inicial + por nivel x (nivel - 1), aplicada a tu carga permanente (los encantamientos y los hechizos no se tocan). Se recalcula al cargar una partida, al subir de nivel, al cambiar un valor aquí y al pulsar \"Aplicar ahora\": nada corre en segundo plano.",
-    "Il carico come formula del tuo livello: iniziale + per livello x (livello - 1), applicato al tuo carico permanente (incantesimi e magie non vengono toccati). Ricalcolato al caricamento di un salvataggio, a un passaggio di livello, quando cambi un valore qui e quando premi \"Applica ora\" - nulla gira in background.",
-    "Udźwig jako wzór od twojego poziomu: początkowy + na poziom x (poziom - 1), stosowany do twojego trwałego udźwigu (zaklęcia i czary pozostają nietknięte). Przeliczany przy wczytaniu zapisu, przy awansie, przy zmianie wartości tutaj i po naciśnięciu \"Zastosuj teraz\" - nic nie działa w tle.",
-    "Nosnost jako vzorec podle úrovně: počáteční + za úroveň x (úroveň - 1), použito na tvou trvalou nosnost (očarování a kouzla zůstávají nedotčena). Přepočítá se při načtení pozice, při postupu, při změně hodnoty zde a při stisku \"Použít nyní\" - nic neběží na pozadí.")
 TRANSLATIONS["CPC_CW_Control"] = T(
     "所持重量を制御する", "소지 중량 제어", "控制负重", "Управлять переносимым весом",
     "Tragkraft steuern", "Contrôler la charge", "Controlar la carga", "Controlla il carico",

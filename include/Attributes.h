@@ -61,6 +61,7 @@ namespace Attributes
 		float gained = 0.0F;         // what those counted choices actually granted (co-save)
 		float permanent = 0.0F;      // base + permanent modifiers
 		float current = 0.0F;        // incl. temporary effects and damage
+		float raceStart = 0.0F;      // the race record's starting value (what a race mod such as Imperious edits)
 	};
 	struct State
 	{

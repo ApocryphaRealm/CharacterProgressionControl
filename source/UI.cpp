@@ -578,6 +578,34 @@ namespace UI
 		RenderButtons();
 	}
 
+	namespace
+	{
+		// The two race switches (1.1.10, the owner 2026-10-24), shared by the Attributes and Carry Weight tabs: drawn on
+		// both, one setting each. Returns true when one changed (the caller re-applies both tabs).
+		bool RaceSwitches()
+		{
+			using namespace settings;
+			bool changed = false;
+			bool starting = race::startingValues;
+			if (ImGuiMCP::Toggle(strings::TR("CPC_Race_StartingValues", "Set starting values"), &starting)) { race::startingValues = starting; changed = true; }
+			HelpMarker(strings::TR("CPC_Race_HelpStartingValues", "On by default. Off: no starting value is touched - starting health, magicka, stamina and carry "
+					   "weight stay as your race and other mods set them, and only the per-level values apply. One switch for the "
+					   "Attributes and Carry Weight tabs."));
+			bool own = race::ownBase;
+			if (ImGuiMCP::Toggle(strings::TR("CPC_Race_OwnBase", "Use our base values instead of the race's"), &own)) { race::ownBase = own; changed = true; }
+			HelpMarker(strings::TR("CPC_Race_HelpOwnBase", "Off by default: this mod's starting values are added on top of what your race (and any race mod) "
+					   "sets. On: this mod's values replace the race's - the starting attributes become the start, and carry weight "
+					   "is set to its formula total. Turning it off again gives the race's values back exactly. One switch for the "
+					   "Attributes and Carry Weight tabs."));
+			if (changed)
+			{
+				Attributes::RequestApply();
+				CarryWeight::RequestApply();
+			}
+			return changed;
+		}
+	}
+
 	void __stdcall AttributesPanel::Render()
 	{
 		strings::Tick();
@@ -601,11 +629,31 @@ namespace UI
 		if (attributes::control)
 		{
 			ImGuiMCP::SeparatorText(strings::TR("CPC_Attr_SecStarting", "Starting values"));
-			changed |= NudgeableSlider(strings::TR("CPC_Attr_StartHealth", "Starting health"), &attributes::starting[0], 10.0F, 1000.0F, "%.0f", 10.0F);
-			changed |= NudgeableSlider(strings::TR("CPC_Attr_StartMagicka", "Starting magicka"), &attributes::starting[1], 10.0F, 1000.0F, "%.0f", 10.0F);
-			changed |= NudgeableSlider(strings::TR("CPC_Attr_StartStamina", "Starting stamina"), &attributes::starting[2], 10.0F, 1000.0F, "%.0f", 10.0F);
-			HelpMarker(strings::TR("CPC_Attr_HelpStarting", "What the attribute starts at, for a character whose vanilla start is 100. A race that starts higher or "
-					   "lower keeps its difference: the value is applied as (this - 100) on top of what the character started with."));
+			changed |= RaceSwitches();
+			if (race::startingValues)
+			{
+				changed |= NudgeableSlider(strings::TR("CPC_Attr_StartHealth", "Starting health"), &attributes::starting[0], 10.0F, 1000.0F, "%.0f", 10.0F);
+				changed |= NudgeableSlider(strings::TR("CPC_Attr_StartMagicka", "Starting magicka"), &attributes::starting[1], 10.0F, 1000.0F, "%.0f", 10.0F);
+				changed |= NudgeableSlider(strings::TR("CPC_Attr_StartStamina", "Starting stamina"), &attributes::starting[2], 10.0F, 1000.0F, "%.0f", 10.0F);
+				if (race::ownBase)
+				{
+					HelpMarker(strings::TR("CPC_Attr_HelpStartingOwn", "What the attribute starts at, whatever your race starts with: the race's own start is replaced by this value."));
+				}
+				else
+				{
+					HelpMarker(strings::TR("CPC_Attr_HelpStarting", "What the attribute starts at, for a character whose vanilla start is 100. A race that starts higher or "
+							   "lower keeps its difference: the value is applied as (this - 100) on top of what the character started with."));
+				}
+			}
+			else
+			{
+				ImGuiMCP::TextDisabled("%s", strings::TR("CPC_Race_StartingOff", "Starting values are off: the race's starting values are left alone and only the per-level values apply."));
+			}
+			if (const auto st = Attributes::GetState(); st.haveHistory)
+			{
+				ImGuiMCP::TextDisabled(strings::TR("CPC_Attr_RaceStarts", "Your race starts at: health %.0f, magicka %.0f, stamina %.0f"),
+									   st.row[0].raceStart, st.row[1].raceStart, st.row[2].raceStart);
+			}
 		}
 
 		ImGuiMCP::SeparatorText(strings::TR("CPC_Attr_SecGain", "Gain per level up"));
@@ -663,9 +711,10 @@ namespace UI
 
 		using namespace settings;
 
-		ImGuiMCP::TextWrapped("%s", strings::TR("CPC_CW_Intro", "Carry weight as a formula of your level: starting + per level x (level - 1), applied to your permanent "
-							  "carry weight (enchantments and spells are left alone). It is recalculated when a save loads, when you "
-							  "level up, when you change a value here, and when you press Apply now - nothing runs in the background."));
+		ImGuiMCP::TextWrapped("%s", strings::TR("CPC_CW_IntroRace", "Carry weight that grows with your level: this mod adds an offset + per level x (level - 1) on top of "
+							  "your race's carry weight and whatever other mods add, as its own permanent modifier (enchantments and spells "
+							  "are left alone). It is recalculated when a save loads, when you level up, when you change a value here, and "
+							  "when you press Apply now - nothing runs in the background."));
 		ImGuiMCP::Spacing();
 
 		ImGuiMCP::PushItemWidth(260.0F);
@@ -682,8 +731,26 @@ namespace UI
 		if (carryweight::control)
 		{
 			ImGuiMCP::SeparatorText(strings::TR("CPC_CW_SecFormula", "The formula"));
-			changed |= NudgeableSlider(strings::TR("CPC_CW_Starting", "Starting carry weight"), &carryweight::starting, 0.0F, 2000.0F, "%.0f", 10.0F);
-			HelpMarker(strings::TR("CPC_CW_HelpStarting", "Carry weight at level 1. Vanilla is 300."));
+			changed |= RaceSwitches();
+			if (!race::startingValues)
+			{
+				ImGuiMCP::TextDisabled("%s", strings::TR("CPC_Race_StartingOff", "Starting values are off: the race's starting values are left alone and only the per-level values apply."));
+			}
+			else if (race::ownBase)
+			{
+				changed |= NudgeableSlider(strings::TR("CPC_CW_Starting", "Starting carry weight"), &carryweight::starting, 0.0F, 2000.0F, "%.0f", 10.0F);
+				HelpMarker(strings::TR("CPC_CW_HelpStarting", "Carry weight at level 1. Vanilla is 300."));
+			}
+			else
+			{
+				changed |= NudgeableSlider(strings::TR("CPC_CW_Offset", "Offset from your race's starting carry weight"), &carryweight::offset, -500.0F, 1500.0F, "%+.0f", 5.0F);
+				HelpMarker(strings::TR("CPC_CW_HelpOffset", "Added on top of your race's carry weight at level 1; 0 keeps your race's own value. An Altmer under "
+						   "Imperious starts at 250, so +20 gives 270."));
+			}
+			if (s.playerLevel > 0)
+			{
+				ImGuiMCP::TextDisabled(strings::TR("CPC_CW_RaceLine", "Your race starts at %.0f; your base carry weight now %.0f"), s.raceBase, s.base);
+			}
 			changed |= NudgeableSlider(strings::TR("CPC_CW_PerLevel", "Per level"), &carryweight::perLevel, 0.0F, 50.0F, "%.1f", 0.5F);
 			HelpMarker(strings::TR("CPC_CW_HelpPerLevel", "Added for every level after the first, whichever attribute you choose."));
 		}
@@ -715,8 +782,21 @@ namespace UI
 		{
 			if (s.controlling)
 			{
-				ImGuiMCP::Text(strings::TR("CPC_CW_FormulaLine", "Level %u: %.0f + %.1f x %u = %.0f"), static_cast<unsigned>(s.playerLevel), carryweight::starting, carryweight::perLevel,
-							   static_cast<unsigned>(s.playerLevel > 0 ? s.playerLevel - 1 : 0), s.target);
+				const auto lvl = static_cast<unsigned>(s.playerLevel);
+				const auto steps = static_cast<unsigned>(s.playerLevel > 0 ? s.playerLevel - 1 : 0);
+				if (!race::startingValues)
+				{
+					ImGuiMCP::Text(strings::TR("CPC_CW_FormulaLineGrowth", "Level %u: race and other mods + %.1f x %u = %.0f"), lvl, carryweight::perLevel, steps, s.target);
+				}
+				else if (race::ownBase)
+				{
+					ImGuiMCP::Text(strings::TR("CPC_CW_FormulaLine", "Level %u: %.0f + %.1f x %u = %.0f"), lvl, carryweight::starting, carryweight::perLevel, steps, s.target);
+				}
+				else
+				{
+					ImGuiMCP::Text(strings::TR("CPC_CW_FormulaLineAdd", "Level %u: race and other mods %+.0f + %.1f x %u = %.0f"), lvl, carryweight::offset, carryweight::perLevel, steps,
+								   s.target);
+				}
 			}
 			ImGuiMCP::Text(strings::TR("CPC_CW_PermanentLine", "Permanent carry weight %.0f, now %.0f with temporary effects; net added by this mod %.0f"), s.permanent, s.current, s.applied);
 			if (!s.controlling) { ImGuiMCP::TextDisabled("%s", strings::TR("CPC_CW_NotControlling", "Not controlling carry weight - the values above are whatever the game is using.")); }

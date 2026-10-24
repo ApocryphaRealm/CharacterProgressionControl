@@ -3,6 +3,7 @@
 #include "CarryWeight.h"
 
 #include "Compat.h"
+#include "RaceShare.h"
 #include "Settings.h"
 #include "utils/Logger.h"
 
@@ -94,30 +95,37 @@ namespace CarryWeight
 			if (s.standDown.empty()) { s.standDown = "another carry-weight mod of ours is loaded and owns carry weight"; }
 		}
 
-		// On: carry weight = starting + perLevel x (level - 1), for the CURRENT level.
-		// Off (or standing down): whatever it would be without this mod - the net applied comes off.
-		float delta = 0.0F;
-		if (s.controlling)
-		{
-			s.target = settings::carryweight::starting
-				+ static_cast<float>(std::max<int>(0, s.playerLevel - 1)) * settings::carryweight::perLevel;
-			delta = s.target - s.permanent;
-		}
-		else
-		{
-			s.target = s.permanent - g_applied;
-			delta = -g_applied;
-		}
+		// 1.1.10 (include/RaceShare.h): this mod holds a SHARE of the permanent carry weight and moves only that.
+		//   additive (default): share = offset + perLevel x (level - 1) on top of the race's carry weight and every other
+		//                       mod's - an Altmer under Imperious keeps its 250 and gets the growth on top;
+		//   our base values:    the total is starting + perLevel x (level - 1), whatever the race and others set;
+		//   starting values off: share = perLevel x (level - 1) only;
+		//   off (or standing down): share 0 - the net applied comes off.
+		if (auto* race = player->GetRace()) { s.raceBase = race->data.baseCarryWeight; }
+		s.base = owner->GetBaseActorValue(RE::ActorValue::kCarryWeight);
+		raceshare::Carry c;
+		c.on = s.controlling;
+		c.startingValues = settings::race::startingValues;
+		c.ownBase = settings::race::ownBase;
+		c.offset = settings::carryweight::offset;
+		c.starting = settings::carryweight::starting;
+		c.perLevel = settings::carryweight::perLevel;
+		c.level = s.playerLevel;
+		const float share = raceshare::CarryShare(c, s.permanent, g_applied);
+		const float delta = share - g_applied;
+		s.target = s.permanent + delta;
 
 		if (std::fabs(delta) > 0.01F)
 		{
 			Modify(owner, delta);
-			g_applied += delta;
-			logger::info("carry weight {:.1f} -> {:.1f} (level {}, {}; net applied {:.1f})",
+			g_applied = share;
+			logger::info("carry weight {:.1f} -> {:.1f} (level {}, {}; this mod's share {:.1f}; race {:.1f}, base {:.1f})",
 						 s.permanent, s.target, s.playerLevel,
-						 s.controlling ? std::format("starting {:.1f}, per level {:.1f}", settings::carryweight::starting, settings::carryweight::perLevel)
-									   : std::string("control off - this mod's share taken away"),
-						 g_applied);
+						 !s.controlling ? std::string("control off - this mod's share taken away")
+						 : !c.startingValues ? std::format("starting values off: per level {:.1f} only", c.perLevel)
+						 : c.ownBase ? std::format("our base values: starting {:.1f}, per level {:.1f}", c.starting, c.perLevel)
+									 : std::format("on top of the race: offset {:+.1f}, per level {:.1f}", c.offset, c.perLevel),
+						 g_applied, s.raceBase, s.base);
 			s.current = owner->GetActorValue(RE::ActorValue::kCarryWeight);
 			s.permanent = owner->GetPermanentActorValue(RE::ActorValue::kCarryWeight);
 		}
@@ -186,8 +194,10 @@ namespace CarryWeight
 	std::string StatusJson()
 	{
 		const auto s = GetState();
-		return std::format(R"({{"control":{},"controlling":{},"standDown":"{}","starting":{:.1f},"perLevel":{:.1f},"playerLevel":{},"target":{:.1f},"permanent":{:.1f},"current":{:.1f},"applied":{:.1f},"applications":{}}})",
+		return std::format(R"({{"control":{},"controlling":{},"standDown":"{}","ownBase":{},"startingValues":{},"offset":{:.1f},"starting":{:.1f},"perLevel":{:.1f},"playerLevel":{},"raceBase":{:.1f},"base":{:.1f},"target":{:.1f},"permanent":{:.1f},"current":{:.1f},"applied":{:.1f},"applications":{}}})",
 						   settings::carryweight::control ? "true" : "false", s.controlling ? "true" : "false", s.standDown,
-						   settings::carryweight::starting, settings::carryweight::perLevel, s.playerLevel, s.target, s.permanent, s.current, s.applied, s.applications);
+						   settings::race::ownBase ? "true" : "false", settings::race::startingValues ? "true" : "false", settings::carryweight::offset,
+						   settings::carryweight::starting, settings::carryweight::perLevel, s.playerLevel, s.raceBase, s.base, s.target, s.permanent, s.current,
+						   s.applied, s.applications);
 	}
 }

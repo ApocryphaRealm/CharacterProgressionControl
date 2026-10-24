@@ -96,13 +96,26 @@ namespace settings
 		inline float starting[3] = { 100.0F, 100.0F, 100.0F };    // fStartingHealth/fStartingMagicka/fStartingStamina:Attributes
 	}
 
-	// The Carry Weight tab (1.0.9): Carryweight on Level Up's shape - permanent carry weight =
-	// starting + per level x (level - 1), recalculated on load, level-up, change and Apply now.
+	// The Carry Weight tab (1.0.9; additive over the race since 1.1.10 - include/RaceShare.h): this mod adds
+	// offset + per level x (level - 1) on top of the race's carry weight and every other mod's, recalculated on load,
+	// level-up, change and Apply now. With race::ownBase on, the total is starting + per level x (level - 1) instead.
 	namespace carryweight
 	{
 		inline bool control = false;        // bControlCarryWeight:CarryWeight
-		inline float starting = 300.0F;     // fStartingCarryWeight:CarryWeight
+		inline float offset = 0.0F;         // fCarryWeightOffset:CarryWeight (1.1.10; a 1.1.9 INI's starting - 300)
+		inline float starting = 300.0F;     // fStartingCarryWeight:CarryWeight (used with race::ownBase)
 		inline float perLevel = 5.0F;       // fCarryWeightPerLevel:CarryWeight
+	}
+
+	// 1.1.10 (the owner, 2026-10-24: "a toggle that decides whether they want our mod to overwrite their race mod"): off,
+	// the starting attributes and carry weight are added on top of the race's own values (and other mods'); on, this
+	// mod's own values replace the race's. One switch for both tabs.
+	namespace race
+	{
+		inline bool ownBase = false;        // bUseOwnBaseValues:Race
+		// The owner, 01:15: off = no starting value is set (starting health/magicka/stamina and starting carry weight add
+		// nothing); only the per-level values apply. On by default, as 1.1.9 behaved.
+		inline bool startingValues = true;  // bApplyStartingValues:Race
 	}
 
 	// Stage 6 - a fixed amount per use instead of the vanilla scaling.
