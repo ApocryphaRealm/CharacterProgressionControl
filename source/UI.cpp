@@ -14,6 +14,7 @@
 #include "Legendary.h"
 #include "Levelling.h"
 #include "Patches.h"
+#include "PreciseSlider.h"
 #include "Presets.h"
 #include "SkillList.h"
 #include "Skills.h"
@@ -114,6 +115,9 @@ namespace UI
 				"igSeparatorText",
 				"igCombo_Str_arr",
 				"igSliderFloat",
+				// precise::SliderFloat (include/PreciseSlider.h, rule 68) asks these to tell a nudge from a drag.
+				"igIsKeyDown_Nil",
+				"igIsMouseDown_Nil",
 				"igCheckbox",
 				"igIsKeyPressed_Bool",
 				"igIsItemClicked",
@@ -156,17 +160,21 @@ namespace UI
 			}
 		}
 
+		// 1.1.10 (rule 68): drawn through precise::SliderFloat, and the arrow-key nudge moves one unit of the digit the format
+		// shows ("%.1f" -> 0.1) - the step each caller passes is no longer used, so a nudge never jumps more than the
+		// shown unit. A frame where the slider itself already moved the value adds no second nudge.
 		bool NudgeableSlider(const char* a_label, float* a_value, float a_min, float a_max,
-							 const char* a_format, float a_step)
+							 const char* a_format, float /*a_step*/)
 		{
-			bool changed = ImGuiMCP::SliderFloat(a_label, a_value, a_min, a_max, a_format);
+			bool changed = precise::SliderFloat(a_label, a_value, a_min, a_max, a_format);
 			if (ImGuiMCP::IsItemClicked() || ImGuiMCP::IsItemActive()) { selectedSlider = a_label; }
 			if (selectedSlider == a_label)
 			{
+				const float step = static_cast<float>(precise::Step(a_format));
 				float nudge = 0.0F;
-				if (ImGuiMCP::IsKeyPressed(ImGuiMCP::ImGuiKey_LeftArrow) || ImGuiMCP::IsKeyPressed(ImGuiMCP::ImGuiKey_DownArrow)) { nudge -= a_step; }
-				if (ImGuiMCP::IsKeyPressed(ImGuiMCP::ImGuiKey_RightArrow) || ImGuiMCP::IsKeyPressed(ImGuiMCP::ImGuiKey_UpArrow)) { nudge += a_step; }
-				if (nudge != 0.0F)
+				if (ImGuiMCP::IsKeyPressed(ImGuiMCP::ImGuiKey_LeftArrow) || ImGuiMCP::IsKeyPressed(ImGuiMCP::ImGuiKey_DownArrow)) { nudge -= step; }
+				if (ImGuiMCP::IsKeyPressed(ImGuiMCP::ImGuiKey_RightArrow) || ImGuiMCP::IsKeyPressed(ImGuiMCP::ImGuiKey_UpArrow)) { nudge += step; }
+				if (nudge != 0.0F && !changed)
 				{
 					*a_value = std::clamp(*a_value + nudge, a_min, a_max);
 					changed = true;

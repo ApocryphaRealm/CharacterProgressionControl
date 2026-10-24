@@ -14,6 +14,11 @@ Settings are stored in a plain INI file and can also be changed in game.
 ## 1.1.10 - 2026-10-24 - untested
 
 ### Changed
+- **Sliders move one shown digit per nudge** (rule 68, the package gate's sliders-are-precise). Every settings slider is
+  drawn through precise::SliderFloat (include/PreciseSlider.h, as Compass Navigation Overhaul and Dragon's Eye Minimap),
+  and the arrow-key nudge steps one unit of the digit its format shows instead of the step each slider carried (the
+  carry-weight offset, shown "%+.0f", now moves 1 per press, not 5). A frame where the slider already moved itself adds
+  no second nudge.
 - **Carry weight is added on top of your race's, so race mods keep their numbers** (the owner, 2026-10-24: "should read
   what the race's base carry weight and stats or skills are, and then apply over the top of it so that it's compatible
   with race mods"; a Nexus question about Imperious). The Carry Weight tab set the TOTAL permanent carry weight to
