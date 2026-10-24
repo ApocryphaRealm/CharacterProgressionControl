@@ -193,6 +193,23 @@ namespace Legendary
 		// time). Never written to, never used to patch.
 		constexpr std::ptrdiff_t kSeKnown[3][2] = { { 0x8BF838, 0x8C0EF1 }, { 0x8C2CFC, 0 }, { 0x8CAE86, 0 } };
 
+		// CUSTOM SKILLS FRAMEWORK (test a053, 2026-10-24). With CustomSkills.dll loaded, the three bytes before each of these
+		// comparisons - the game's `call [r+18h]` that fetches the skill's value (FF 53 18 / FF 50 18) - were `90 90 90` or
+		// `FF D0 90` (call rax; nop): CSF supplies the value for its own skills there. The comparison itself, the only thing
+		// this mod writes, was untouched, so the two patches sit on different instructions of the same check: CSF picks the
+		// value, this mod picks the threshold. The vanilla shapes, holding the game's call, matched 0 times.
+		bool g_customSkillsSeen = false;   // CSF's bytes found at a site this run (the refusal notice names it)
+
+		bool CustomSkillsLoaded() { return GetModuleHandleA("CustomSkills.dll") != nullptr; }
+
+		// The three bytes before a comparison are CSF's: three NOPs, or call rax + nop.
+		bool IsCustomSkillsCall(std::uintptr_t a_comiss)
+		{
+			const auto* b = reinterpret_cast<const std::uint8_t*>(a_comiss - 3);
+			return (b[0] == 0x90 && b[1] == 0x90 && b[2] == 0x90) || (b[0] == 0xFF && b[1] == 0xD0 && b[2] == 0x90);
+		}
+
+
 		// The file name of the module that owns an address, or "" when none does.
 		std::string OwnerOf(std::uintptr_t a_address)
 		{
@@ -246,6 +263,13 @@ namespace Legendary
 					const std::string owner = OwnerOf(target);
 					if (owner.empty() || reinterpret_cast<std::uintptr_t>(GetModuleHandleA(owner.c_str())) == gameModule) { continue; }
 					foreign = std::format("; a {} at game offset 0x{:X} leads into {}", b[i] == 0xE8 ? "call" : "jump", rva + i, owner);
+				}
+				if (foreign.empty() && IsCustomSkillsCall(at))
+				{
+					g_customSkillsSeen = true;
+					foreign = CustomSkillsLoaded() ?
+					              "; Custom Skills Framework (CustomSkills.dll) has replaced the game's skill-value call just before it" :
+					              "; the game's skill-value call just before it is replaced (Custom Skills Framework's pattern)";
 				}
 				out += std::format("{}at game offset 0x{:X} (where it matched on 2026-09-11) the game now holds {}{}", out.empty() ? "" : "; ",
 								   rva, bytes, foreign.empty() ? " - no jump into another DLL there" : foreign);
@@ -416,6 +440,8 @@ namespace Legendary
 			logger::warn("legendary: the UI was not available at data load; settings changes apply after a restart instead of on the next Skills menu");
 		}
 	}
+
+	bool CustomSkillsInTheWay() { return g_customSkillsSeen; }
 
 	std::string StatusJson()
 	{

@@ -692,6 +692,17 @@ TRANSLATIONS["CPC_CW_FormulaLineAdd"] = T(
     'Livello %u: razza e altre mod %+.0f + %.1f x %u = %.0f',
     'Poziom %u: rasa i inne mody %+.0f + %.1f x %u = %.0f',
     'Úroveň %u: rasa a jiné mody %+.0f + %.1f x %u = %.0f')
+TRANSLATIONS["CPC_Notice_RefusedCsf"] = T(
+    "Character Progression Control: Custom Skills Frameworkがゲームの伝説スキルの判定を変更しており、このMODを併せて適用できなかったため、伝説スキルの設定はオフになっています - どれかは「Patches」タブに表示されます。",
+    "Character Progression Control: Custom Skills Framework가 게임의 전설 판정을 이 모드가 함께 적용될 수 없는 방식으로 바꾸어, 전설 설정이 꺼져 있습니다 - 어느 것인지는 “Patches” 탭에 표시됩니다.",
+    "Character Progression Control：Custom Skills Framework 修改了游戏的传奇判定，本模组无法与之一同生效，因此其传奇设置已关闭——具体哪些见“Patches”标签页。",
+    "Character Progression Control: Custom Skills Framework изменил проверки легендарных навыков так, что этот мод не смог подключиться вместе с ним, поэтому его легендарные настройки отключены - какие именно, показано на вкладке «Patches».",
+    "Character Progression Control: Custom Skills Framework hat die Legendär-Prüfungen des Spiels so verändert, dass sich diese Mod nicht daneben einbinden ließ; ihre Legendär-Einstellungen sind daher aus - welche, zeigt der Reiter „Patches“.",
+    "Character Progression Control : Custom Skills Framework a modifié les vérifications légendaires du jeu d'une façon qui empêche ce mod de s'appliquer à côté ; ses réglages légendaires sont donc désactivés - l'onglet « Patches » indique lesquels.",
+    "Character Progression Control: Custom Skills Framework ha cambiado las comprobaciones de habilidad legendaria del juego de forma que este mod no pudo aplicarse junto a él, así que sus ajustes legendarios están desactivados; la pestaña «Patches» indica cuáles.",
+    "Character Progression Control: Custom Skills Framework ha modificato i controlli leggendari del gioco in un modo che non ha permesso a questa mod di agganciarsi insieme, quindi le sue impostazioni leggendarie sono spente - la scheda «Patches» indica quali.",
+    "Character Progression Control: Custom Skills Framework zmienił w grze sprawdzanie umiejętności legendarnych tak, że ten mod nie mógł się podłączyć obok niego, więc jego ustawienia legendarne są wyłączone - zakładka „Patches” pokazuje które.",
+    "Character Progression Control: Custom Skills Framework změnil legendární kontroly hry tak, že se tento mod nemohl připojit vedle něj, a jeho legendární nastavení jsou proto vypnutá - karta „Patches“ ukazuje která.")
 TRANSLATIONS["CPC_Notice_Refused"] = T(
     "Character Progression Control: 有効にした機能の一部がこのゲームに適用できず、オフになっています - どれかは「Patches」タブに表示されます。",
     "Character Progression Control: 켜 둔 기능 일부가 이 게임에 적용되지 못해 꺼져 있습니다 - 어떤 것인지는 “Patches” 탭에 표시됩니다.",

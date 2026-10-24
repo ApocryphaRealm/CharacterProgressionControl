@@ -11,6 +11,7 @@
 #include "DifficultyValues.h"
 #include "Enchanting.h"
 #include "ExperienceSources.h"
+#include "Legendary.h"
 #include "Levelling.h"
 #include "Patches.h"
 #include "Presets.h"
@@ -246,8 +247,14 @@ namespace UI
 		std::string names;
 		for (const auto& n : refused) { names += (names.empty() ? "" : ", ") + n; }
 		logger::warn("notice shown: {} patch group(s) refused while switched on: {}", refused.size(), names);
-		const char* text = strings::TR("CPC_Notice_Refused", "Character Progression Control: part of what you switched on could not "
-									   "attach on this game and is off - the Patches tab says which.");
+		// Custom Skills Framework in the way of a legendary group that still could not attach (a053): say so by name.
+		const bool csf = Legendary::CustomSkillsInTheWay() &&
+		                 std::any_of(refused.begin(), refused.end(), [](const std::string& a_n) { return a_n.rfind("Legendary", 0) == 0; });
+		const char* text = csf ?
+			strings::TR("CPC_Notice_RefusedCsf", "Character Progression Control: Custom Skills Framework has changed the game's legendary "
+						"checks in a way this mod could not attach alongside, so its legendary settings are off - the Patches tab says which.") :
+			strings::TR("CPC_Notice_Refused", "Character Progression Control: part of what you switched on could not "
+						"attach on this game and is off - the Patches tab says which.");
 #if RUNTIME_LINE == 17
 		RE::SendHUDMessage::ShowHUDMessage(text, nullptr, true);   // CommonLibSSE-NG 7.x has no RE::DebugNotification
 #else

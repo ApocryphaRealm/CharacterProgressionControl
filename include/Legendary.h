@@ -33,4 +33,8 @@ namespace Legendary
 
 	// Live state for the cpc.control DevBench tool.
 	std::string StatusJson();
+
+	// Custom Skills Framework's call was found in place of the game's at a legendary check this run (Legendary.cpp):
+	// the refusal notice names it when a legendary group could not attach.
+	bool CustomSkillsInTheWay();
 }
