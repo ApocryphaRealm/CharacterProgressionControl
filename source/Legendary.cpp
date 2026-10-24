@@ -188,9 +188,9 @@ namespace Legendary
 		}
 
 		// Where each site's `comiss` sat in the 1.5.97 exe when its shape last matched (in game, 2026-09-11, 1.1.5's log).
-		// Used only to SAY what is there now when the shape no longer matches (1.2.0: on 2026-10-23 all three legendary
-		// shapes matched 0 times with the same 1.1.9 DLL that had matched them, so something rewrote those bytes at run
-		// time). Never written to, never used to patch.
+		// Used to SAY what is there now when the shape no longer matches (1.2.0: on 2026-10-23 all three legendary shapes
+		// matched 0 times with the same 1.1.9 DLL that had matched them, so something rewrote those bytes at run time) - and,
+		// with Custom Skills Framework loaded, as the place to look when its changes leave no shape to match (Locate).
 		constexpr std::ptrdiff_t kSeKnown[3][2] = { { 0x8BF838, 0x8C0EF1 }, { 0x8C2CFC, 0 }, { 0x8CAE86, 0 } };
 
 		// CUSTOM SKILLS FRAMEWORK (test a053, 2026-10-24). With CustomSkills.dll loaded, the three bytes before each of these
@@ -207,6 +207,15 @@ namespace Legendary
 		{
 			const auto* b = reinterpret_cast<const std::uint8_t*>(a_comiss - 3);
 			return (b[0] == 0x90 && b[1] == 0x90 && b[2] == 0x90) || (b[0] == 0xFF && b[1] == 0xD0 && b[2] == 0x90);
+		}
+
+		// The three bytes before a comparison are still the GAME's: `call [rax+18h]` / `call [rbx+18h]` (FF 50 18 / FF 53 18).
+		// Test 8014 (2026-10-24) found a third CSF pattern - `00 00 00` before the button's comparison - so "not the game's
+		// call" is what marks CSF's work, not a list of its patterns.
+		bool IsGameSkillCall(std::uintptr_t a_comiss)
+		{
+			const auto* b = reinterpret_cast<const std::uint8_t*>(a_comiss - 3);
+			return b[0] == 0xFF && (b[1] == 0x50 || b[1] == 0x53) && b[2] == 0x18;
 		}
 
 		// A shape with the three bytes before its `0F 2F 05` (the comparison) made wildcards - where CSF's call sits.
@@ -250,8 +259,27 @@ namespace Legendary
 				if (rva == 0) { continue; }
 				const auto at = base + static_cast<std::uintptr_t>(rva);
 				const auto* b = reinterpret_cast<const std::uint8_t*>(at);
+				// 1.1.10 (test 8014): the WHOLE window the shape covers, the bytes that differ from the game's shape in [ ], so
+				// the shape can be reworked from what is really there
 				std::string bytes;
-				for (int i = -3; i < 7; ++i) { bytes += std::format("{}{:02X}", bytes.empty() ? "" : " ", b[i]); }
+				{
+					std::string sig = a_site.seSig;
+					std::vector<std::string> tok;
+					for (std::size_t p = 0; p < sig.size();)
+					{
+						const auto e = sig.find(' ', p);
+						tok.push_back(sig.substr(p, e == std::string::npos ? std::string::npos : e - p));
+						p = e == std::string::npos ? sig.size() : e + 1;
+					}
+					const auto* w = b - a_site.seAt;
+					for (std::size_t k = 0; k < tok.size(); ++k)
+					{
+						const bool wild = tok[k] == "??";
+						const bool same = wild || std::format("{:02X}", w[k]) == tok[k];
+						bytes += std::format("{}{}{:02X}{}", bytes.empty() ? "" : " ", same ? "" : "[", w[k], same ? "" : "]");
+					}
+					bytes += " (the shape: " + sig + ")";
+				}
 				std::string foreign;
 				// a 5-byte jmp/call rel32 or a 6-byte jmp [rip+disp32] anywhere from 24 bytes before the comparison to just
 				// after it - where a hook placed over this check would start
@@ -273,7 +301,7 @@ namespace Legendary
 					if (owner.empty() || reinterpret_cast<std::uintptr_t>(GetModuleHandleA(owner.c_str())) == gameModule) { continue; }
 					foreign = std::format("; a {} at game offset 0x{:X} leads into {}", b[i] == 0xE8 ? "call" : "jump", rva + i, owner);
 				}
-				if (foreign.empty() && IsCustomSkillsCall(at))
+				if (foreign.empty() && (IsCustomSkillsCall(at) || (CustomSkillsLoaded() && !IsGameSkillCall(at))))
 				{
 					g_customSkillsSeen = true;
 					foreign = CustomSkillsLoaded() ?
@@ -315,6 +343,35 @@ namespace Legendary
 					}
 					a_note += std::format("; with Custom Skills Framework's call allowed for it, {} time(s){}", csf.size(),
 										  allCsf ? "" : ", not all holding its call");
+				}
+				// 1.1.10 (test 8014): CSF changes more of the shape than the call (the threshold sites matched 0 of 2 with the
+				// call left open, and the button holds a third pattern), so on 1.5.97 the comparisons are looked for where
+				// they were on 2026-09-11. Taken only when EVERY known place holds a comparison whose call before it is no
+				// longer the game's, the count is exact, and - in InstallSite, as always - each is `comiss xmm0,[rip+100.0]`.
+				const auto index = static_cast<std::size_t>(&a_site - g_sites);
+				if (REL::Module::get().version() == REL::Version(1, 5, 97, 0) && index < std::size(kSeKnown))
+				{
+					const auto base = REL::Module::get().base();
+					std::vector<std::uintptr_t> known;
+					bool allChanged = true;
+					for (const auto rva : kSeKnown[index])
+					{
+						if (rva == 0) { continue; }
+						const auto at = base + static_cast<std::uintptr_t>(rva);
+						const auto* b = reinterpret_cast<const std::uint8_t*>(at);
+						if (b[0] != 0x0F || b[1] != 0x2F || b[2] != 0x05) { allChanged = false; break; }
+						if (IsGameSkillCall(at)) { allChanged = false; }
+						known.push_back(at);
+					}
+					if (allChanged && known.size() == a_site.copies)
+					{
+						g_customSkillsSeen = true;
+						a_how = std::format("found at the {} game offset(s) where its shape matched on 2026-09-11, alongside Custom Skills "
+											"Framework - the code around the comparison is CSF's, the comparison the game's own", known.size());
+						return known;
+					}
+					a_note += std::format("; at the 2026-09-11 offsets: {}", allChanged ? "not every comparison there" : "the comparison is not "
+										  "there, or the game's own call still is");
 				}
 			}
 			if (a_site.aeSig)

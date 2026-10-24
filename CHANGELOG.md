@@ -50,6 +50,13 @@ Settings are stored in a plain INI file and can also be changed in game.
   `comiss xmm0, [rip+100.0]` before anything is written - else nothing is written, as before. The Patches tab then says
   "Attached alongside Custom Skills Framework". When it still cannot attach, the refusal and the HUD notice name
   Custom Skills Framework (11 languages) instead of "no jump into another DLL there".
+  Test 8014 showed CSF changes more than that call: with it left open the threshold shape still matched 0 of 2, and the
+  button's comparison had a third pattern before it (`00 00 00`). So on 1.5.97, when no shape matches with CSF loaded,
+  the comparisons are taken from the offsets where the shapes matched on 2026-09-11 - only when every one of them still
+  holds the comparison, none still has the game's own call before it, the count is exact, and each passes the same
+  100.0 proof. CSF is named whenever the game's call before a comparison is gone, whatever replaced it, and the refusal
+  now prints the whole window the shape covers, the bytes that differ from it in [ ], so the shapes can be reworked
+  from what is really there.
 - **Two switches, shared by the Attributes and Carry Weight tabs** ([Race] in the INI; 11 languages):
   - "Use our base values instead of the race's" (the owner: "a toggle that decides whether they want our mod to
     overwrite their race mod"), off by default. On: the starting attributes replace the race's own start (setting -
