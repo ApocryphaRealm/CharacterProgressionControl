@@ -1,6 +1,6 @@
 # Character Progression Control
 
-Version 1.1.9
+Version 1.1.10
 
 What changed in 1.1.9: with skill points on, skill experience no longer banks through use when
 another plugin (Actor Value Generator, the Skyrim Skill Uncapper) already hooks the skill-improve
