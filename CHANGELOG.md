@@ -56,7 +56,9 @@ Settings are stored in a plain INI file and can also be changed in game.
   holds the comparison, none still has the game's own call before it, the count is exact, and each passes the same
   100.0 proof. CSF is named whenever the game's call before a comparison is gone, whatever replaced it, and the refusal
   now prints the whole window the shape covers, the bytes that differ from it in [ ], so the shapes can be reworked
-  from what is really there.
+  from what is really there. Test 3ac4 passed (all three groups attached alongside CSF); the Patches tab then still read
+  only "Active" for them, so a group attached that way now reads "Active - attached alongside Custom Skills Framework"
+  (11 languages).
 - **Two switches, shared by the Attributes and Carry Weight tabs** ([Race] in the INI; 11 languages):
   - "Use our base values instead of the race's" (the owner: "a toggle that decides whether they want our mod to
     overwrite their race mod"), off by default. On: the starting attributes replace the race's own start (setting -

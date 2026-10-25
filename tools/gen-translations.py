@@ -703,6 +703,17 @@ TRANSLATIONS["CPC_Notice_RefusedCsf"] = T(
     "Character Progression Control: Custom Skills Framework ha modificato i controlli leggendari del gioco in un modo che non ha permesso a questa mod di agganciarsi insieme, quindi le sue impostazioni leggendarie sono spente - la scheda «Patches» indica quali.",
     "Character Progression Control: Custom Skills Framework zmienił w grze sprawdzanie umiejętności legendarnych tak, że ten mod nie mógł się podłączyć obok niego, więc jego ustawienia legendarne są wyłączone - zakładka „Patches” pokazuje które.",
     "Character Progression Control: Custom Skills Framework změnil legendární kontroly hry tak, že se tento mod nemohl připojit vedle něj, a jeho legendární nastavení jsou proto vypnutá - karta „Patches“ ukazuje která.")
+TRANSLATIONS["CPC_Pat_ActiveCsf"] = T(
+    "有効 - Custom Skills Framework と併せて適用",
+    "활성 - Custom Skills Framework와 함께 적용됨",
+    "已启用 - 与 Custom Skills Framework 一同生效",
+    "Активно - подключено вместе с Custom Skills Framework",
+    "Aktiv - neben Custom Skills Framework eingebunden",
+    "Actif - appliqué à côté de Custom Skills Framework",
+    "Activo - aplicado junto a Custom Skills Framework",
+    "Attivo - agganciato insieme a Custom Skills Framework",
+    "Aktywne - podłączone obok Custom Skills Framework",
+    "Aktivní - připojeno vedle Custom Skills Framework")
 TRANSLATIONS["CPC_Notice_Refused"] = T(
     "Character Progression Control: 有効にした機能の一部がこのゲームに適用できず、オフになっています - どれかは「Patches」タブに表示されます。",
     "Character Progression Control: 켜 둔 기능 일부가 이 게임에 적용되지 못해 꺼져 있습니다 - 어떤 것인지는 “Patches” 탭에 표시됩니다.",
