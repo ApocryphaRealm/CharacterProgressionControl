@@ -706,8 +706,8 @@ namespace DevBenchTool
 				{
 					if (!first) { rows += ","; }
 					first = false;
-					rows += std::format(R"({{"name":"{}","installed":{},"status":"{}","touches":"{}"}})",
-										EscapeJson(g.name), g.installed ? "true" : "false",
+					rows += std::format(R"({{"name":"{}","installed":{},"alongsideCsf":{},"status":"{}","touches":"{}"}})",
+										EscapeJson(g.name), g.installed ? "true" : "false", g.alongsideCsf ? "true" : "false",
 										EscapeJson(g.status), EscapeJson(g.touches));
 				}
 				a_write(a_sink, std::format(R"({{"ok":true,"op":"patches","groups":[{}]}})", rows).c_str());

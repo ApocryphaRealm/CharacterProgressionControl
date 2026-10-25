@@ -1352,7 +1352,7 @@ namespace UI
 			ImGuiMCP::SeparatorText(g.name.c_str());
 			// 1.1.10 (test 3ac4): a legendary group attached with Custom Skills Framework's code around its comparison says so
 			// here too, not only in the log
-			const bool alongsideCsf = g.installed && g.status.find("alongside Custom Skills Framework") != std::string::npos;
+			const bool alongsideCsf = g.installed && g.alongsideCsf;
 			ImGuiMCP::Text("%s", !g.installed ? strings::TR("CPC_Pat_NotActive", "Not active") :
 								 alongsideCsf ? strings::TR("CPC_Pat_ActiveCsf", "Active - attached alongside Custom Skills Framework") :
 												strings::TR("CPC_Pat_Active", "Active"));

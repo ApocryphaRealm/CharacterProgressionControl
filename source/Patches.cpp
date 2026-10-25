@@ -66,6 +66,7 @@ namespace Patches
 			e.group.installed = ok;
 			e.group.status = ok ? "installed" : (reason.empty() ? "not installed" : reason);
 			e.group.refused = !ok && e.group.status.rfind("refused", 0) == 0;
+			e.group.alongsideCsf = ok && reason.find("alongside Custom Skills Framework") != std::string::npos;
 
 			if (ok)
 			{

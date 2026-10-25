@@ -58,7 +58,9 @@ Settings are stored in a plain INI file and can also be changed in game.
   now prints the whole window the shape covers, the bytes that differ from it in [ ], so the shapes can be reworked
   from what is really there. Test 3ac4 passed (all three groups attached alongside CSF); the Patches tab then still read
   only "Active" for them, so a group attached that way now reads "Active - attached alongside Custom Skills Framework"
-  (11 languages).
+  (11 languages). Test 71d9: it still read "Active" - the tab looked for those words in the group's status, which says
+  only "installed" once a group is in (the attach reason is not kept). The group now carries its own flag, set from
+  the installer's reason, and the tab and DevBench op=patches (`alongsideCsf`) read that.
 - **Two switches, shared by the Attributes and Carry Weight tabs** ([Race] in the INI; 11 languages):
   - "Use our base values instead of the race's" (the owner: "a toggle that decides whether they want our mod to
     overwrite their race mod"), off by default. On: the starting attributes replace the race's own start (setting -
