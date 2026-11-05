@@ -13,7 +13,7 @@ namespace settings
 {
 	namespace debug
 	{
-		inline std::uint32_t logLevel = 0;  // uLogLevel:Debug - 0 = trace (project default)
+		inline std::uint32_t logLevel = 2;  // uLogLevel:Debug - 2 = info (project default)
 	}
 
 	namespace levelling

@@ -14,6 +14,7 @@ Settings are stored in a plain INI file and can also be changed in game.
 ## 1.1.10 - 2026-10-24 - untested
 
 ### Changed
+- **Ships at info** (uLogLevel=2, the project's default): the shipped INI and the compiled default were still 0 (trace) from the first skeleton of this mod. An INI you already have keeps its value.
 - **Sliders move one shown digit per nudge** (rule 68, the package gate's sliders-are-precise). Every settings slider is
   drawn through precise::SliderFloat (include/PreciseSlider.h, as Compass Navigation Overhaul and Dragon's Eye Minimap),
   and the arrow-key nudge steps one unit of the digit its format shows instead of the step each slider carried (the
@@ -75,6 +76,7 @@ Settings are stored in a plain INI file and can also be changed in game.
 - The starting-attributes apply waits for a placed player, as carry weight's does.
 
 ### Fixed
+- **A number typed into a slider (Ctrl+click) is clamped to the slider's range** (the package gate's precise-sliders-always-clamp): precise::SliderFloat and SliderInt draw with ImGuiSliderFlags_AlwaysClamp and clamp again after the call, as Dragon's Eye Minimap has since 7c3ce18, where an unclamped typed value crashed the game.
 - **The Carry Weight tab's "Per choice at level up" note gave an old reason** (combined run 2026-10-24, 3e1c): "it sets
   the total" was true of 1.1.9, but the tab now adds its share on top of the race. The cross terms are still off while
   the tab is in control, because its per-level gain takes their place: on top of the race they would count twice, and
