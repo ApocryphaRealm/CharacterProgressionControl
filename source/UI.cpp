@@ -161,7 +161,7 @@ namespace UI
 			}
 		}
 
-		// 1.1.10 (rule 68): drawn through precise::SliderFloat, and the arrow-key nudge moves one unit of the digit the format
+		// 1.2.0 (rule 68): drawn through precise::SliderFloat, and the arrow-key nudge moves one unit of the digit the format
 		// shows ("%.1f" -> 0.1) - the step each caller passes is no longer used, so a nudge never jumps more than the
 		// shown unit. A frame where the slider itself already moved the value adds no second nudge.
 		bool NudgeableSlider(const char* a_label, float* a_value, float a_min, float a_max,
@@ -599,7 +599,7 @@ namespace UI
 
 	namespace
 	{
-		// The two race switches (1.1.10, the owner 2026-10-24), shared by the Attributes and Carry Weight tabs: drawn on
+		// The two race switches (1.2.0, the owner 2026-10-24), shared by the Attributes and Carry Weight tabs: drawn on
 		// both, one setting each. Returns true when one changed (the caller re-applies both tabs).
 		bool RaceSwitches()
 		{
@@ -1350,7 +1350,7 @@ namespace UI
 		for (const auto& g : groups)
 		{
 			ImGuiMCP::SeparatorText(g.name.c_str());
-			// 1.1.10 (test 3ac4): a legendary group attached with Custom Skills Framework's code around its comparison says so
+			// 1.2.0 (test 3ac4): a legendary group attached with Custom Skills Framework's code around its comparison says so
 			// here too, not only in the log
 			const bool alongsideCsf = g.installed && g.alongsideCsf;
 			ImGuiMCP::Text("%s", !g.installed ? strings::TR("CPC_Pat_NotActive", "Not active") :

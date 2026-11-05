@@ -25,7 +25,7 @@ namespace Patches
 		// 1.2.0: the installer REFUSED it (its reason starts "refused") - the game's code did not look as expected, so the
 		// feature behind it is off however it is set. Distinct from a group that is simply not wanted.
 		bool refused = false;
-		// 1.1.10 (test 71d9): installed with Custom Skills Framework's code around the comparison - kept as its own flag,
+		// 1.2.0 (test 71d9): installed with Custom Skills Framework's code around the comparison - kept as its own flag,
 		// because status says only "installed" once a group is in and the installer's reason is not kept
 		bool alongsideCsf = false;
 	};

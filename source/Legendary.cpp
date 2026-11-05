@@ -259,7 +259,7 @@ namespace Legendary
 				if (rva == 0) { continue; }
 				const auto at = base + static_cast<std::uintptr_t>(rva);
 				const auto* b = reinterpret_cast<const std::uint8_t*>(at);
-				// 1.1.10 (test 8014): the WHOLE window the shape covers, the bytes that differ from the game's shape in [ ], so
+				// 1.2.0 (test 8014): the WHOLE window the shape covers, the bytes that differ from the game's shape in [ ], so
 				// the shape can be reworked from what is really there
 				std::string bytes;
 				{
@@ -344,7 +344,7 @@ namespace Legendary
 					a_note += std::format("; with Custom Skills Framework's call allowed for it, {} time(s){}", csf.size(),
 										  allCsf ? "" : ", not all holding its call");
 				}
-				// 1.1.10 (test 8014): CSF changes more of the shape than the call (the threshold sites matched 0 of 2 with the
+				// 1.2.0 (test 8014): CSF changes more of the shape than the call (the threshold sites matched 0 of 2 with the
 				// call left open, and the button holds a third pattern), so on 1.5.97 the comparisons are looked for where
 				// they were on 2026-09-11. Taken only when EVERY known place holds a comparison whose call before it is no
 				// longer the game's, the count is exact, and - in InstallSite, as always - each is `comiss xmm0,[rip+100.0]`.

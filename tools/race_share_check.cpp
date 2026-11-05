@@ -1,4 +1,4 @@
-// Off-game check of include/RaceShare.h - the share of carry weight and the starting attributes this mod owns (1.1.10:
+// Off-game check of include/RaceShare.h - the share of carry weight and the starting attributes this mod owns (1.2.0:
 // additive over the race by default, "use our base values" on request). The game is modelled as a permanent value made
 // of the race's base, other mods' permanent modifiers and this mod's share; an apply moves the share by the difference,
 // as CarryWeight.cpp and Attributes.cpp do.

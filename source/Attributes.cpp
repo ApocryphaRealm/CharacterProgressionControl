@@ -266,10 +266,10 @@ namespace Attributes
 				logger::info("attributes: the game did not keep this mod's {:+.1f} {} across the load (permanent {:.1f}, was {:.1f}) - starting from zero", g_applied[i], kName[i], r.permanent, g_lastPermanent[i]);
 				g_applied[i] = 0.0F;
 			}
-			// 1.1.10 (include/RaceShare.h): (setting - 100) on top of the race's start, or with "use our base values" the
+			// 1.2.0 (include/RaceShare.h): (setting - 100) on top of the race's start, or with "use our base values" the
 			// race's own start replaced by the setting; nothing while starting values are off.
 			// The character's own start: the race record's value plus the character's NPC-record offset (a vanilla race
-			// records 50 and the player starts at 100 - the gap is the NPC offset, to be confirmed in game by the 1.1.10 test).
+			// records 50 and the player starts at 100 - the gap is the NPC offset, to be confirmed in game by the 1.2.0 test).
 			float raceStart = race ? (i == 0 ? race->data.startingHealth : i == 1 ? race->data.startingMagicka : race->data.startingStamina) : 100.0F;
 			if (const auto* npc = player->GetActorBase())
 			{

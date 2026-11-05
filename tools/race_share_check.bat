@@ -1,7 +1,7 @@
 @echo off
 setlocal
 REM Compiles tools\race_share_check.cpp (include\RaceShare.h: the share of carry weight and the starting attributes this
-REM mod owns - additive over the race, or our base values - 1.1.10) with MSVC and runs it.
+REM mod owns - additive over the race, or our base values - 1.2.0) with MSVC and runs it.
 call "%~dp0..\find-msvc.bat"
 if errorlevel 1 exit /b 1
 set OUT=%TEMP%\cpc-race-share-check-build

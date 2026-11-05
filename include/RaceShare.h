@@ -1,6 +1,6 @@
 #pragma once
 
-// HOW MUCH OF A VALUE THIS MOD OWNS (1.1.10) - pure arithmetic, no game types, so tools\race_share_check.cpp tests it.
+// HOW MUCH OF A VALUE THIS MOD OWNS (1.2.0) - pure arithmetic, no game types, so tools\race_share_check.cpp tests it.
 //
 // The owner, 2026-10-24 01:08: "the carry weight on level up feature of CPC and the mod itself should read what the race's
 // base carry weight and stats or skills are, and then apply over the top of it so that it's compatible with race mods";

@@ -17,7 +17,7 @@ namespace CarryWeight
 {
 	namespace
 	{
-		// 3 (1.1.10): the share is a permanent modifier. A 2 record's share went into the base, which the load has already
+		// 3 (1.2.0): the share is a permanent modifier. A 2 record's share went into the base, which the load has already
 		// rebuilt from the race, so nothing of it is left: it is read as 0.
 		constexpr std::uint32_t kRecordVersion = 3;
 
@@ -50,12 +50,12 @@ namespace CarryWeight
 			}
 		};
 
-		// This mod's share goes into the PERMANENT MODIFIER, not the base (1.1.10). Vtable slot 05 - SE's
+		// This mod's share goes into the PERMANENT MODIFIER, not the base (1.2.0). Vtable slot 05 - SE's
 		// ActorValueOwner::ModActorValue, which CommonLibSSE-NG 7.x names ModBaseActorValue - changes the base, and the game
 		// rebuilds the player's base carry weight from the race on every load (2026-09-05: the share came back missing;
 		// Carryweight on Level Up 1.0.7: base 400 saved, 300 after the load), and the base is the race mod's number. Slot 06
 		// with kPermanent - SE's RestoreActorValue, 7.x's ModActorValue(modifier, ...) - moves the permanent modifier.
-		// To be proven in game on each line (the 1.1.10 test request).
+		// To be proven in game on each line (the 1.2.0 test request).
 		void Modify(RE::ActorValueOwner* a_owner, float a_delta)
 		{
 #if RUNTIME_LINE == 17
@@ -103,7 +103,7 @@ namespace CarryWeight
 			if (s.standDown.empty()) { s.standDown = "another carry-weight mod of ours is loaded and owns carry weight"; }
 		}
 
-		// 1.1.10 (include/RaceShare.h): this mod holds a SHARE of the permanent carry weight and moves only that.
+		// 1.2.0 (include/RaceShare.h): this mod holds a SHARE of the permanent carry weight and moves only that.
 		//   additive (default): share = offset + perLevel x (level - 1) on top of the race's carry weight and every other
 		//                       mod's - an Altmer under Imperious keeps its 250 and gets the growth on top;
 		//   our base values:    the total is starting + perLevel x (level - 1), whatever the race and others set;

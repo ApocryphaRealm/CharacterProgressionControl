@@ -4,7 +4,7 @@
 // absorbed here at the owner's word ("carryweight gets a tab"): the player's PERMANENT carry
 // weight (base plus permanent modifiers; enchantments and spells are temporary and left alone)
 // gets this mod's SHARE as its own permanent modifier - by default  offset + per level x (level - 1)
-// ON TOP of the race's carry weight and every other mod's (1.1.10, include/RaceShare.h; with "use our
+// ON TOP of the race's carry weight and every other mod's (1.2.0, include/RaceShare.h; with "use our
 // base values" the total is  starting + per level x (level - 1)  as before), and that runs exactly
 // when something can have changed: a save loads, the player
 // levels up (SKSE LevelIncrease event, and the attribute choice itself), a slider on the tab

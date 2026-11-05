@@ -195,7 +195,7 @@ namespace settings
 			get("fbookread:experience", experience::book, ParseFloat);
 			get("fskillbookread:experience", experience::skillBook, ParseFloat);
 			{
-				// 1.1.10: carry weight is added on top of the race's. A 1.1.9 INI has only the absolute starting weight; its
+				// 1.2.0: carry weight is added on top of the race's. A 1.1.9 INI has only the absolute starting weight; its
 				// offset is that minus the 300 every such value was set against (an Altmer's 250 then gets +offset, not 300).
 				bool sawStarting = false, sawOffset = false;
 				get("fstartingcarryweight:carryweight", carryweight::starting, ParseFloat, &sawStarting);

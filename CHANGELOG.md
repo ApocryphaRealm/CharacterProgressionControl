@@ -11,7 +11,7 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
-## 1.1.10 - 2026-10-24 - untested
+## 1.2.0 - 2026-10-24 - untested
 
 ### Changed
 - **Ships at info** (uLogLevel=2, the project's default): the shipped INI and the compiled default were still 0 (trace) from the first skeleton of this mod. An INI you already have keeps its value.
