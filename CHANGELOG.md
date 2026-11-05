@@ -41,6 +41,7 @@ Settings are stored in a plain INI file and can also be changed in game.
   moving it would apply it twice on existing saves.
 
 ### Added
+- **Beyond Mastery takes over when it is installed.** With BeyondMastery.dll loaded (asked at data load, so plugin order does not matter) this mod attaches neither Skill caps and Formula caps, which patch the same cap load and the same GetActorValue slot Beyond Mastery does, nor its four Legendary patches, since Beyond Mastery's raises are bought through the Legendary button. One log line says so, the Patches tab lists it, and the Skills tab greys those controls and says why, in all eleven languages. Saved values stay in the INI and come back if Beyond Mastery is removed. With skill points on, the level-up menu's ceiling follows Beyond Mastery's limit instead of the Skills tab's caps, and points charged for an increase its limit stopped go back to the bank. Without Beyond Mastery nothing changes except its not-installed row on the Patches tab.
 - **The legendary settings work alongside Custom Skills Framework** (test a053, 2026-10-24). With Custom Skills
   Framework loaded, all three legendary checks refused: CSF replaces the game's call that fetches the skill's value,
   just before each comparison, with its own (`call rax; nop` or three NOPs), so CPC's shapes - which include the game's
@@ -104,6 +105,9 @@ Settings are stored in a plain INI file and can also be changed in game.
 
 ### Changed
 - Skill points are on by default in a fresh install; an existing INI keeps its value.
+
+### Known
+- With Beyond Mastery's optional bScaleXPGainAbove100 on, a point-bought level above 100 falls short (its factor scales the exact amount this mod sends) and the points come back. Its default is off.
 
 ## 1.1.8 - 2026-09-18 - untested
 

@@ -78,6 +78,8 @@ and `cpc.control op=scan` exposes the same scanner for finding new ones.
 - **Skills tab** - every skill live (level, experience, threshold) straight from the game's own
   progression data, plus the cap and formula-cap settings for all eighteen. The cap patch itself
   is not implemented yet and the tab says so; the values are stored and saved regardless.
+  With Beyond Mastery installed it takes over skill caps, the formula value and Legendary: this mod
+  attaches none of those patches, greys those controls and keeps your values saved in the INI.
 - **Enchanting tab** - how the cost of using an enchanted item scales with the Enchanting skill.
   This is the equation uncapping Enchanting breaks, which is why it sits beside the caps. Another
   no-hook tab: they are the game's own settings.

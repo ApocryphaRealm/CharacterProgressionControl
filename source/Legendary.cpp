@@ -2,6 +2,7 @@
 
 #include "Legendary.h"
 
+#include "Compat.h"
 #include "Patches.h"
 #include "Settings.h"
 #include "Signature.h"
@@ -504,6 +505,10 @@ namespace Legendary
 
 	void Register()
 	{
+		// Beyond Mastery's raises are bought through the Legendary button and its Reset Skill is the game's own Legendary:
+		// this mod's threshold, button and reset level would hide that box or reset to a level its text does not name.
+		if (Compat::BeyondMasteryPresent()) { return; }
+
 		Patches::Register(
 			"Legendary reset level",
 			"The level a skill drops to when it is made legendary, or whether it keeps its level.",

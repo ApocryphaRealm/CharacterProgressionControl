@@ -43,4 +43,5 @@ namespace Compat
 	bool CustomDifficultyUIPresent();    // our standalone Custom Difficulty UI is loaded - the Difficulty tab stands down
 	bool BladeAndBluntPresent();         // BladeAndBlunt.esp is loaded - the Difficulty tab's built-in patch applies
 	bool RequiemPresent();               // Requiem.esp is loaded - likewise
+	bool BeyondMasteryPresent();         // BeyondMastery.dll is loaded - it owns skill caps, the formula value and Legendary
 }

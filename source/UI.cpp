@@ -387,12 +387,20 @@ namespace UI
 
 		const auto s = Skills::GetState();
 		const bool capsActive = Patches::IsInstalled("Skill caps");
+		const bool beyondMastery = Compat::BeyondMasteryPresent();
 
 		ImGuiMCP::TextWrapped("%s", strings::TR("CPC_Skl_Intro", "Where each skill stops, and what the game's own formulas read for it - "
 							  "so a skill can show 300 while combat maths still treats it as 100."));
 		ImGuiMCP::Spacing();
 
-		if (!capsActive)
+		if (beyondMastery)
+		{
+			ImGuiMCP::TextWrapped("%s", strings::TR("CPC_Skl_BeyondMasteryCaps", "Beyond Mastery is installed and owns skill caps and the value the "
+								  "game's formulas read for a skill, so these controls are greyed out and do nothing. Your values "
+								  "stay saved and come back if Beyond Mastery is removed."));
+			ImGuiMCP::Spacing();
+		}
+		else if (!capsActive)
 		{
 			// Said plainly rather than left to be discovered. The values below are still stored
 			// and saved, so a configuration made now is ready the day the patch lands.
@@ -405,7 +413,10 @@ namespace UI
 		ImGuiMCP::PushItemWidth(200.0F);
 
 		bool over = skills::overrideCaps;
-		if (ImGuiMCP::Toggle(strings::TR("CPC_Skl_ControlCaps", "Control skill caps"), &over)) { skills::overrideCaps = over; }
+		const char* capsLabel = strings::TR("CPC_Skl_ControlCaps", "Control skill caps");
+		// Greyed by drawing the name alone: the Toggle paints its track in fixed colours, which BeginDisabled would not dim.
+		if (beyondMastery) { ImGuiMCP::TextDisabled("%s", capsLabel); }
+		else if (ImGuiMCP::Toggle(capsLabel, &over)) { skills::overrideCaps = over; }
 		HelpMarker(strings::TR("CPC_Skl_HelpCaps", "Off by default. While it is off this mod asserts nothing about your skills - "
 				   "with it off, not one instruction in the game is modified."));
 
@@ -439,12 +450,20 @@ namespace UI
 		ImGuiMCP::Spacing();
 		ImGuiMCP::SeparatorText(strings::TR("CPC_Skl_SecLegendary", "Legendary skills"));
 
+		if (beyondMastery)
+		{
+			ImGuiMCP::TextWrapped("%s", strings::TR("CPC_Skl_BeyondMasteryLegendary", "Beyond Mastery is installed and owns the Legendary button, so "
+								  "these controls are greyed out and do nothing. Your values stay saved and come back if Beyond "
+								  "Mastery is removed."));
+		}
 		bool leg = legendary::control;
-		if (ImGuiMCP::Toggle(strings::TR("CPC_Skl_ControlLegendary", "Control legendary skills"), &leg)) { legendary::control = leg; }
+		const char* legendaryLabel = strings::TR("CPC_Skl_ControlLegendary", "Control legendary skills");
+		if (beyondMastery) { ImGuiMCP::TextDisabled("%s", legendaryLabel); }
+		else if (ImGuiMCP::Toggle(legendaryLabel, &leg)) { legendary::control = leg; }
 		HelpMarker(strings::TR("CPC_Skl_HelpLegendary", "Off by default. While it is off, making a skill legendary works exactly as in "
 				   "vanilla. Turning it on takes effect after a restart; the values below apply the next time the Skills menu opens."));
 
-		if (legendary::control)
+		if (legendary::control && !beyondMastery)
 		{
 			const bool resetOn = Patches::IsInstalled("Legendary reset level");
 			const bool thresholdOn = Patches::IsInstalled("Legendary threshold") && Patches::IsInstalled("Legendary reset threshold");
@@ -502,7 +521,7 @@ namespace UI
 			ImGuiMCP::Text(strings::TR("CPC_Skl_Row", "%-12s  %5.1f   %.0f / %.0f"), strings::TR(kSkillKeys[i], kSkillLabels[i]),
 						   s.skill[i].level, s.skill[i].xp, s.skill[i].levelThreshold);
 
-			if (skills::overrideCaps)
+			if (skills::overrideCaps && !beyondMastery)
 			{
 				NudgeableSlider(strings::TR("CPC_Skl_Cap", "Cap"), &skills::cap[i], 100.0F, 1000.0F, "%.0f", 5.0F);
 				HelpMarker(strings::TR("CPC_Skl_HelpCap", "The level this skill stops advancing at. 100 is vanilla."));

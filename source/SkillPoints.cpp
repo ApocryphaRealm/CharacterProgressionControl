@@ -2,6 +2,7 @@
 
 #include "SkillPoints.h"
 
+#include "Compat.h"
 #include "Patches.h"
 #include "Settings.h"
 #include "SkillExperience.h"
@@ -77,6 +78,22 @@ namespace SkillPoints
 			return avo ? avo->GetBaseActorValue(av) > before : true;
 		}
 
+		// The level-up menu's ceiling for a skill while Beyond Mastery owns the cap. It has no call to ask, so this is read
+		// from the game: below 100 the limit is always 100; a skill stopped at its limit has a threshold of 0 (the game's own
+		// mark); otherwise the limit is the next +10 step. A wrong guess costs nothing: ApplyAllocation returns the points of
+		// an increase that did not land. Base value, as the menu itself reads.
+		double BeyondMasteryCeiling(int a_index)
+		{
+			auto* player = RE::PlayerCharacter::GetSingleton();
+			auto* avo = player ? player->AsActorValueOwner() : nullptr;
+			auto* skills = player ? player->GetPlayerRuntimeData().skills : nullptr;
+			if (!avo || !skills || !skills->data) { return 100.0; }
+			const double level = avo->GetBaseActorValue(static_cast<RE::ActorValue>(6 + a_index));
+			if (level < 100.0) { return 100.0; }
+			if (skills->data->skills[a_index].levelThreshold <= 0.0F) { return level; }
+			return (std::floor(level / 10.0) + 1.0) * 10.0;
+		}
+
 		void FeedMenu()
 		{
 			g_fed = false;
@@ -85,9 +102,10 @@ namespace SkillPoints
 			auto* movie = (menu && menu->uiMovie) ? menu->uiMovie.get() : nullptr;
 			if (!movie) { g_menuStatus = "the level-up menu opened but its movie was not reachable"; logger::warn("skill points: {}", g_menuStatus); return; }
 			RE::GFxValue result;
-			// caps: this mod's own per-skill caps (what the Skills tab holds; 100 is vanilla)
+			// caps: this mod's own per-skill caps (what the Skills tab holds; 100 is vanilla), or Beyond Mastery's when it owns them
 			RE::GFxValue caps[skilllist::kCount];
-			for (int i = 0; i < skilllist::kCount; ++i) { caps[i] = RE::GFxValue(static_cast<double>(settings::skills::cap[i])); }
+			const bool beyondMastery = Compat::BeyondMasteryPresent();
+			for (int i = 0; i < skilllist::kCount; ++i) { caps[i] = RE::GFxValue(beyondMastery ? BeyondMasteryCeiling(i) : static_cast<double>(settings::skills::cap[i])); }
 			if (!movie->Invoke((std::string(kMenuPath) + "setSkillCaps").c_str(), &result, caps, skilllist::kCount))
 			{
 				g_menuStatus = "the level-up menu is not the skill-point one (no setSkillCaps) - this mod's Interface\\CharacterProgressionControl\\levelupmenu.swf did not load; the Patches tab says why";
@@ -403,16 +421,27 @@ namespace SkillPoints
 		}
 		g_applying = true;
 		int applied = 0;
+		int returned = 0;   // points of increases Beyond Mastery's limit stopped (the menu had already charged them)
 		for (int i = 0; i < skilllist::kCount; ++i)
 		{
 			for (int n = 0; n < diffs[i]; ++n)
 			{
 				if (IncreaseOnce(i)) { ++applied; }
-				else { logger::warn("skill points: {} did not rise on increase {} of {}", skilllist::kIniName[i], n + 1, diffs[i]); }
+				else
+				{
+					logger::warn("skill points: {} did not rise on increase {} of {}", skilllist::kIniName[i], n + 1, diffs[i]);
+					if (Compat::BeyondMasteryPresent())
+					{
+						auto* player = RE::PlayerCharacter::GetSingleton();
+						auto* avo = player ? player->AsActorValueOwner() : nullptr;
+						if (avo) { returned += CostForLevel(static_cast<int>(avo->GetBaseActorValue(static_cast<RE::ActorValue>(6 + i)))); }
+					}
+				}
 			}
 		}
 		g_applying = false;
-		g_bank = std::max(0, a_remaining);
+		g_bank = std::max(0, a_remaining) + returned;
+		if (returned > 0) { logger::info("skill points: {} point(s) returned to the bank: Beyond Mastery's limit stopped those increases", returned); }
 		logger::info("skill points: applied {} increase(s) from the level-up menu; {} point(s) left in the bank", applied, g_bank);
 		g_menuStatus = std::format("last level up: {} skill increase(s) applied, {} point(s) banked", applied, g_bank);
 		return true;

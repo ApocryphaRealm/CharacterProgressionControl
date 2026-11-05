@@ -693,9 +693,10 @@ namespace DevBenchTool
 										EscapeJson(d.consequence));
 				}
 				a_write(a_sink, std::format(
-					R"({{"ok":true,"op":"compat","altExperience":{},"customSkills":{},"detected":[{}]}})",
+					R"({{"ok":true,"op":"compat","altExperience":{},"customSkills":{},"beyondMastery":{},"detected":[{}]}})",
 					Compat::AlternativeExperienceActive() ? "true" : "false",
-					Compat::CustomSkillsFrameworkPresent() ? "true" : "false", rows).c_str());
+					Compat::CustomSkillsFrameworkPresent() ? "true" : "false",
+					Compat::BeyondMasteryPresent() ? "true" : "false", rows).c_str());
 				return;
 			}
 			if (args.find("\"patches\"") != std::string_view::npos)

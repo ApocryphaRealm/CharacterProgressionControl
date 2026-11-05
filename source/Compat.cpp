@@ -17,6 +17,7 @@ namespace Compat
 		bool customDifficulty = false;
 		bool bladeAndBlunt = false;
 		bool requiem = false;
+		bool beyondMastery = false;
 		bool ran = false;
 
 		// A loaded SKSE plugin is a module in this process. Asking the loader is the truth;
@@ -61,6 +62,10 @@ namespace Compat
 		// twelve damage multipliers in their ESP; Blade and Blunt's DLL also steps them by level.
 		bladeAndBlunt = PluginLoaded("BladeAndBlunt.esp");
 		requiem = PluginLoaded("Requiem.esp");
+		// Beyond Mastery patches the same cap load and the same GetActorValue vtable slot as this mod's cap groups, and its
+		// raises are bought through the Legendary button. Whichever plugin reached kDataLoaded first used to win those sites.
+		// Asked at kDataLoaded, by when SKSE has loaded every plugin, so the answer does not depend on that order.
+		beyondMastery = ModuleLoaded("BeyondMastery.dll");
 
 		altExperience = experience;
 
@@ -127,6 +132,14 @@ namespace Compat
 				  "own override is switched on."
 				: "not installed - the Levelling tab has the level cost to itself.");
 
+		Add("Beyond Mastery", beyondMastery,
+			beyondMastery
+				? "installed, and it takes over skill caps, the value the game's formulas read for a skill, and Legendary: this mod "
+				  "attached neither its Skill caps and Formula caps patches nor its four Legendary patches, and the level-up menu's "
+				  "per-skill ceiling now follows Beyond Mastery. Your saved values for them stay in the INI. Skill experience, skill "
+				  "points, level cost, perks and the Enchanting tab stay with this mod."
+				: "not installed - skill caps and Legendary are this mod's to set, on the Skills tab.");
+
 		for (const auto& d : detections)
 		{
 			if (d.present) { logger::info("compatibility: {} detected - {}", d.name, d.consequence); }
@@ -139,6 +152,7 @@ namespace Compat
 	bool CustomDifficultyUIPresent() { return customDifficulty; }
 	bool BladeAndBluntPresent() { return bladeAndBlunt; }
 	bool RequiemPresent() { return requiem; }
+	bool BeyondMasteryPresent() { return beyondMastery; }
 	bool AlternativeExperienceActive() { return altExperience; }
 	bool CustomSkillsFrameworkPresent() { return customSkills; }
 }

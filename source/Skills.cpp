@@ -2,6 +2,7 @@
 
 #include "Skills.h"
 
+#include "Compat.h"
 #include "Patches.h"
 #include "Settings.h"
 #include "Signature.h"
@@ -194,6 +195,10 @@ namespace Skills
 
 	void Register()
 	{
+		// Beyond Mastery owns both: the cap load and the player's GetActorValue slot are the two places it patches too.
+		// Registering nothing leaves those bytes and that slot exactly as the game (or the other mod) has them.
+		if (Compat::BeyondMasteryPresent()) { return; }
+
 		Patches::Register(
 			"Skill caps",
 			"Where a skill stops advancing.",

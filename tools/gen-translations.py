@@ -485,6 +485,28 @@ TRANSLATIONS["CPC_Skl_CapsInert"] = T(
     "La patch dei limiti di abilità NON è attiva in questa build, quindi ogni abilità si ferma ancora a 100 esattamente come nel gioco base. I valori sotto vengono ricordati e salvati, ma per ora non fanno nulla. Vedi la scheda Patches.",
     "Łatka limitów umiejętności NIE jest aktywna w tej wersji, więc każda umiejętność wciąż zatrzymuje się na 100, jak w podstawowej grze. Wartości poniżej są zapamiętywane i zapisywane, ale na razie nic nie robią. Zobacz kartę Patches.",
     "Záplata stropů dovedností v tomto sestavení NENÍ aktivní, takže každá dovednost se stále zastaví na 100 jako v základní hře. Hodnoty níže se pamatují a ukládají, ale zatím nic nedělají. Viz karta Patches.")
+TRANSLATIONS["CPC_Skl_BeyondMasteryCaps"] = T(
+    "Beyond Mastery がインストールされており、スキル上限とゲームの計算式が読むスキル値を管理しているため、これらの設定はグレー表示で何もしません。値は保存されたままで、Beyond Mastery を外すと元に戻ります。",
+    "Beyond Mastery가 설치되어 있어 기술 상한과 게임 공식이 읽는 기술 값을 관리하므로, 이 설정들은 회색으로 표시되며 아무 일도 하지 않습니다. 값은 저장된 채로 남으며 Beyond Mastery를 제거하면 다시 적용됩니다.",
+    "已安装 Beyond Mastery，技能上限以及游戏公式读取的技能数值由它管理，因此这些设置显示为灰色且不起作用。你的数值仍会保存，移除 Beyond Mastery 后恢复生效。",
+    "Установлен Beyond Mastery: он управляет потолками навыков и значением навыка, которое читают формулы игры, поэтому эти настройки затенены и ничего не делают. Ваши значения сохранены и вернутся, если удалить Beyond Mastery.",
+    "Beyond Mastery ist installiert und steuert die Fertigkeitsgrenzen sowie den Wert, den die Formeln des Spiels für eine Fertigkeit lesen. Diese Einstellungen sind daher ausgegraut und tun nichts. Deine Werte bleiben gespeichert und gelten wieder, wenn Beyond Mastery entfernt wird.",
+    "Beyond Mastery est installé et gère les plafonds de compétence ainsi que la valeur lue par les formules du jeu : ces réglages sont donc grisés et sans effet. Vos valeurs restent enregistrées et reviennent si Beyond Mastery est retiré.",
+    "Beyond Mastery está instalado y controla los límites de habilidad y el valor que leen las fórmulas del juego, así que estos ajustes aparecen en gris y no hacen nada. Tus valores siguen guardados y volverán si quitas Beyond Mastery.",
+    "Beyond Mastery è installato e gestisce i limiti di abilità e il valore letto dalle formule del gioco, quindi queste impostazioni sono in grigio e non fanno nulla. I tuoi valori restano salvati e tornano se rimuovi Beyond Mastery.",
+    "Beyond Mastery jest zainstalowany i zarządza limitami umiejętności oraz wartością odczytywaną przez wzory gry, więc te ustawienia są wyszarzone i nic nie robią. Twoje wartości pozostają zapisane i wrócą po usunięciu Beyond Mastery.",
+    "Beyond Mastery je nainstalován a spravuje stropy dovedností i hodnotu, kterou čtou vzorce hry, proto jsou tato nastavení zašedlá a nic nedělají. Vaše hodnoty zůstávají uložené a vrátí se po odebrání Beyond Mastery.")
+TRANSLATIONS["CPC_Skl_BeyondMasteryLegendary"] = T(
+    "Beyond Mastery がインストールされており、レジェンダリーボタンを管理しているため、これらの設定はグレー表示で何もしません。値は保存されたままで、Beyond Mastery を外すと元に戻ります。",
+    "Beyond Mastery가 설치되어 있어 전설 버튼을 관리하므로, 이 설정들은 회색으로 표시되며 아무 일도 하지 않습니다. 값은 저장된 채로 남으며 Beyond Mastery를 제거하면 다시 적용됩니다.",
+    "已安装 Beyond Mastery，传奇按钮由它管理，因此这些设置显示为灰色且不起作用。你的数值仍会保存，移除 Beyond Mastery 后恢复生效。",
+    "Установлен Beyond Mastery: он управляет кнопкой «Легендарный», поэтому эти настройки затенены и ничего не делают. Ваши значения сохранены и вернутся, если удалить Beyond Mastery.",
+    "Beyond Mastery ist installiert und steuert die Legendär-Schaltfläche. Diese Einstellungen sind daher ausgegraut und tun nichts. Deine Werte bleiben gespeichert und gelten wieder, wenn Beyond Mastery entfernt wird.",
+    "Beyond Mastery est installé et gère le bouton Légendaire : ces réglages sont donc grisés et sans effet. Vos valeurs restent enregistrées et reviennent si Beyond Mastery est retiré.",
+    "Beyond Mastery está instalado y controla el botón Legendaria, así que estos ajustes aparecen en gris y no hacen nada. Tus valores siguen guardados y volverán si quitas Beyond Mastery.",
+    "Beyond Mastery è installato e gestisce il pulsante Leggendaria, quindi queste impostazioni sono in grigio e non fanno nulla. I tuoi valori restano salvati e tornano se rimuovi Beyond Mastery.",
+    "Beyond Mastery jest zainstalowany i zarządza przyciskiem Legendarna, więc te ustawienia są wyszarzone i nic nie robią. Twoje wartości pozostają zapisane i wrócą po usunięciu Beyond Mastery.",
+    "Beyond Mastery je nainstalován a spravuje tlačítko Legendární, proto jsou tato nastavení zašedlá a nic nedělají. Vaše hodnoty zůstávají uložené a vrátí se po odebrání Beyond Mastery.")
 TRANSLATIONS["CPC_Skl_ControlCaps"] = T(
     "スキル上限を制御する", "기술 상한 제어", "控制技能上限", "Управлять потолками навыков",
     "Fertigkeitsgrenzen steuern", "Contrôler les plafonds de compétence", "Controlar los límites de habilidad",
