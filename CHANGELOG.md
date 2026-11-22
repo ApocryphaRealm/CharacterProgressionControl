@@ -11,7 +11,7 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
-## 1.3.0 - 2026-11-22 - untested
+## 1.3.0 - 2026-11-22 - working
 
 ### Added
 - **Static levelling, skill experience rates, skill-to-level income and perk points now work on Skyrim 1.7.x**

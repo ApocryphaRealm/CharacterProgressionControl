@@ -1,6 +1,11 @@
 # Character Progression Control
 
-Version 1.2.0
+Version 1.3.0
+
+What changed in 1.3.0: on Skyrim 1.7.99 / 1.7.104, static levelling, the skill experience rates,
+skill-to-level income and the perk table now work, and with skill points on, using a skill no longer
+banks experience there. Each has its own 1.7 shape, read out of the running 1.7.104 game; SE 1.5.97
+and AE 1.6.1170 keep the exact path they had. The legendary reset level is still off on 1.7.
 
 What changed in 1.1.9: with skill points on, skill experience no longer banks through use when
 another plugin (Actor Value Generator, the Skyrim Skill Uncapper) already hooks the skill-improve
