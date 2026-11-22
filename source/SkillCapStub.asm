@@ -33,6 +33,7 @@ EXTERN CPC_PerkPool_Hook:PROC        ; void CPC_PerkPool_Hook(int count)
 EXTERN CPC_PerkPoolReturn:QWORD       ; filled in at install time - the instruction after the sequence
 EXTERN CPC_PerkPoolPlayer:QWORD      ; address of the game's player-pointer global
 EXTERN CPC_PerkPoolNewCount:DWORD    ; the new perk count the hook settled on
+EXTERN CPC_LevelExp17Const:QWORD     ; Skyrim 1.7.x: address of the scale the inlined level-experience maths multiplies by
 
 .code
 
@@ -189,5 +190,103 @@ CPC_PerkPoolStub PROC
     mov     eax, ecx
     jmp     qword ptr [CPC_PerkPoolReturn]
 CPC_PerkPoolStub ENDP
+
+; Skyrim 1.7.x, perk points: the same "perk pool += count" sequence (0x1D bytes there), but the count is in
+; edi, not ebx (read out of the running 1.7.104 game, 2026-11-22: add eax,edi / add cl,dil). Otherwise the
+; same contract as CPC_PerkPoolStub above.
+CPC_PerkPoolStub17 PROC
+    push    rax
+    push    rcx
+    push    rdx
+    push    r8
+    push    r9
+    push    r10
+    push    r11
+    push    rbx
+    mov     rbx, rsp
+    sub     rsp, 60h
+    and     rsp, -16
+    movaps  xmmword ptr [rsp + 00h], xmm0
+    movaps  xmmword ptr [rsp + 10h], xmm1
+    movaps  xmmword ptr [rsp + 20h], xmm2
+    movaps  xmmword ptr [rsp + 30h], xmm3
+    movaps  xmmword ptr [rsp + 40h], xmm4
+    movaps  xmmword ptr [rsp + 50h], xmm5
+    mov     ecx, edi                        ; the game's edi = the count (edi is untouched by the pushes)
+    movsx   ecx, cl                         ; the game adds it as a signed byte
+    sub     rsp, 20h
+    call    CPC_PerkPool_Hook
+    add     rsp, 20h
+    movaps  xmm0, xmmword ptr [rsp + 00h]
+    movaps  xmm1, xmmword ptr [rsp + 10h]
+    movaps  xmm2, xmmword ptr [rsp + 20h]
+    movaps  xmm3, xmmword ptr [rsp + 30h]
+    movaps  xmm4, xmmword ptr [rsp + 40h]
+    movaps  xmm5, xmmword ptr [rsp + 50h]
+    mov     rsp, rbx
+    pop     rbx
+    pop     r11
+    pop     r10
+    pop     r9
+    pop     r8
+    pop     rdx
+    pop     rcx
+    pop     rax
+    mov     rdx, qword ptr [CPC_PerkPoolPlayer]
+    mov     rdx, qword ptr [rdx]
+    mov     ecx, dword ptr [CPC_PerkPoolNewCount]
+    mov     eax, ecx
+    jmp     qword ptr [CPC_PerkPoolReturn]
+CPC_PerkPoolStub17 ENDP
+
+; Skyrim 1.7.x, skill-to-level income. The level-experience maths is inlined in the skill-improve function;
+; this stub is CALLED in place of its last three instructions (16 bytes: mulss xmm1,[k] / addss xmm1,[rax] /
+; movss [rax],xmm1). Contract there: xmm1 = the maths before the scale, rax = where the level experience is
+; kept, esi = the skill id. It redoes the scale, asks CPC_LevelExp_Hook (xmm0 = value, edx = skill id), and
+; does the add and store itself. Every volatile register except xmm1 (the result, as the game leaves it) is
+; preserved; the stack is realigned because this is a call from the middle of a function.
+CPC_LevelExp17Stub PROC
+    push    rax
+    push    rcx
+    push    rdx
+    push    r8
+    push    r9
+    push    r10
+    push    r11
+    push    rbx
+    mov     rbx, rsp
+    sub     rsp, 60h
+    and     rsp, -16
+    movaps  xmmword ptr [rsp + 00h], xmm0
+    movaps  xmmword ptr [rsp + 10h], xmm2
+    movaps  xmmword ptr [rsp + 20h], xmm3
+    movaps  xmmword ptr [rsp + 30h], xmm4
+    movaps  xmmword ptr [rsp + 40h], xmm5
+    mov     rax, qword ptr [CPC_LevelExp17Const]
+    mulss   xmm1, dword ptr [rax]           ; the replaced mulss
+    movaps  xmm0, xmm1                      ; value -> first argument
+    mov     edx, esi                        ; skill id -> second argument
+    sub     rsp, 20h
+    call    CPC_LevelExp_Hook               ; result in xmm0
+    add     rsp, 20h
+    movaps  xmm1, xmm0
+    movaps  xmm0, xmmword ptr [rsp + 00h]
+    movaps  xmm2, xmmword ptr [rsp + 10h]
+    movaps  xmm3, xmmword ptr [rsp + 20h]
+    movaps  xmm4, xmmword ptr [rsp + 30h]
+    movaps  xmm5, xmmword ptr [rsp + 40h]
+    mov     rsp, rbx
+    pop     rbx
+    pop     r11
+    pop     r10
+    pop     r9
+    pop     r8
+    pop     rdx
+    pop     rcx
+    pop     rax
+    addss   xmm1, dword ptr [rax]           ; the replaced addss
+    movss   dword ptr [rax], xmm1           ; the replaced store
+    ret
+CPC_LevelExp17Stub ENDP
 
 END

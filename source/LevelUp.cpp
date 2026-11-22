@@ -18,6 +18,7 @@ extern "C"
 	std::uintptr_t CPC_PerkPoolPlayer = 0;   // the game's player-pointer global the sequence loads into rdx
 	std::int32_t   CPC_PerkPoolNewCount = 0; // what the sequence leaves in ecx/eax: the new perk count
 	void CPC_PerkPoolStub();                 // SkillCapStub.asm
+	void CPC_PerkPoolStub17();               // the same for Skyrim 1.7.x, where the count is in edi
 
 	// Called by the stub with the count the game was about to add (positive on a level up; negative
 	// when something takes points away). Applies this mod's table on a grant and leaves removals
@@ -59,11 +60,27 @@ namespace LevelUp
 			"48 8B 15 ?? ?? ?? ?? 0F B6 8A ?? ?? ?? ?? 8B C1 03 C3 78 08 02 CB 88 8A ?? ?? ?? ??";
 		constexpr std::ptrdiff_t kPerkPoolOffset = 0x1C;
 		constexpr std::size_t kSequenceLength = 0x1C;
+		// Skyrim 1.7.x (read out of the running 1.7.104 game, 2026-11-22): the same sequence with the count in edi,
+		// 0x1D bytes - add eax,edi / js +9 / add cl,dil (40 02 CF) - anchored on the end of the function before it
+		// (movss [rax+34h],xmm0 / add rsp,20h / pop rdi / ret), 0xB bytes back.
+		constexpr const char* kPerkPoolSig17 =
+			"F3 0F 11 40 34 48 83 C4 20 5F C3 "
+			"48 8B 15 ?? ?? ?? ?? 0F B6 8A ?? ?? ?? ?? 8B C1 03 C7 78 09 40 02 CF 88 8A ?? ?? ?? ??";
+		constexpr std::ptrdiff_t kPerkPoolOffset17 = 0xB;
+		constexpr std::size_t kSequenceLength17 = 0x1D;
 
 		bool InstallPerkPoints(std::string& a_reason)
 		{
-			const auto found = Signature::Find(kPerkPoolSig, kPerkPoolOffset);
+			auto found = Signature::Find(kPerkPoolSig, kPerkPoolOffset);
+			bool line17 = false;
+			if (!found.found && found.matches == 0)
+			{
+				const auto f17 = Signature::Find(kPerkPoolSig17, kPerkPoolOffset17);
+				if (f17.found || f17.matches > 1) { found = f17; line17 = f17.found; }
+			}
 			if (!found.found) { a_reason = found.note + ". A level up grants exactly what vanilla grants."; return false; }
+			const std::size_t seqLen = line17 ? kSequenceLength17 : kSequenceLength;
+			const std::size_t writeDispAt = line17 ? 0x19 : 0x18;   // the store's displacement (the 1.7 add is one byte longer)
 			const auto site = found.address;
 			const auto base = REL::Module::get().base();
 			const auto* b = reinterpret_cast<const std::uint8_t*>(site);
@@ -76,7 +93,7 @@ namespace LevelUp
 				reinterpret_cast<std::uintptr_t>(&player->GetGameStatsData().perkCount) - reinterpret_cast<std::uintptr_t>(player));
 			std::uint32_t readDisp = 0, writeDisp = 0;
 			std::memcpy(&readDisp, b + 10, 4);
-			std::memcpy(&writeDisp, b + 0x18, 4);
+			std::memcpy(&writeDisp, b + writeDispAt, 4);
 			if (readDisp != perkOffset || writeDisp != perkOffset)
 			{
 				a_reason = std::format("refused: the sequence at game offset 0x{:X} reads/writes +0x{:X}/+0x{:X}, but the player's perk "
@@ -95,9 +112,9 @@ namespace LevelUp
 				std::int32_t rel = 0; std::memcpy(&rel, b + 3, 4);
 				CPC_PerkPoolPlayer = site + 7 + static_cast<std::intptr_t>(rel);
 			}
-			CPC_PerkPoolReturn = site + kSequenceLength;
-			SKSE::GetTrampoline().write_branch<5>(site, reinterpret_cast<std::uintptr_t>(&CPC_PerkPoolStub));
-			REL::safe_fill(site + 5, 0x90, kSequenceLength - 5);
+			CPC_PerkPoolReturn = site + seqLen;
+			SKSE::GetTrampoline().write_branch<5>(site, line17 ? reinterpret_cast<std::uintptr_t>(&CPC_PerkPoolStub17) : reinterpret_cast<std::uintptr_t>(&CPC_PerkPoolStub));
+			REL::safe_fill(site + 5, 0x90, seqLen - 5);
 			logger::info("Perk points: attached at game offset 0x{:X} (resume 0x{:X}); each level up now grants the table's whole "
 						 "number of perks", site - base, CPC_PerkPoolReturn - base);
 			a_reason = located + ". Attached: while Control what a level up grants is on, each level up grants the number of perks the table gives for the level reached; off, exactly what vanilla grants.";

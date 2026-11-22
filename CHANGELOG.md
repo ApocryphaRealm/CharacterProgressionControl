@@ -11,6 +11,25 @@ Adds the Patches tab, which lists each engine patch and states plainly whether i
 Adds a Debug tab with the log level and a live readout of the values the game is using.
 Settings are stored in a plain INI file and can also be changed in game.
 
+## 1.3.0 - 2026-11-22 - untested
+
+### Added
+- **Static levelling, skill experience rates, skill-to-level income and perk points now work on Skyrim 1.7.x**
+  (1.7.99 / 1.7.104). Until now those four groups stayed off on the 1.7 build because the SE byte shapes are not in
+  that game, and with skill points on, skills still levelled through use there (a Discord question, 2026-11-22). The
+  three sites were read out of the running 1.7.104 game and each has its own 1.7 shape, found at runtime and proven
+  before a byte is written:
+  - **Skill-improve entry** - the same function with an AE-style frame (`mov rax,rsp / push rdi / push r12..r15 /
+    sub rsp,180h`). Its shape is matched 0x28 bytes past the entry, so a branch another plugin wrote there does not
+    hide it (chained, as on SE). The hook's arguments are unchanged: the 1.7 function reads the same three stack
+    arguments. The branch cuts `push r12`, so the thunk re-executes six prologue bytes, not five.
+  - **Skill-to-level income** - on 1.7 the level-experience maths is inlined in the skill-improve function instead of
+    being a function of its own. Its last three instructions (scale, add, store) are found inside that function and
+    replaced by a call to `CPC_LevelExp17Stub`, which asks the same hook SE uses.
+  - **Perk points** - the same "perk pool += count" sequence with the count in `edi` and one byte longer;
+    `CPC_PerkPoolStub17` reads `edi`. The perk-count displacement is still checked against the live player.
+  - So **skill points on 1.7 now stop ordinary skill experience**, as on SE.
+
 ## 1.2.0 - 2026-10-24 - untested
 
 ### Changed

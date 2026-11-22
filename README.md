@@ -35,10 +35,10 @@ it loads or compares before a byte is written, and with its setting off nothing 
 (CommonLibSSE-NG 3.7.0) and one for Skyrim 1.7.99 / 1.7.104 (CommonLibSSE-NG 7.2.0,
 distributed under GPL-3.0-or-later with the library's exceptions - its licence texts install with
 it). Every site is found by shape at runtime, so a group simply reports itself off on a build where
-its shape is absent: on 1.7.104 the skill caps, formula caps and attribute gains attach; the skill
-experience rates, skill-to-level income, static levelling and perk-table sites are not present there
-and those groups stay off and say so on the Patches tab (skill points still work, but ordinary skill
-experience cannot be suppressed on that build and the group says that too).
+its shape is absent. Since 1.3.0 every group has a 1.7 shape of its own (read out of the running 1.7.104
+game): the skill-improve entry has an AE-style frame, the level-experience maths is inlined into it, and the
+perk-pool sequence keeps its count in `edi` - so static levelling, skill experience rates, skill-to-level
+income, perk points and skill points' stop on ordinary skill experience work there as on SE.
 
 **Skill points (1.0.4; on by default since 1.1.9).** *Use skill points* ships ON: the rewritten
 level-up screen is the point of the mod, so a fresh install gets it without touching the INI. With it on,

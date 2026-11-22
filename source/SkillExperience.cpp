@@ -24,6 +24,10 @@ extern "C"
 	// and returns to the game's call site.
 	std::uintptr_t CPC_LevelExpOriginal = 0;   // the game's level-experience function; set at install
 	void CPC_LevelExpCallStub();
+	// Skyrim 1.7.x: the level-experience maths is inlined; this stub replaces its last three instructions
+	// (mulss xmm1,[k] / addss xmm1,[rax] / movss [rax],xmm1) and needs the constant's address.
+	std::uintptr_t CPC_LevelExp17Const = 0;
+	void CPC_LevelExp17Stub();
 }
 
 namespace SkillExperience
@@ -47,6 +51,31 @@ namespace SkillExperience
 		// Nexus report of 2026-09-20 (xLenax): skills still levelled through use.
 		constexpr const char* kImproveTailSig =
 			"41 56 48 81 EC 60 01 00 00 8D 42 FA 41 0F 29 7B C8 49 8B E9 0F 28 FA 8B F2 4C 8B F1 83 F8 11";
+		// Skyrim 1.7.x (1.7.99 / 1.7.104; read out of the running 1.7.104 game, 2026-11-22): the same function with an
+		// AE-style frame - mov rax,rsp / push rdi / push r12..r15 / sub rsp,180h / ... / movaps [rax-38h..-88h],xmm6..xmm11
+		// / mov rbp,r9 / movaps xmm6,xmm2 / mov esi,edx / mov r14,rcx / lea eax,[rdx-6] / cmp eax,11h. Its stack arguments
+		// sit at [rsp+1D0h/1D8h/1E0h] in that frame - the same three the SE function reads at [rsp+1A0h/1A8h/1B0h], so the
+		// hook's signature fits both. The shape starts 0x28 bytes after the entry, so a branch another plugin wrote at
+		// the entry does not hide it.
+		constexpr const char* kImproveSig17 =
+			"0F 29 70 C8 0F 29 78 B8 44 0F 29 40 A8 44 0F 29 48 98 44 0F 29 50 88 44 0F 29 98 78 FF FF FF 49 8B E9 0F 28 F2 8B F2 4C 8B F1 8D 42 FA 83 F8 11";
+		constexpr std::ptrdiff_t kImproveSig17Offset = -0x28;
+		// mov rax,rsp / push rdi / push r12: three whole, position-independent instructions (6 bytes) that the 5-byte
+		// branch cuts into; the thunk re-executes all six and resumes at entry+6.
+		constexpr std::uint8_t kPrologue17[6] = { 0x48, 0x8B, 0xC4, 0x57, 0x41, 0x54 };
+		std::size_t g_prologueLen = 5;
+		const std::uint8_t* g_prologue = kPrologue5;
+		bool g_line17Shape = false;   // the 1.7 frame was found: the level-experience maths is inlined, not a call
+
+		// On 1.7 the level-experience maths is INLINED in the skill-improve function rather than a leaf function:
+		//   mov rax,[r14] / subss xmm1,xmm2 / mulss xmm1,[rip+k] / addss xmm1,[rax] / movss [rax],xmm1
+		// xmm1 after the mulss is exactly what SE's leaf returns (the same subtract-then-scale tail). The 16 bytes from
+		// the mulss to the store are replaced by a call to CPC_LevelExp17Stub, which redoes the mulss, asks
+		// CPC_LevelExp_Hook, and does the add and store itself.
+		constexpr const char* kLevelExpSig17 = "49 8B 06 F3 0F 5C CA F3 0F 59 0D ?? ?? ?? ?? F3 0F 58 08 F3 0F 11 08";
+		constexpr std::ptrdiff_t kLevelExpSig17Offset = 7;
+		constexpr std::size_t kLevelExp17Length = 16;
+		constexpr std::ptrdiff_t kImproveScan17 = 0x400;   // the 1.7 function is 0x3E3 bytes long
 		std::uintptr_t g_foreignHook = 0;   // where the branch already sitting at the entry goes, when another plugin hooked first
 		std::string g_foreignOwner;         // that plugin's file name, for the log and the Patches tab
 
@@ -198,15 +227,48 @@ namespace SkillExperience
 					found = tail;
 				}
 			}
+			if (!found.found && found.matches == 0)
+			{
+				// Skyrim 1.7.x: the AE-style frame. Its shape sits 0x28 bytes past the entry, so it matches whether or
+				// not another plugin has branched the entry; the entry must then hold the 1.7 prologue or a branch.
+				const auto f17 = Signature::Find(kImproveSig17, kImproveSig17Offset);
+				if (f17.found)
+				{
+					const auto* b = reinterpret_cast<const std::uint8_t*>(f17.address);
+					if (b[0] == 0xE9)
+					{
+						const auto rel = *reinterpret_cast<const std::int32_t*>(f17.address + 1);
+						g_foreignHook = f17.address + 5 + rel;
+						g_foreignOwner = OwnerOf(g_foreignHook);
+						logger::info("skill-improve entry (1.7 frame) at game offset 0x{:X} is already hooked by {} (branch to 0x{:X}); this mod's hook will sit in front of it and call it",
+									 f17.address - base, g_foreignOwner, g_foreignHook);
+					}
+					else if (std::memcmp(b, kPrologue17, sizeof(kPrologue17)) != 0)
+					{
+						a_reason = std::format("refused: game offset 0x{:X} starts with {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}, neither the 1.7 prologue nor "
+											   "another plugin's branch; nothing was written", f17.address - base, b[0], b[1], b[2], b[3], b[4], b[5]);
+						return false;
+					}
+					g_prologue = kPrologue17;
+					g_prologueLen = sizeof(kPrologue17);
+					g_line17Shape = true;
+					found = f17;
+				}
+				else if (f17.matches > 1)
+				{
+					found = f17;
+				}
+			}
 			if (!found.found) { a_reason = found.note; return false; }
 			const auto entry = found.address;
-			if (!g_foreignHook && std::memcmp(reinterpret_cast<const void*>(entry), kPrologue5, sizeof(kPrologue5)) != 0)
+			if (!g_foreignHook && std::memcmp(reinterpret_cast<const void*>(entry), g_prologue, g_prologueLen) != 0)
 			{
 				a_reason = std::format("refused: game offset 0x{:X} does not start with the expected prologue; nothing was written", entry - base);
 				return false;
 			}
 			const auto capSite = Skills::CapSiteAddress();
-			if (capSite && !(capSite > entry && capSite < entry + kImproveScan))
+			const auto scan = g_line17Shape ? kImproveScan17 : kImproveScan;
+			if (capSite && !(capSite > entry && capSite < entry + scan))
 			{
 				a_reason = std::format("refused: the verified skill-cap site (0x{:X}) does not lie inside the function found at 0x{:X}; nothing was written", capSite - base, entry - base);
 				return false;
@@ -221,7 +283,7 @@ namespace SkillExperience
 			if (g_origImprove.address()) { return true; }
 			const auto base = REL::Module::get().base();
 			auto& trampoline = SKSE::GetTrampoline();
-			auto* thunk = static_cast<std::uint8_t*>(trampoline.allocate(5 + 6 + 8));
+			auto* thunk = static_cast<std::uint8_t*>(trampoline.allocate(sizeof(kPrologue17) + 6 + 8));
 			if (!thunk) { a_reason = "refused: no trampoline space for the prologue thunk; nothing was written"; return false; }
 			if (g_foreignHook)
 			{
@@ -233,14 +295,20 @@ namespace SkillExperience
 			}
 			else
 			{
-				// The "original": the 5 overwritten prologue bytes, then `jmp [rip+0]` to entry+5.
-				std::memcpy(thunk, kPrologue5, 5);
-				thunk[5] = 0xFF; thunk[6] = 0x25; std::memset(thunk + 7, 0, 4);
-				const std::uintptr_t resume = g_improveEntry + 5;
-				std::memcpy(thunk + 11, &resume, 8);
+				// The "original": the overwritten prologue instructions (5 bytes on SE, 6 on 1.7 - the branch cuts into
+				// `push r12`), then `jmp [rip+0]` to the first instruction after them.
+				const auto n = g_prologueLen;
+				std::memcpy(thunk, g_prologue, n);
+				thunk[n] = 0xFF; thunk[n + 1] = 0x25; std::memset(thunk + n + 2, 0, 4);
+				const std::uintptr_t resume = g_improveEntry + n;
+				std::memcpy(thunk + n + 6, &resume, 8);
 			}
 			g_origImprove = REL::Relocation<Improve_t>(reinterpret_cast<std::uintptr_t>(thunk));
 			trampoline.write_branch<5>(g_improveEntry, Improve_Hook);
+			if (!g_foreignHook && g_prologueLen > 5)
+			{
+				REL::safe_fill(g_improveEntry + 5, 0x90, g_prologueLen - 5);   // the cut instruction's leftover byte
+			}
 			if (g_foreignHook) { logger::info("skill-improve entry hook attached at game offset 0x{:X}, in front of {}'s hook, which it calls", g_improveEntry - base, g_foreignOwner); }
 			else { logger::info("skill-improve entry hook attached at game offset 0x{:X}", g_improveEntry - base); }
 			return true;
@@ -279,10 +347,53 @@ namespace SkillExperience
 			return true;
 		}
 
+		std::string LevelIncomeOutcome(std::uintptr_t a_site)
+		{
+			const bool replaceMode = settings::experience::enabled && !settings::experience::skillsPay;
+			if (replaceMode)
+			{
+				return std::format("attached at game offset 0x{:X}: skill increases pay NOTHING toward the character level - experience comes from the "
+								   "Experience tab's sources only (Skill increases still pay toward your level is off).", a_site);
+			}
+			if (!settings::skillexp::overrideRates)
+			{
+				return std::format("attached at game offset 0x{:X} for skill points only: a point-bought skill level pays nothing toward "
+								   "the character level; ordinary increases pay vanilla (Control skill experience rates is off).", a_site);
+			}
+			return std::format("attached at game offset 0x{:X}: a skill increase pays vanilla times the Skill increase -> level multiplier.", a_site);
+		}
+
+		// Skyrim 1.7.x: the level-experience maths is inlined in the skill-improve function. Its last three
+		// instructions are found INSIDE that function, exactly once, and replaced by a call to the stub.
+		bool InstallLevelIncome17(std::string& a_reason)
+		{
+			const auto base = REL::Module::get().base();
+			const auto found = Signature::Find(kLevelExpSig17, kLevelExpSig17Offset);
+			if (!found.found) { a_reason = found.note + ". A skill increase pays toward a level exactly as in vanilla."; return false; }
+			const auto site = found.address;
+			if (!(site > g_improveEntry && site + kLevelExp17Length < g_improveEntry + kImproveScan17))
+			{
+				a_reason = std::format("refused: the inlined level-experience maths at 0x{:X} does not lie inside the skill-improve function at 0x{:X}; "
+									   "nothing was written", site - base, g_improveEntry - base);
+				return false;
+			}
+			std::int32_t rel = 0;
+			std::memcpy(&rel, reinterpret_cast<const void*>(site + 4), 4);
+			CPC_LevelExp17Const = site + 8 + static_cast<std::intptr_t>(rel);
+			const float k = *reinterpret_cast<const float*>(CPC_LevelExp17Const);
+			SKSE::GetTrampoline().write_call<5>(site, reinterpret_cast<std::uintptr_t>(&CPC_LevelExp17Stub));
+			REL::safe_fill(site + 5, 0x90, kLevelExp17Length - 5);
+			logger::info("Skill-to-level income: the inlined level-experience maths at game offset 0x{:X} (scale {:g} at 0x{:X}) now goes "
+						 "through this mod; a skill increase pays fSkillToLevelMult times vanilla", site - base, k, CPC_LevelExp17Const - base);
+			a_reason = LevelIncomeOutcome(site - base);
+			return true;
+		}
+
 		bool InstallLevelIncome(std::string& a_reason)
 		{
 			if (!LocateImprove(a_reason)) { a_reason += ". A skill increase pays toward a level exactly as in vanilla."; return false; }
 			const auto base = REL::Module::get().base();
+			if (g_line17Shape) { return InstallLevelIncome17(a_reason); }
 			const auto maths = Signature::Find(kLevelExpSig, 0);
 			if (!maths.found) { a_reason = maths.note + ". A skill increase pays toward a level exactly as in vanilla."; return false; }
 			// Prove it is a self-contained function: its prologue `sub rsp,18h` is the first instruction after the
